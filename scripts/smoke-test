@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+jar=.dev/artifacts/jar/elide-doclet/elide-doclet.jar
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+echo '/** Example API. */ public class Example {}' > "$work/Example.java"
+javadoc -quiet -d "$work/docs" -doclet dev.elide.doclet.ElideDoclet \
+    -docletpath "$jar" "$work/Example.java"
+test -s "$work/docs/index.html"
+grep -q 'elide.css' "$work/docs/Example.html"
+css=$(find "$work/docs" -name elide.css)
+cmp src/main/resources/dev/elide/doclet/elide.css "$css"

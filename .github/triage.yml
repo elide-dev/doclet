@@ -1,0 +1,17 @@
+format:
+  - '**/*.java'
+  - '**/*.kt'
+  - '**/*.kts'
+  - hk.pkl
+  - mise.toml
+  - '.github/**'
+build:
+  - 'src/**'
+  - 'scripts/**'
+  - '**/*.java'
+  - '**/*.kt'
+  - '**/*.kts'
+  - '*.pkl'
+  - mise.toml
+  - '.github/**'
+  - '*release-please*.json'

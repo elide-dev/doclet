@@ -1,0 +1,29 @@
+name: PR
+on: pull_request
+concurrency:
+  group: pr-${{ github.event.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  triage:
+    name: Triage
+    uses: ./.github/workflows/job.triage.yml
+    permissions:
+      contents: read
+      issues: write # Create area labels on first use.
+      pull-requests: write
+  format:
+    name: Format
+    needs: triage
+    if: needs.triage.outputs.format == 'true'
+    uses: ./.github/workflows/check.format.yml
+    with:
+      elide-version: ${{ needs.triage.outputs.elide-version }}
+  build:
+    name: Build
+    needs: triage
+    if: needs.triage.outputs.build == 'true'
+    uses: ./.github/workflows/job.build.yml
+    with:
+      elide-version: ${{ needs.triage.outputs.elide-version }}

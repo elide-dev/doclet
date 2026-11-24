@@ -1,0 +1,4 @@
+[tools]
+"github:elide-dev/elide" = "1.6.3"
+hk = "2.12.0"
+pkl = "0.33.0"

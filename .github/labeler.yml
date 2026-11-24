@@ -1,0 +1,15 @@
+'area: doclet':
+  - changed-files:
+      - any-glob-to-any-file: 'src/**'
+'area: tooling':
+  - changed-files:
+      - any-glob-to-any-file: ['scripts/**', '*.pkl', 'mise.toml']
+'area: ci':
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+'area: release':
+  - changed-files:
+      - any-glob-to-any-file: ['*release-please*.json', '.github/workflows/job.release.yml']
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: '**/*.md'

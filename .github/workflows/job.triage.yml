@@ -1,0 +1,60 @@
+name: Triage
+on:
+  workflow_call:
+    outputs:
+      format:
+        value: ${{ jobs.changes.outputs.format }}
+      build:
+        value: ${{ jobs.changes.outputs.build }}
+      elide-version:
+        value: ${{ jobs.changes.outputs.elide-version }}
+jobs:
+  changes:
+    name: Changed paths
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    outputs:
+      format: ${{ steps.filter.outputs.format }}
+      build: ${{ steps.filter.outputs.build }}
+      elide-version: ${{ steps.tools.outputs.version }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Read Elide version from mise
+        id: tools
+        run: |
+          python3 -c 'import tomllib; print("version=" + tomllib.load(open("mise.toml", "rb"))["tools"]["github:elide-dev/elide"])' >> "$GITHUB_OUTPUT"
+      - name: Classify changes
+        uses: step-security/paths-filter@5f3d1a83daa17363d18b529d60375e1e36566799 # v4.0.3
+        id: filter
+        with:
+          base: ${{ github.ref }}
+          filters: .github/triage.yml
+  labels:
+    name: PR labels
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
+      issues: write # Create area labels on first use.
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - name: Sync labels
+        uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          sync-labels: true

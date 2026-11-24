@@ -1,0 +1,34 @@
+name: JVM formatting
+on:
+  workflow_call:
+    inputs:
+      elide-version:
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Elide
+        uses: elide-dev/setup-elide@10fbf30cebffd3538c428369950dc2094137f02b # v4.2.0
+        with:
+          version: ${{ inputs.elide-version }}
+          channel: release
+      - name: Check Java and Kotlin
+        uses: elide-dev/format@aae4b4e776ae3ef91a609b7d7e1cf6864a6e6fe8 # v1.1.3
+        with:
+          include-kts: true
+          ktfmt-args: --google-style
+          output-mode: command
+          output-mode-command: mise exec -- hk fix --all

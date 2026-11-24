@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: push-${{ github.ref }}
+permissions:
+  contents: read
+jobs:
+  triage:
+    name: Triage
+    uses: ./.github/workflows/job.triage.yml
+    permissions:
+      contents: read
+      pull-requests: read
+  format:
+    name: Format
+    needs: triage
+    if: github.event_name == 'workflow_dispatch' || needs.triage.outputs.format == 'true'
+    uses: ./.github/workflows/check.format.yml
+    with:
+      elide-version: ${{ needs.triage.outputs.elide-version }}
+  build:
+    name: Build
+    needs: triage
+    uses: ./.github/workflows/job.build.yml
+    with:
+      elide-version: ${{ needs.triage.outputs.elide-version }}
+  release:
+    name: Release
+    needs: [build, format]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build.result == 'success' && (needs.format.result == 'success' || needs.format.result == 'skipped') }}
+    uses: ./.github/workflows/job.release.yml
+    permissions:
+      contents: write
+      pull-requests: write
