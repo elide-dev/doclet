@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-jar=.dev/artifacts/jar/elide-doclet/elide-doclet.jar
+jar=doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
@@ -11,4 +11,4 @@ javadoc -quiet -d "$work/docs" -doclet dev.elide.doclet.ElideDoclet \
 test -s "$work/docs/index.html"
 grep -q 'elide.css' "$work/docs/Example.html"
 css=$(find "$work/docs" -name elide.css)
-cmp src/main/resources/dev/elide/doclet/elide.css "$css"
+cmp doclet/src/main/resources/dev/elide/doclet/elide.css "$css"

@@ -1,6 +1,6 @@
 'area: doclet':
   - changed-files:
-      - any-glob-to-any-file: 'src/**'
+      - any-glob-to-any-file: ['doclet/**', 'gradle-plugin/**', 'maven-plugin/**']
 'area: tooling':
   - changed-files:
       - any-glob-to-any-file: ['scripts/**', '*.pkl', 'mise.toml']

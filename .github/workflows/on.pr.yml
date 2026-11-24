@@ -41,6 +41,9 @@ jobs:
     name: Build
     needs: triage
     if: needs.triage.outputs.build == 'true'
+    permissions:
+      contents: read
+      id-token: write # Authenticate report uploads to Codecov.
     uses: ./.github/workflows/job.build.yml
     with:
       elide-version: ${{ needs.triage.outputs.elide-version }}

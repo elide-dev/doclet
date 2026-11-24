@@ -1,0 +1,21 @@
+amends "elide:project.pkl"
+
+import "elide:Jvm.pkl" as Jvm
+import "elide:Coverage.pkl" as Coverage
+
+name = "elide-doclet"
+version = "0.1.0" // x-release-please-version
+description = "Elide's Javadoc doclet"
+
+jvm { java { release = 17 } }
+
+artifacts {
+  ["elide-doclet"] = new Jvm.Jar {}
+}
+
+coverage {
+  jvm {
+    excludes { "*Test" }
+    reports { Coverage.xmlReport() }
+  }
+}

@@ -6,8 +6,11 @@ format:
   - mise.toml
   - '.github/**'
 build:
-  - 'src/**'
+  - 'doclet/**'
+  - 'gradle-plugin/**'
+  - 'maven-plugin/**'
   - 'scripts/**'
+  - 'tests/consumer/**'
   - '**/*.java'
   - '**/*.kt'
   - '**/*.kts'

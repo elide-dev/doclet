@@ -2,6 +2,7 @@ name: GitHub Release
 on: workflow_call
 permissions:
   contents: write
+  packages: write
   pull-requests: write
 jobs:
   release:
@@ -24,3 +25,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag_name }}
         run: gh release upload "$TAG" dist/*.jar dist/*.pom --repo "$GITHUB_REPOSITORY" --clobber
+      - name: Set up Maven publication
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          server-id: github
+      - name: Publish tested artifacts to GitHub Packages
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          for pom in dist/*.pom; do
+            mvn -B org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy-file \
+              -DrepositoryId=github -Durl="https://maven.pkg.github.com/$GITHUB_REPOSITORY" \
+              -DpomFile="$pom" -Dfile="${pom%.pom}.jar"
+          done

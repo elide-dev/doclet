@@ -1,7 +1,7 @@
 package dev.elide.doclet;
 
+import dev.elide.doclet.core.DocumentationAssets;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -23,14 +23,10 @@ public final class ElideDoclet extends StandardDoclet {
 
   @Override
   public boolean run(DocletEnvironment environment) {
-    try (InputStream css = ElideDoclet.class.getResourceAsStream("elide.css")) {
-      if (css == null) {
-        throw new IOException("Missing doclet resource elide.css");
-      }
+    try {
       Path directory = Files.createTempDirectory("elide-doclet-");
-      Path stylesheet = directory.resolve("elide.css");
       try {
-        Files.copy(css, stylesheet);
+        Path stylesheet = DocumentationAssets.writeStylesheet(directory);
         var option =
             getSupportedOptions().stream()
                 .filter(item -> item.getNames().contains("--add-stylesheet"))
@@ -39,7 +35,7 @@ public final class ElideDoclet extends StandardDoclet {
         return option.process("--add-stylesheet", List.of(stylesheet.toString()))
             && super.run(environment);
       } finally {
-        Files.deleteIfExists(stylesheet);
+        Files.deleteIfExists(directory.resolve("elide.css"));
         Files.delete(directory);
       }
     } catch (IOException exception) {

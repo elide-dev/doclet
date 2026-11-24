@@ -1,17 +1,13 @@
 amends "elide:project.pkl"
 
-import "elide:Jvm.pkl" as Jvm
-
-name = "elide-doclet"
-version = "0.1.0" // x-release-please-version
-description = "Elide's Javadoc doclet"
-
-jvm { java { release = 17 } }
-
-artifacts {
-  ["elide-doclet"] = new Jvm.Jar {}
+name = "doclet-workspace"
+workspace {
+  members {
+    "doclet"
+    "gradle-plugin"
+    "maven-plugin"
+  }
 }
-
 publishing {
   maven { groupId = "dev.elide" }
 }

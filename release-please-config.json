@@ -3,7 +3,12 @@
     ".": {
       "release-type": "simple",
       "initial-version": "0.1.0",
-      "extra-files": ["elide.pkl"]
+      "extra-files": [
+        "doclet/elide.pkl",
+        "gradle-plugin/elide.pkl",
+        "maven-plugin/elide.pkl",
+        "maven-plugin/src/main/resources/META-INF/maven/plugin.xml"
+      ]
     }
   }
 }

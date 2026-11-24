@@ -1,0 +1,15 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>example</groupId>
+  <artifactId>doclet-consumer</artifactId>
+  <version>1</version>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>dev.elide</groupId>
+        <artifactId>elide-doclet-maven-plugin</artifactId>
+        <version>${doclet.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

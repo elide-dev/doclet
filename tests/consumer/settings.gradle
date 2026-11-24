@@ -1,0 +1,4 @@
+pluginManagement {
+    repositories { maven { url = uri('repository') } }
+}
+rootProject.name = 'doclet-consumer'

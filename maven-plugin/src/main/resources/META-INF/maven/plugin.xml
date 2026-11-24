@@ -1,0 +1,31 @@
+<plugin>
+  <name>Elide Doclet Maven Plugin</name>
+  <description>Generate API documentation with the Elide doclet.</description>
+  <groupId>dev.elide</groupId>
+  <artifactId>elide-doclet-maven-plugin</artifactId>
+  <version>0.1.0</version><!-- x-release-please-version -->
+  <goalPrefix>elide-doclet</goalPrefix>
+  <mojos>
+    <mojo>
+      <goal>javadoc</goal>
+      <description>Generate API documentation using the project's Javadoc configuration.</description>
+      <requiresDependencyResolution>compile</requiresDependencyResolution>
+      <requiresProject>true</requiresProject>
+      <phase>prepare-package</phase>
+      <implementation>dev.elide.doclet.DocletMojo</implementation>
+      <language>java</language>
+      <instantiationStrategy>per-lookup</instantiationStrategy>
+      <parameters>
+        <parameter><name>project</name><type>org.apache.maven.project.MavenProject</type><required>true</required><editable>false</editable></parameter>
+        <parameter><name>session</name><type>org.apache.maven.execution.MavenSession</type><required>true</required><editable>false</editable></parameter>
+      </parameters>
+      <configuration>
+        <project implementation="org.apache.maven.project.MavenProject" default-value="${project}"/>
+        <session implementation="org.apache.maven.execution.MavenSession" default-value="${session}"/>
+      </configuration>
+      <requirements>
+        <requirement><role>org.apache.maven.plugin.BuildPluginManager</role><field-name>pluginManager</field-name></requirement>
+      </requirements>
+    </mojo>
+  </mojos>
+</plugin>

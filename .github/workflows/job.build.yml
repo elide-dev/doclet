@@ -1,4 +1,4 @@
-name: Build JAR
+name: Build workspace
 on:
   workflow_call:
     inputs:
@@ -7,6 +7,7 @@ on:
         type: string
 permissions:
   contents: read
+  id-token: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,13 +30,49 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: maven
+          cache-dependency-path: |
+            tests/consumer/pom.xml
+            *-plugin/elide.pkl
+            maven-plugin/src/main/java/**/*.java
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          gradle-version: '9.5.1'
       - run: elide build
+      - name: Test generator with coverage
+        working-directory: doclet
+        run: elide test --coverage --reporter=junit
+      - name: Report generator coverage
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: true
+          disable_search: true
+          fail_ci_if_error: true
+          flags: generator
+          files: doclet/.dev/reports/coverage/jvm/jvm-test/jvm-test.xml
+      - name: Report generator test results
+        if: ${{ !cancelled() && hashFiles('doclet/.dev/reports/tests/jvm/test/*.xml') != '' }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: true
+          disable_search: true
+          fail_ci_if_error: true
+          report_type: test_results
+          flags: generator
+          files: doclet/.dev/reports/tests/jvm/test/TEST-dev.elide.doclet.ElideDocletTest.xml
       - name: Smoke test on JDK 17
         run: PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test
       - run: elide publish --dry-run
+      - name: Gradle plugin end-to-end
+        run: PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test-plugins gradle
+      - name: Maven plugin end-to-end
+        run: DOCLET_TEST_M2="$HOME/.m2/repository" PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test-plugins maven
       - run: |
           mkdir dist
-          cp .dev/staging/publish/maven/dev/elide/elide-doclet/*/*.{jar,pom} dist/
+          for member in doclet gradle-plugin maven-plugin; do
+            find "$member/.dev/staging/publish/maven" -type f \( -name '*.pom' -o -name '*.jar' \) -exec cp {} dist/ \;
+          done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: maven-artifacts

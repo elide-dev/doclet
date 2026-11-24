@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+case "${1:-all}" in
+  gradle|maven|all) consumer=${1:-all} ;;
+  *) echo "Usage: $0 [gradle|maven|all]" >&2; exit 2 ;;
+esac
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+cp -R tests/consumer/. "$work/"
+version=$(sed -n 's/^version = "\([^"]*\)".*/\1/p' doclet/elide.pkl)
+css="$PWD/doclet/src/main/resources/dev/elide/doclet/elide.css"
+mkdir -p "$work/repository"
+for member in doclet gradle-plugin maven-plugin; do
+  cp -R "$member/.dev/staging/publish/maven/." "$work/repository/"
+done
+
+check_docs() {
+  local page="$1/example/Example.html"
+  grep -Fq 'Demonstrates the published doclet.' "$page"
+  grep -Fq 'elide.css' "$page"
+  cmp "$css" "$(find "$1" -name elide.css)"
+}
+
+if [[ "$consumer" != maven ]]; then
+  gradle -p "$work" --console=plain -PdocletVersion="$version" javadoc
+  check_docs "$work/build/docs/javadoc"
+fi
+
+if [[ "$consumer" != gradle ]]; then
+  # Install this build into the test-only repository every time. Keep Maven's
+  # unrelated dependencies between runs without touching the developer's m2.
+  m2="${DOCLET_TEST_M2:-$PWD/.dev/consumer-m2}"
+  mkdir -p "$m2"
+  cp -R "$work/repository/." "$m2/"
+  mvn -B -q -f "$work/pom.xml" -Dmaven.repo.local="$m2" -Ddoclet.version="$version" elide-doclet:javadoc
+  check_docs "$work/target/reports/apidocs"
+fi

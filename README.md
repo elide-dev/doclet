@@ -1,67 +1,83 @@
 # Elide Doclet
 
-Build a Javadoc doclet with Elide and run it with any JDK 17+ Javadoc tool. The starter inherits the standard doclet's HTML output and options, and adds a stylesheet from the JAR. Java sources and classpath resources live under `src/main/java` and `src/main/resources`.
+Generate standard Javadoc HTML with Elide's bundled stylesheet on JDK 17 or later. The Elide workspace builds three artifacts together. The [doclet](doclet/) owns the implementation and resources. The [Gradle plugin](gradle-plugin/) configures Javadoc tasks, and the [Maven plugin](maven-plugin/) delegates to the Apache Maven Javadoc Plugin. Both declare the same version of the core as a dependency.
+
+## Gradle
+
+For a released version, add the GitHub Packages repository to the top-level `pluginManagement` block in `settings.gradle.kts`. Use a GitHub username and a token with read access to packages.
+
+```kotlin
+pluginManagement {
+    repositories {
+        maven {
+            url = uri("https://maven.pkg.github.com/elide-dev/doclet")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+        gradlePluginPortal()
+    }
+}
+```
+
+Apply the plugin in `build.gradle.kts` and run `./gradlew javadoc`. The plugin configures existing and future Javadoc tasks, including their doclet path.
+
+```kotlin
+plugins {
+    java
+    id("dev.elide.doclet") version "0.1.0"
+}
+```
+
+## Maven
+
+Add the repository and plugin to the consuming POM, then run `mvn elide-doclet:javadoc`. To generate docs during `mvn package`, add an execution for the `javadoc` goal. Its default phase is `prepare-package`.
+
+```xml
+<pluginRepositories>
+  <pluginRepository>
+    <id>elide-doclet</id>
+    <url>https://maven.pkg.github.com/elide-dev/doclet</url>
+  </pluginRepository>
+</pluginRepositories>
+<build>
+  <plugins>
+    <plugin>
+      <groupId>dev.elide</groupId>
+      <artifactId>elide-doclet-maven-plugin</artifactId>
+      <version>0.1.0</version>
+    </plugin>
+  </plugins>
+</build>
+```
+
+Configure a `<server>` with the matching ID in your Maven settings:
+
+```xml
+<server>
+  <id>elide-doclet</id>
+  <username>${env.GITHUB_ACTOR}</username>
+  <password>${env.GITHUB_TOKEN}</password>
+</server>
+```
 
 ## Build and verify
-
-Install the pinned development tools with mise, then enable hk for this checkout:
 
 ```sh
 mise trust
 mise install
 mise exec -- hk install
-```
-
-The pre-commit hook formats staged Java, Kotlin and Kotlin script files with Elide and stages the fixes. Run `mise exec -- hk check --all` for a read-only check or `mise exec -- hk fix --all` to format the repository. CI uses the same Elide version and Google-style Kotlin formatting.
-
-With mise activated and a JDK on PATH, run:
-
-```sh
 elide build
 scripts/smoke-test
+elide publish --dry-run
+scripts/smoke-test-plugins
 ```
 
-The smoke test documents a sample class and verifies the generated page references the packaged CSS. To document your own sources:
+The first smoke test loads the core JAR with Javadoc. The second runs [one example API](tests/consumer/) through each build tool, checks its Javadoc text, and compares the generated stylesheet with the bundled CSS. Run either consumer alone with `scripts/smoke-test-plugins gradle` or `scripts/smoke-test-plugins maven`. Each run uses fresh build outputs and the staged plugins. Maven caches third-party dependencies under `.dev/consumer-m2`. CI runs both on JDK 17. The pre-commit hook formats staged Java and Kotlin files. Run `hk check --all` or `hk fix --all` with mise activated.
 
-```sh
-javadoc -d build/docs -doclet dev.elide.doclet.ElideDoclet \
-  -docletpath .dev/artifacts/jar/elide-doclet/elide-doclet.jar src/example/Example.java
-```
+To try the plugins before a release, run `elide publish` from the workspace root. Maven uses the local repository automatically. In Gradle, add `mavenLocal()` to `pluginManagement.repositories`. The standalone core remains available as `dev.elide:elide-doclet:<version>` for direct use with `javadoc -doclet dev.elide.doclet.ElideDoclet -docletpath <jar>`.
 
-## Consume a GitHub release
+## Releases
 
-Download the versioned JAR and save it as `tools/elide-doclet.jar` in the consuming project. Consumers only need their existing Java toolchain.
-
-### Maven
-
-Configure the Maven Javadoc Plugin in `build.plugins`, then run `mvn javadoc:javadoc`.
-
-```xml
-<plugin>
-  <groupId>org.apache.maven.plugins</groupId>
-  <artifactId>maven-javadoc-plugin</artifactId>
-  <version>3.11.2</version>
-  <configuration>
-    <doclet>dev.elide.doclet.ElideDoclet</doclet>
-    <docletPath>${project.basedir}/tools/elide-doclet.jar</docletPath>
-    <useStandardDocletOptions>true</useStandardDocletOptions>
-  </configuration>
-</plugin>
-```
-
-### Gradle
-
-In a Java project's `build.gradle.kts`, configure the existing Javadoc task and run `./gradlew javadoc`.
-
-```kotlin
-tasks.javadoc {
-    options.doclet = "dev.elide.doclet.ElideDoclet"
-    options.docletpath = listOf(rootProject.file("tools/elide-doclet.jar"))
-}
-```
-
-## Releases and Maven coordinates
-
-Use Conventional Commits on `main`. Release Please maintains the changelog and version in `elide.pkl` through release PRs. Allow GitHub Actions to create pull requests in repository settings. Merging a release PR creates a tagged GitHub release with the tested JAR and its generated POM.
-
-Run `elide publish --dry-run` to stage the Maven layout under `.dev/staging/publish/maven`, or `elide publish` to install it in your local Maven repository. The coordinates are `dev.elide:elide-doclet:<version>`. Maven Central publication is deferred until the namespace, license, signing, sources and Javadoc artifacts are configured.
+Release Please updates the workspace members together from Conventional Commits on `main`. Enable Actions pull-request creation and GitHub Packages publication for the repository. On release, CI attaches the tested JARs and POMs to the GitHub release and deploys those same files to GitHub Packages. Maven Central and the Gradle Plugin Portal are future publication targets.

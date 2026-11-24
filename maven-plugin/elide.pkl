@@ -1,0 +1,20 @@
+amends "elide:project.pkl"
+
+import "elide:Jvm.pkl" as Jvm
+
+name = "elide-doclet-maven-plugin"
+version = "0.1.0" // x-release-please-version
+local core = project("elide-doclet")
+
+jvm { java { release = 17 } }
+
+artifacts {
+  ["elide-doclet-maven-plugin"] = new Jvm.Jar {}
+}
+
+dependencies {
+  maven {
+    packages { core; "org.twdata.maven:mojo-executor:2.4.1" }
+    compileOnly { "org.apache.maven:maven-core:3.9.9" }
+  }
+}

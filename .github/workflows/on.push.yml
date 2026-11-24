@@ -24,6 +24,9 @@ jobs:
   build:
     name: Build
     needs: triage
+    permissions:
+      contents: read
+      id-token: write # Authenticate report uploads to Codecov.
     uses: ./.github/workflows/job.build.yml
     with:
       elide-version: ${{ needs.triage.outputs.elide-version }}
@@ -34,4 +37,5 @@ jobs:
     uses: ./.github/workflows/job.release.yml
     permissions:
       contents: write
+      packages: write
       pull-requests: write
