@@ -11,8 +11,25 @@ jobs:
     uses: ./.github/workflows/job.triage.yml
     permissions:
       contents: read
+      pull-requests: read
+  labels:
+    name: PR labels
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
       issues: write # Create area labels on first use.
       pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - name: Sync labels
+        uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          sync-labels: true
   format:
     name: Format
     needs: triage
