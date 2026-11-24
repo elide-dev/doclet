@@ -2,6 +2,8 @@
 
 Generate standard Javadoc HTML with Elide's bundled stylesheet on JDK 17 or later. The Elide workspace builds three artifacts together. The [doclet](doclet/) owns the implementation and resources. The [Gradle plugin](gradle-plugin/) configures Javadoc tasks, and the [Maven plugin](maven-plugin/) delegates to the Apache Maven Javadoc Plugin. Both declare the same version of the core as a dependency.
 
+The core exposes `DocumentationAssets.writeStylesheet(Path)` for renderers that need the shared stylesheet. Only `ElideDoclet` depends on the JDK doclet API.
+
 ## Gradle
 
 For a released version, add the GitHub Packages repository to the top-level `pluginManagement` block in `settings.gradle.kts`. Use a GitHub username and a token with read access to packages.
@@ -69,6 +71,7 @@ mise trust
 mise install
 mise exec -- hk install
 elide build
+(cd doclet && elide test --coverage --reporter=junit)
 scripts/smoke-test
 elide publish --dry-run
 scripts/smoke-test-plugins
