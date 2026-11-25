@@ -17,6 +17,7 @@ import com.sun.source.doctree.IndexTree;
 import com.sun.source.doctree.LinkTree;
 import com.sun.source.doctree.LiteralTree;
 import com.sun.source.doctree.ParamTree;
+import com.sun.source.doctree.RawTextTree;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.SeeTree;
@@ -59,7 +60,8 @@ import javax.lang.model.util.Types;
  * tags), the stream a small element tree with HTML's implicit closing rules ({@code <p>}, {@code
  * <li>}, table cells), and the element tree blocks and inlines. Javadoc's HTML subset maps to
  * nodes; other markup is kept as a raw node, never dropped. Tags and constructs the model cannot
- * represent are errors.
+ * represent are errors. Markdown comments ({@code ///}) become the same events through {@link
+ * Markdown}.
  *
  * <p>{@code {@inheritDoc}}, and parts a method's comment leaves out (the description, a
  * {@code @param}, the {@code @return}, the {@code @throws} of a declared exception), come from the
@@ -127,7 +129,7 @@ final class Comments {
   private static final Set<String> NOTE_TAGS = Set.of("apiNote", "implSpec", "implNote");
   private static final Set<String> NOT_MODELED =
       Set.of("author", "version", "serial", "serialData", "serialField");
-  private static final Map<String, String> ENTITIES =
+  static final Map<String, String> ENTITIES =
       Map.ofEntries(
           Map.entry("lt", "<"),
           Map.entry("gt", ">"),
@@ -234,7 +236,6 @@ final class Comments {
       return NONE;
     }
     var ctx = new Ctx(element, dc, trees.getPath(element));
-    checkMarkdown(ctx, dc.getFullBody());
 
     List<Doc.Inline> summary;
     List<Doc.Block> body;
@@ -596,21 +597,24 @@ final class Comments {
     return element != null && !linker.documented(element);
   }
 
-  private sealed interface Event permits TextEvent, StartEvent, EndEvent, InlineEvent, BlockEvent {}
+  sealed interface Event permits TextEvent, StartEvent, EndEvent, InlineEvent, BlockEvent {}
 
-  private record TextEvent(String text) implements Event {}
+  record TextEvent(String text) implements Event {}
 
-  private record StartEvent(String name, Map<String, String> attributes, boolean selfClosing)
+  record StartEvent(String name, Map<String, String> attributes, boolean selfClosing)
       implements Event {}
 
-  private record EndEvent(String name) implements Event {}
+  record EndEvent(String name) implements Event {}
 
-  private record InlineEvent(Doc.Inline inline) implements Event {}
+  record InlineEvent(Doc.Inline inline) implements Event {}
 
-  private record BlockEvent(Doc.Block block) implements Event {}
+  record BlockEvent(Doc.Block block) implements Event {}
 
   private List<Event> events(
       Ctx ctx, List<? extends DocTree> trees, Supplier<List<Event>> inherit) {
+    if (trees.stream().anyMatch(t -> t.getKind() == DocTree.Kind.MARKDOWN)) {
+      return markdown(ctx, trees, inherit);
+    }
     List<Event> events = new ArrayList<>();
     for (var tree : trees) {
       switch (tree) {
@@ -693,8 +697,6 @@ final class Comments {
             case COMMENT, DOC_TYPE -> {
               // HTML comments and doctypes are not content.
             }
-            case MARKDOWN ->
-                problem(ctx, tree, "Markdown documentation comments (///) are not supported yet");
             default ->
                 problem(
                     ctx, tree, "The API model cannot represent " + tree.getKind() + ": " + tree);
@@ -727,13 +729,32 @@ final class Comments {
     }
   }
 
-  private void checkMarkdown(Ctx ctx, List<? extends DocTree> body) {
-    for (var tree : body) {
-      if (tree.getKind() == DocTree.Kind.MARKDOWN) {
-        problem(ctx, tree, "Markdown documentation comments (///) are not supported yet");
-        return;
+  /**
+   * A Markdown comment's trees ({@code ///}) as events: its tags convert as in an HTML comment,
+   * each leaving a slot in the Markdown text, which {@link Markdown} parses and fills.
+   */
+  private List<Event> markdown(
+      Ctx ctx, List<? extends DocTree> trees, Supplier<List<Event>> inherit) {
+    var text = new StringBuilder();
+    List<List<Event>> slots = new ArrayList<>();
+    DocTree first = null;
+    for (var tree : trees) {
+      if (tree instanceof RawTextTree raw && tree.getKind() == DocTree.Kind.MARKDOWN) {
+        if (first == null) {
+          first = tree;
+        }
+        text.append(raw.getContent());
+      } else {
+        text.append(Markdown.slot(slots.size()));
+        slots.add(events(ctx, List.of(tree), inherit));
       }
     }
+    var at = first;
+    return new Markdown(
+            slots,
+            index -> textContent(build(slots.get(index))),
+            message -> problem(ctx, at, message))
+        .parse(text.toString());
   }
 
   private static boolean endsWithPeriod(List<Event> events) {
@@ -750,7 +771,7 @@ final class Comments {
     return false;
   }
 
-  private static final Set<String> URL_ATTRIBUTES =
+  static final Set<String> URL_ATTRIBUTES =
       Set.of("href", "src", "action", "formaction", "srcdoc", "data", "poster", "xlink:href");
   private static final Set<String> SAFE_SCHEMES = Set.of("http", "https", "mailto");
 
