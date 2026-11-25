@@ -123,6 +123,6 @@ Release Please updates the workspace members together from Conventional Commits 
 
 ## Theme gallery
 
-[Browse the sample gallery](https://animated-adventure-jkjlqo3.pages.github.io/) or edit the [sample themes](samples/themes/). Run `scripts/build-samples` and open `.dev/pages/index.html` to compare the same Java record across the sample themes. The gallery links to each rendered reference and its complete JSON configuration. The GraalVM sample uses artwork from the [official brand resources](https://www.graalvm.org/graalvm-brand-guidelines/).
+[Browse the sample gallery](https://animated-adventure-jkjlqo3.pages.github.io/) or edit the [sample themes](samples/themes/). Run `scripts/build-samples` and open `.dev/pages/index.html` to compare the module overview, package, guides, and Java declarations across all seven themes. The gallery links to each rendered reference and its complete JSON configuration. The GraalVM sample uses artwork from the [official brand resources](https://www.graalvm.org/graalvm-brand-guidelines/). The Micronaut and Google samples embed the [Micronaut wordmark](https://micronaut.io/micronaut-assets/logos/micronaut-horizontal-black.svg) and [Google wordmark](https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24px.svg).
 
 For an interactive preview, serve the generated folder with `python3 -m http.server 8787 --bind 127.0.0.1 --directory .dev/pages` and open `http://127.0.0.1:8787/preview.html`. Rerun `scripts/build-samples` after editing a theme and reload the preview.
