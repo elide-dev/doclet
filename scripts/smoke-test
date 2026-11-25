@@ -9,6 +9,7 @@ echo '/** Example API. */ public class Example {}' > "$work/Example.java"
 javadoc -quiet -d "$work/docs" -doclet dev.elide.doclet.ElideDoclet \
     -docletpath "$jar" "$work/Example.java"
 test -s "$work/docs/index.html"
-grep -q 'elide.css' "$work/docs/Example.html"
-css=$(find "$work/docs" -name elide.css)
-cmp doclet/src/main/resources/dev/elide/doclet/elide.css "$css"
+grep -Fq 'Example API.' "$work/docs/default-package/Example.md"
+test -s "$work/docs/api.json"
+test -s "$work/docs/assets/apidocs.css"
+test -s "$work/docs/assets/apidocs.js"

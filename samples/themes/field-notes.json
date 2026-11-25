@@ -1,0 +1,42 @@
+{
+  "name": "Field Notes",
+  "productName": "Field Notes",
+  "brand": "Field Notes",
+  "memberDetails": "expanded",
+  "symbols": "none",
+  "tokens": {
+    "light": {
+      "bg": "#f9f6ed",
+      "surface": "#fffdf5",
+      "fg": "#29392d",
+      "accent": "#426342",
+      "link": "#345a3c",
+      "code-bg": "#eeeee1",
+      "rule": "#cfcfbc",
+      "syn-keyword": "#825433",
+      "font-display": "Georgia, serif"
+    },
+    "dark": {
+      "bg": "#1c241d",
+      "surface": "#252e24",
+      "fg": "#f4f1df",
+      "accent": "#b5cd9c",
+      "link": "#bdd8ab",
+      "code-bg": "#29342a",
+      "rule": "#4b594b",
+      "syn-keyword": "#e6b88d",
+      "font-display": "Georgia, serif"
+    }
+  },
+  "footer": "Field Notes \u00b7 Java library reference",
+  "homeUrl": "./index.html",
+  "links": {
+    "footer": [
+      {
+        "label": "Theme gallery",
+        "url": "../index.html"
+      }
+    ]
+  },
+  "socialImage": null
+}

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+elide build elide-doclet
+jar=doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar
+out=.dev/pages
+mkdir -p "$out/themes"
+cp samples/site/* "$out/"
+for theme in samples/themes/*.json; do
+  name=$(basename "$theme" .json)
+  "${JAVA_HOME:+$JAVA_HOME/bin/}javadoc" -quiet -public -doclet dev.elide.doclet.ElideDoclet -docletpath "$jar" \
+    --module-name runtime-kit --module-version 1.0 --theme "$theme" \
+    -d "$out/$name" -sourcepath samples/java -subpackages example.runtime
+  cp "$theme" "$out/themes/"
+  test -s "$out/$name/example/runtime/BuildPlan.html"
+done

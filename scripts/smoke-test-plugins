@@ -10,8 +10,8 @@ esac
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 cp -R tests/consumer/. "$work/"
+mv "$work/theme.json" "$work/site theme.json"
 version=$(sed -n 's/^version = "\([^"]*\)".*/\1/p' doclet/elide.pkl)
-css="$PWD/doclet/src/main/resources/dev/elide/doclet/elide.css"
 mkdir -p "$work/repository"
 for member in doclet gradle-plugin maven-plugin; do
   cp -R "$member/.dev/staging/publish/maven/." "$work/repository/"
@@ -20,21 +20,46 @@ done
 check_docs() {
   local page="$1/example/Example.html"
   grep -Fq 'Demonstrates the published doclet.' "$page"
-  grep -Fq 'elide.css' "$page"
-  cmp "$css" "$(find "$1" -name elide.css)"
+  python3 - "$1/api.json" <<'PYTHON'
+import json, sys
+with open(sys.argv[1]) as source:
+    model = json.load(source)
+assert model["schema"] == "apidocs/1"
+assert model["module"] == {"name": "doclet-consumer", "version": "1", "languages": ["java"]}
+package, = model["packages"]
+example, = package["types"]
+assert package["name"] == "example" and example["id"] == "example.Example"
+method, = example["members"]
+assert method["id"] == "example.Example#find(java.lang.String)"
+assert method["doc"]["summary"][0]["text"] == "Finds a book by title."
+assert method["params"][0]["name"] == "title"
+PYTHON
+  grep -Fq 'assets/apidocs.css' "$page"
+  grep -Fq 'Finds a book by title.' "$1/example/Example.md"
+  test -s "$1/assets/search-index.js"
+  test -s "$1/llms.txt"
+}
+
+check_brand() {
+  grep -Fq 'Field Guide SDK' "$1/index.html"
+  grep -Fq '#345b84' "$1/assets/theme.css"
 }
 
 if [[ "$consumer" != maven ]]; then
-  gradle -p "$work" --console=plain -PdocletVersion="$version" javadoc
+  gradle_args=(-p "$work" --console=plain -PdocletVersion="$version")
+  gradle "${gradle_args[@]}" javadoc
   check_docs "$work/build/docs/javadoc"
+  gradle "${gradle_args[@]}" "-PelideDoclet.theme=site theme.json" javadoc
+  check_brand "$work/build/docs/javadoc"
 fi
 
 if [[ "$consumer" != gradle ]]; then
-  # Install this build into the test-only repository every time. Keep Maven's
-  # unrelated dependencies between runs without touching the developer's m2.
   m2="${DOCLET_TEST_M2:-$PWD/.dev/consumer-m2}"
   mkdir -p "$m2"
   cp -R "$work/repository/." "$m2/"
-  mvn -B -q -f "$work/pom.xml" -Dmaven.repo.local="$m2" -Ddoclet.version="$version" elide-doclet:javadoc
+  mvn_args=(-B -q -f "$work/pom.xml" -Dmaven.repo.local="$m2" -Ddoclet.version="$version")
+  mvn "${mvn_args[@]}" elide-doclet:javadoc
   check_docs "$work/target/reports/apidocs"
+  mvn "${mvn_args[@]}" -DelideDoclet.theme="$work/site theme.json" elide-doclet:javadoc
+  check_brand "$work/target/reports/apidocs"
 fi

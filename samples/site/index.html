@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Theme gallery · Elide Doclet</title>
+<link rel="stylesheet" href="./gallery.css">
+</head>
+<body>
+<header><a href="./" class="identity">Elide <span>/ Doclet</span></a><a href="https://github.com/elide-dev/doclet/tree/main/samples">Sample sources ↗</a></header>
+<main>
+<h1>Theme gallery<span>.</span></h1>
+<p class="intro">One Java API, three ways to read it. Explore the generated reference or open a theme’s JSON to adapt it for your library.</p>
+<section class="featured">
+<div class="feature-copy">
+<img src="./graalvm/assets/logo-light.svg" alt="GraalVM" class="wordmark">
+<h2>Java OSS</h2>
+<p>Ocean blue links and warm orange syntax bring GraalVM’s palette to a native-build API. Try the light and dark modes on the same declaration.</p>
+<div class="links"><a class="button" href="./graalvm/index.html">Explore the reference →</a><a href="./themes/graalvm.json">Theme JSON</a></div>
+</div>
+<a href="./graalvm/example/runtime/BuildPlan.html" class="specimen" aria-label="Open the BuildPlan record in the GraalVM sample">
+<span class="file">example/runtime/BuildPlan.java</span>
+<code><b>public record</b> BuildPlan(<br>    <em>String</em> mainClass,<br>    <em>List</em>&lt;<em>String</em>&gt; arguments<br>) {}</code>
+<span class="caption">View declaration ↗</span>
+</a>
+</section>
+<div class="alternates">
+<section class="field"><h2>Field Notes</h2><p>A field manual with paper-toned surfaces, serif headings, and expanded member details.</p><div class="links"><a href="./field-notes/example/runtime/BuildPlan.html">View reference →</a><a href="./themes/field-notes.json">Theme JSON</a></div></section>
+<section class="signal"><h2>Signal</h2><p>A compact technical reference with monospaced headings, violet accents, and square edges.</p><div class="links"><a href="./signal/example/runtime/BuildPlan.html">View reference →</a><a href="./themes/signal.json">Theme JSON</a></div></section>
+</div></main>
+<footer>Independent theme samples generated with Elide Doclet. <a href="https://www.graalvm.org/graalvm-brand-guidelines/">GraalVM brand resources ↗</a></footer>
+</body></html>

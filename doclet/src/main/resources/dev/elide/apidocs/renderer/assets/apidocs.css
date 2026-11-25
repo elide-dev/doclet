@@ -1,0 +1,1281 @@
+/*
+ * @elide/apidocs page styles. Reads only --apidocs-* custom properties; the
+ * values below are the neutral defaults, and a theme's assets/theme.css
+ * overrides them. No branding here.
+ */
+
+:root {
+  /* One set of tokens for both schemes: each color is light-dark(light, dark), resolved by the root's color-scheme,
+     which follows the reader's system unless the theme switch pins it (data-theme). */
+  color-scheme: light dark;
+  /* System stacks. A theme puts its own families in front of these; it never replaces them, so a character the
+     theme's font lacks (a symbol, an emoji, another script) always has a font that was chosen for it. */
+  --apidocs-font-system: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif;
+  --apidocs-font-system-mono: ui-monospace, "SF Mono", "Cascadia Code", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+  --apidocs-font-symbol: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", "Noto Sans Symbols", "DejaVu Sans";
+  --apidocs-font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla";
+  --apidocs-font-sans: var(--apidocs-font-system), var(--apidocs-font-symbol), var(--apidocs-font-emoji);
+  /* Headings: the system's display cut where it has one. */
+  --apidocs-font-display: "Segoe UI Variable Display", "SF Pro Display", var(--apidocs-font-sans);
+  --apidocs-font-mono: var(--apidocs-font-system-mono), var(--apidocs-font-symbol), var(--apidocs-font-emoji);
+  /* The type scale. Every font size on the page is one of these. */
+  --apidocs-size-xs: 11px;
+  --apidocs-size-sm: 13px;
+  --apidocs-size-md: 15px;
+  --apidocs-size-lg: 16.5px;
+  --apidocs-size-xl: 20px;
+  --apidocs-size-2xl: 24px;
+  --apidocs-size-3xl: 30px;
+  /* Code inside running text, relative to the text around it. */
+  --apidocs-code-scale: 0.9em;
+  --apidocs-tracking-display: -0.015em;
+  --apidocs-tracking-caps: 0.04em;
+  --apidocs-bg: light-dark(oklch(99.059% 0.0017 247.839), oklch(18.079% 0.00953 255.642));
+  --apidocs-surface: light-dark(oklch(100% 0 none), oklch(21.25% 0.01517 261.609));
+  --apidocs-subtle: light-dark(oklch(96.648% 0.00454 258.325), oklch(23.785% 0.01713 259.757));
+  --apidocs-fg: light-dark(oklch(21.685% 0.01509 261.617), oklch(93.061% 0.00581 264.531));
+  --apidocs-muted: light-dark(oklch(45.541% 0.02655 263.037), oklch(73.897% 0.0208 260.165));
+  --apidocs-faint: light-dark(oklch(51.195% 0.0243 261.702), oklch(67.698% 0.02312 259.192));
+  --apidocs-rule: light-dark(oklch(91.83% 0.00875 264.52), oklch(29.114% 0.01854 258.368));
+  --apidocs-rule-strong: light-dark(oklch(84.433% 0.01492 264.488), oklch(37.364% 0.02265 261.232));
+  --apidocs-accent: light-dark(oklch(49.4% 0.08141 208.54), oklch(76.813% 0.09823 203.685));
+  --apidocs-accent-soft: light-dark(oklch(49.4% 0.08141 208.54 / 0.08), oklch(76.813% 0.09823 203.685 / 0.1));
+  --apidocs-link: light-dark(oklch(44.632% 0.07384 210.379), oklch(80.181% 0.09233 203.396));
+  --apidocs-focus: light-dark(oklch(49.4% 0.08141 208.54), oklch(76.813% 0.09823 203.685));
+  --apidocs-note-api: light-dark(oklch(49.4% 0.08141 208.54), oklch(76.813% 0.09823 203.685));
+  --apidocs-note-api-soft: light-dark(oklch(49.4% 0.08141 208.54 / 0.08), oklch(76.813% 0.09823 203.685 / 0.1));
+  --apidocs-note-spec: light-dark(oklch(46.754% 0.14115 262.814), oklch(75.722% 0.0996 263.17));
+  --apidocs-note-spec-soft: light-dark(oklch(46.754% 0.14115 262.814 / 0.07), oklch(75.722% 0.0996 263.17 / 0.09));
+  --apidocs-note-impl: light-dark(oklch(51.195% 0.0243 261.702), oklch(67.698% 0.02312 259.192));
+  --apidocs-note-impl-soft: light-dark(oklch(21.685% 0.01509 261.617 / 0.03), oklch(93.061% 0.00581 264.531 / 0.03));
+  --apidocs-deprecated: light-dark(oklch(49.291% 0.15737 31.846), oklch(73.872% 0.12799 30.977));
+  --apidocs-deprecated-soft: light-dark(oklch(49.291% 0.15737 31.846 / 0.07), oklch(73.872% 0.12799 30.977 / 0.1));
+  --apidocs-nullable: light-dark(oklch(49.402% 0.10925 66.906), oklch(79.118% 0.11843 79.713));
+  --apidocs-non-null: light-dark(oklch(47.294% 0.10194 148.797), oklch(77.004% 0.115 150.059));
+  --apidocs-code-bg: light-dark(oklch(96.948% 0.00454 258.325), oklch(21.154% 0.01586 256.82));
+  --apidocs-code-fg: light-dark(oklch(25.906% 0.02487 261.09), oklch(89.621% 0.00927 258.337));
+  --apidocs-syn-comment: light-dark(oklch(51.195% 0.0243 261.702), oklch(66.055% 0.02327 259.192));
+  --apidocs-syn-keyword: light-dark(oklch(46.111% 0.16624 315.205), oklch(76.528% 0.11869 315.718));
+  --apidocs-syn-string: light-dark(oklch(47.612% 0.10049 157.022), oklch(80.46% 0.09072 155.262));
+  --apidocs-syn-number: light-dark(oklch(50.112% 0.12797 52.531), oklch(81.27% 0.10204 64.602));
+  --apidocs-syn-type: light-dark(oklch(44.632% 0.07384 210.379), oklch(80.181% 0.09233 203.396));
+  --apidocs-syn-function: light-dark(oklch(45.846% 0.16697 265.949), oklch(78.123% 0.11032 268.427));
+  --apidocs-syn-annotation: light-dark(oklch(49.402% 0.10925 66.906), oklch(79.118% 0.11843 79.713));
+  --apidocs-syn-param: light-dark(oklch(43.405% 0.14897 358.998), oklch(78.337% 0.11238 351.953));
+  --apidocs-radius: 2px;
+  --apidocs-topbar: 52px;
+  /* Sizes that grow with the screen: the narrow value at 480px wide and below, the wide one from 1000px, a straight
+     line between. Spacing only, and two sizes of the fallback type scale: a theme whose type is set to exact pixels
+     (the Elide preset's JetBrains Mono, whose characters are then a whole number of pixels wide) sets those two to
+     its own sizes, and the scale tokens above stay exact. */
+  --apidocs-gutter: clamp(16px, 5.385vw - 0.656rem, 44px);
+  --apidocs-content-top: clamp(18px, 1.923vw + 0.585rem, 28px);
+  --apidocs-content-bottom: clamp(72px, 4.615vw + 3.323rem, 96px);
+  --apidocs-topbar-pad: clamp(12px, 1.538vw + 0.308rem, 20px);
+  --apidocs-topbar-gap: clamp(10px, 0.769vw + 0.421rem, 14px);
+  --apidocs-tools-gap: clamp(10px, 0.385vw + 0.544rem, 12px);
+  --apidocs-specimen-pad-block: clamp(14px, 0.769vw + 0.687rem, 18px);
+  --apidocs-specimen-pad-inline: clamp(16px, 1.154vw + 0.697rem, 22px);
+  /* A page's title and its declaration specimen. */
+  --apidocs-size-title: clamp(var(--apidocs-size-2xl), 1.154vw + 1.231rem, var(--apidocs-size-3xl));
+  --apidocs-size-specimen: clamp(var(--apidocs-size-sm), 0.385vw + 0.744rem, var(--apidocs-size-md));
+}
+
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+/* ---- Base ---- */
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+/* Controls that need the script. The inline boot script sets data-js before first paint, so they take their
+   space at once; without scripting they are absent and their fallbacks show. */
+html:not([data-js]) [data-js-only] { display: none !important; }
+html[data-js] .search-fallback { display: none; }
+/* A page opened from disk cannot read the file beside it: there, and without the script, copy gives way to a link. */
+html[data-file] [data-served-only] { display: none !important; }
+html[data-js]:not([data-file]) [data-static-only] { display: none !important; }
+
+html {
+  background: var(--apidocs-bg);
+  color: var(--apidocs-fg);
+  font-family: var(--apidocs-font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  font-synthesis: none;
+  /* Names are set in a monospace font with programming ligatures, so ligatures are off by default; prose turns the
+     common ones back on. */
+  font-variant-ligatures: none;
+  font-kerning: normal;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-block-start: calc(var(--apidocs-topbar) + 16px);
+  /* The page keeps its width whether or not it scrolls, so moving between short and long pages shifts nothing. */
+  scrollbar-gutter: stable;
+}
+
+body { margin: 0; min-height: 100vh; font-size: var(--apidocs-size-md); }
+
+/* Links. Color marks every link, and a visited link keeps it: no rule styles :visited. An underline marks a link only
+   in running text, where color alone would not set it apart from the words around it (WCAG 1.4.1): faint, clear of
+   descenders, and full on hover. Navigation, lists and tables of names, and signatures have no underline until pointed
+   at. A link whose whole text is code is set in the code font itself, which sets it apart without an underline. */
+a { color: var(--apidocs-link); text-decoration: none; text-decoration-thickness: 1px; text-underline-offset: 0.22em; text-decoration-skip-ink: auto; }
+@media (hover: hover) and (pointer: fine) { a:hover { text-decoration-line: underline; } }
+a:active { text-decoration-line: underline; }
+:focus-visible { outline: 2px solid var(--apidocs-focus); outline-offset: 2px; border-radius: var(--apidocs-radius); }
+
+code, kbd, pre { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-code-scale); font-variant-ligatures: none; }
+/* Code reads left to right on a right-to-left page too. Only there: isolating inline code moves line breaks. */
+code:dir(rtl), kbd:dir(rtl), pre:dir(rtl) { direction: ltr; unicode-bidi: isolate; }
+:not(pre) > code {
+  background: var(--apidocs-subtle);
+  border-radius: var(--apidocs-radius);
+  /* Tight, so a chip sits in its sentence like a word: wide padding reads as extra space between the words. */
+  padding-block: 0.04em; padding-inline: 0.18em;
+  overflow-wrap: anywhere;
+}
+/* A link's code needs no chip: the link's color and font already set it apart. */
+.prose a > code, .callout a > code, .fact dd a > code, .lede a > code, .see-list a > code, .decl-summary a > code, .package-summary a > code { background: none; padding: 0; }
+a > code { color: inherit; }
+/* Running text. */
+:is(.prose, .callout, .fact dd, .lede, .index-summary, td) a:not(.type-link) {
+  text-decoration-line: underline; text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+@media (hover: hover) and (pointer: fine) { :is(.prose, .callout, .fact dd, .lede, .index-summary, td) a:not(.type-link):hover { text-decoration-color: currentColor; } }
+:is(.prose, .callout, .fact dd, .lede, .index-summary, td) a:not(.type-link):active { text-decoration-color: currentColor; }
+/* A name in running text: the code font, no underline until pointed at. The link takes the code's font and size, and
+   the code inside it keeps them, so the line is as tall as with the code alone. */
+:is(.prose, .callout, .fact dd, .lede, .index-summary, td) a:has(> code:only-child) { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-code-scale); text-decoration-line: none; }
+:is(.prose, .callout, .fact dd, .lede, .index-summary, td) a:has(> code:only-child) > code { font-size: 1em; }
+@media (hover: hover) and (pointer: fine) { :is(.prose, .callout, .fact dd, .lede, .index-summary, td) a:has(> code:only-child):hover { text-decoration-line: underline; } }
+:is(.prose, .callout, .fact dd, .lede, .index-summary, td) a:has(> code:only-child):active { text-decoration-line: underline; }
+.summary-sig a { text-decoration: none; }
+/* Where a link leads, in a character after its text: another site, or a file to download. Not read aloud (the empty
+   alternative text), and never underlined. The format menu labels its own entries, and code (signatures, the
+   inheritance line, parameter types) has none: there a mark on every JDK type would be clutter. */
+:is(.content, .footer) a:is([href^="http://"], [href^="https://"]):not(.formats-list a, .sig a, .lineage a, .fact dt a)::after,
+:is(.content, .footer) a:is([download], [href$=".zip"], [href$=".jar"], [href$=".tgz"], [href$=".tar.gz"], [href$=".pdf"]):not(.formats-list a, .sig a, .lineage a, .fact dt a)::after {
+  display: inline-block; margin-inline-start: 0.15em; text-decoration: none;
+  font-family: var(--apidocs-font-sans); font-size: 0.85em; font-weight: 400; color: var(--apidocs-faint);
+}
+:is(.content, .footer) a:is([href^="http://"], [href^="https://"]):not(.formats-list a, .sig a, .lineage a, .fact dt a)::after { content: "\2197\FE0E" / ""; }
+:is(.content, .footer) a:is([download], [href$=".zip"], [href$=".jar"], [href$=".tgz"], [href$=".tar.gz"], [href$=".pdf"]):not(.formats-list a, .sig a, .lineage a, .fact dt a)::after { content: "\2913" / ""; }
+
+h1, h2, h3, h4 { font-family: var(--apidocs-font-display); line-height: 1.2; margin: 0; text-wrap: balance; }
+p, li, dd { text-wrap: pretty; }
+/* Grayscale smoothing only for light text on a dark page, where subpixel smoothing makes it look heavy. */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; } }
+:root[data-theme="dark"] { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+/* Prose has the common ligatures (code inside it keeps them off), and hangs a leading quote or a trailing stop in the
+   margin where the browser can. Counts and tables have figures of one width, so numbers line up. */
+.prose, .lede, .guide-summary, .callout-body { font-variant-ligatures: common-ligatures; hanging-punctuation: first allow-end; }
+table, .nav-count, .members-count, .package-count, .version { font-variant-numeric: tabular-nums; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: clip;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+.skip {
+  position: absolute; inset-inline-start: 12px; inset-block-start: -60px; z-index: 20;
+  background: var(--apidocs-surface); padding-block: 8px; padding-inline: 12px; border: 1px solid var(--apidocs-rule-strong);
+}
+.skip:focus-visible { inset-block-start: 8px; }
+
+/* Labels, counts, marks, controls and navigation (the top bar, the navigator, breadcrumbs, pagers) are furniture,
+   not content: a selection skips them, so copying a name or a paragraph gives that text and nothing else. */
+.nav-heading, .nav-count, .glyph, .badge, .nav-twisty, .nav-fold-all, .fold-toggle, thead th, .facts-title,
+.callout-icon, .callout-label, .copy, .search-key, .nav-button, .theme-switch, .skip, .kind-cell, .source-link,
+.crumbs, .footer, .member-badges, caption, .topbar, .sidebar, .page-tools, .formats, .guide-kicker, .guide-pager,
+.heading-anchor, .member-marks, .members-count, .members-inherited-count, .members-toggle, .package-count, .lang,
+.guide-card-link, .loadbar, .readbar { user-select: none; -webkit-user-select: none; }
+/* Text typed into the top bar's search and the navigator's filter stays selectable. */
+:is(.topbar, .sidebar) input { user-select: text; -webkit-user-select: text; }
+
+/* ---- Top bar ---- */
+
+/*
+ * The bar holds the site's controls on one line at every width from 320px. As it narrows, its parts give way in
+ * this order, and nothing wraps, overflows or is cut off:
+ *   1. The search field narrows, from 19rem to 10rem (to 5rem where the navigator is a drawer).
+ *   2. The suite switcher's row gives way to its menu button. Where the navigator is a drawer, the switcher leaves
+ *      the bar instead: the drawer lists the sites first.
+ *   3. The product name ends in an ellipsis; its title keeps the whole name. The logo never shrinks.
+ * Where the navigator is a drawer (860px and below), the module's name and version are not in the bar at all.
+ * Flexbox does the ordering. .topbar-tools has a flex basis of 0: it grows into what the brand leaves and squeezes
+ * the brand only once it is at its own minimum. Inside it, the search field also starts from 0 and grows (to 19rem)
+ * only into space the switcher's row does not need, and the switcher is the one part that shrinks.
+ */
+.topbar {
+  position: sticky; inset-block-start: 0; z-index: 10;
+  height: var(--apidocs-topbar);
+  display: flex; align-items: center; gap: var(--apidocs-topbar-gap);
+  padding-inline: var(--apidocs-topbar-pad);
+  background: color-mix(in srgb, var(--apidocs-bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-block-end: 1px solid var(--apidocs-rule);
+}
+.brand { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--apidocs-fg); font-weight: 650; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .brand:hover { text-decoration: none; } }
+.brand:active { text-decoration: none; }
+.logo { flex: none; height: 22px; width: auto; display: block; }
+.logo-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .logo-light { display: none; }
+  :root:not([data-theme="light"]) .logo-dark { display: block; }
+}
+:root[data-theme="dark"] .logo-light { display: none; }
+:root[data-theme="dark"] .logo-dark { display: block; }
+/* good-css exception (overflow-clip): hidden, not clip, so the ellipsis shows in every target browser, Safari before 16 among them. */
+.product { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-lg); letter-spacing: 0; }
+.module-version { flex: none; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); white-space: nowrap; }
+.version { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-sm); }
+.topbar-tools { --apidocs-search-floor: 10rem; flex: 1 1 0; display: flex; align-items: center; gap: var(--apidocs-tools-gap); }
+.topbar-tools > .search-fallback, .topbar-tools > .theme-switch { flex: none; }
+.search-fallback { margin-inline-start: auto; }
+
+/* The suite switcher (SuiteSwitcher in chrome.tsx). .suites-fit holds hidden copies of the labels in a wrapping
+   row: 32px tall when they fit on one line, 64px or more when they do not. The visible row and the menu are placed
+   from that height, scaled up so the one that does not apply sits far above the page: the row at the top when the
+   labels fit, the menu when they do not. No width is written down anywhere: the browser's layout decides. The
+   hidden copy of the menu button (.suites-floor) keeps the bar from squeezing the switcher below the button. */
+.suites { flex: 0 1 auto; height: 32px; margin-inline-start: 10px; font-size: var(--apidocs-size-sm); user-select: none; -webkit-user-select: none; }
+.suites-fit { position: relative; display: flex; flex-wrap: wrap; column-gap: 2px; pointer-events: none; }
+.suites-probe { width: 0; height: 32px; margin-inline-end: -2px; }
+.suites-ghost { display: flex; align-items: center; height: 32px; padding-block: 0; padding-inline: 9px; white-space: nowrap; visibility: hidden; }
+.suites-ghost[data-current] { font-weight: 600; }
+.suites-row, .suite-menu { pointer-events: auto; }
+.suites-row { position: absolute; inset-inline-start: 0; inset-block-start: calc((32px - 100%) * 1000); display: flex; align-items: center; height: 32px; max-width: 100%; overflow: clip; column-gap: 2px; }
+.suites-row a { padding-block: 5px; padding-inline: 9px; border-radius: var(--apidocs-radius); color: var(--apidocs-muted); white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .suites-row a:hover { color: var(--apidocs-fg); background: var(--apidocs-subtle); text-decoration: none; } }
+.suites-row a:active { color: var(--apidocs-fg); background: var(--apidocs-subtle); text-decoration: none; }
+.suites-row a[aria-current="true"] { color: var(--apidocs-accent); background: var(--apidocs-accent-soft); font-weight: 600; }
+.suite-menu { position: absolute; inset-inline-start: 0; inset-inline-end: 0; inset-block-start: min(0px, calc((100% - 64px) * 1000)); height: 32px; }
+.suite-current, .suites-floor { display: flex; align-items: center; gap: 4px; padding-block: 0; padding-inline: 9px 7px; border: 1px solid transparent; white-space: nowrap; }
+.suite-current {
+  width: fit-content; max-width: 100%; height: 30px; margin-block-start: 1px;
+  border-color: var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  color: var(--apidocs-fg); list-style: none; cursor: pointer;
+}
+.suite-current::-webkit-details-marker { display: none; }
+.suite-current .icon { flex: none; vertical-align: 0; color: var(--apidocs-muted); }
+/* good-css exception (overflow-clip): hidden, not clip, so the ellipsis shows in every target browser, Safari before 16 among them. */
+.suite-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.suite-menu[open] > .suite-current { background: var(--apidocs-subtle); }
+@media (hover: hover) and (pointer: fine) { .suite-current:hover { background: var(--apidocs-subtle); } }
+.suite-current:active { background: var(--apidocs-subtle); }
+.suites-floor { width: max-content; height: 0; overflow: clip; visibility: hidden; }
+/* With the script (SUITES_BOOT in chrome.tsx), the switcher is as wide as what it shows, and the one out of view is
+   hidden from assistive technology and the keyboard too. */
+.suites[data-fit] { flex: 0 1 var(--apidocs-suites-width); }
+.suites[data-fit="row"] { min-width: 0; }
+/* Out of the bar, but still laid out, so the script can measure its labels the next time: no width, no gap, unseen. */
+.suites[data-fit="none"] { flex: 0 0 0; min-width: 0; margin-inline-end: calc(-1 * var(--apidocs-tools-gap)); overflow: clip; visibility: hidden; }
+.suites[data-fit="row"] .suite-menu, .suites[data-fit="menu"] .suites-row { visibility: hidden; }
+.suite-list {
+  position: absolute; inset-inline-start: -1px; inset-block-start: calc(100% + 6px); z-index: 12;
+  min-width: 12rem; margin: 0; padding: 4px; list-style: none;
+  background: var(--apidocs-surface); border: 1px solid var(--apidocs-rule-strong);
+  border-radius: var(--apidocs-radius); box-shadow: 0 12px 32px -12px oklch(0% 0 none / 0.28);
+  line-height: 1.5;
+}
+.suite-list a { display: block; padding-block: 5px; padding-inline: 10px; border-radius: var(--apidocs-radius); color: var(--apidocs-fg); white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .suite-list a:hover { background: var(--apidocs-subtle); text-decoration: none; } }
+.suite-list a:active { background: var(--apidocs-subtle); text-decoration: none; }
+.suite-list a[aria-current="true"] { color: var(--apidocs-accent); font-weight: 600; }
+/* An entry with a menu (ThemeLink.children): a button in the row, its menu a popover under it. */
+.suite-group { display: contents; }
+.suite-group-button {
+  display: inline-flex; align-items: center; gap: 4px; padding-block: 5px; padding-inline: 9px 7px;
+  font: inherit; color: var(--apidocs-fg); background: none; border: 0; border-radius: var(--apidocs-radius); white-space: nowrap; cursor: pointer;
+}
+.suite-group-button .icon { color: var(--apidocs-muted); }
+@media (hover: hover) and (pointer: fine) { .suite-group-button:hover { background: var(--apidocs-subtle); } }
+.suite-group-button:active, .suite-group-button:has(+ :popover-open) { background: var(--apidocs-subtle); }
+.suite-group-button[aria-current="true"] { color: var(--apidocs-accent); background: var(--apidocs-accent-soft); font-weight: 600; }
+.suite-popover { inset: auto; margin: 0; font-size: var(--apidocs-size-sm); }
+@supports (anchor-name: --a) {
+  .suite-popover { position-area: block-end span-inline-end; margin-block-start: 6px; }
+}
+.suite-list-group { display: block; padding-block: 5px 2px; padding-inline: 10px; color: var(--apidocs-faint); font-size: var(--apidocs-size-xs); user-select: none; -webkit-user-select: none; }
+.suite-list ul { margin: 0; padding: 0; list-style: none; }
+.suite-list ul a { padding-inline-start: 18px; }
+
+.search { position: relative; display: block; flex: 1000 1 0; min-width: var(--apidocs-search-floor); max-width: 19rem; margin-inline-start: auto; }
+.search input {
+  width: 100%; text-overflow: ellipsis;
+  font: inherit; font-size: var(--apidocs-size-sm);
+  color: var(--apidocs-fg);
+  background: var(--apidocs-surface);
+  border: 1px solid var(--apidocs-rule-strong);
+  border-radius: var(--apidocs-radius);
+  padding-block: 6px; padding-inline: 10px 30px;
+}
+.search input:focus-visible { outline: 2px solid var(--apidocs-focus); outline-offset: 0; border-color: transparent; }
+.search-key {
+  position: absolute; inset-inline-end: 8px; inset-block-start: 50%; transform: translateY(-50%);
+  font-size: var(--apidocs-size-xs); color: var(--apidocs-faint);
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius); padding-block: 0; padding-inline: 5px; line-height: 1.4;
+}
+.search-results {
+  position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 6px);
+  width: min(34rem, 92vw); max-height: min(70vh, 34rem); overflow: auto;
+  margin: 0; padding: 4px; list-style: none;
+  background: var(--apidocs-surface);
+  border: 1px solid var(--apidocs-rule-strong);
+  border-radius: var(--apidocs-radius);
+  box-shadow: 0 12px 32px -12px oklch(0% 0 none / 0.28);
+}
+.search-results li a {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 12px;
+  padding-block: 7px; padding-inline: 10px; border-radius: var(--apidocs-radius); color: var(--apidocs-fg);
+}
+@media (hover: hover) and (pointer: fine) { .search-results li a:hover { text-decoration: none; } }
+.search-results li a:active { text-decoration: none; }
+.search-results li[aria-selected="true"] a { background: var(--apidocs-accent-soft); }
+.result-label { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-sm); overflow-wrap: anywhere; }
+.result-label mark { background: none; color: var(--apidocs-accent); font-weight: 700; }
+.result-kind { color: var(--apidocs-faint); font-size: var(--apidocs-size-sm); text-align: end; }
+/* good-css exception (overflow-clip): hidden, not clip, so the ellipsis shows in every target browser, Safari before 16 among them. */
+.result-context { grid-column: 1 / -1; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-empty { padding: 10px; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); }
+
+.theme-switch {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  background: none; border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  color: var(--apidocs-muted); cursor: pointer;
+}
+.theme-icon {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
+.theme-switch[data-mode="light"] .theme-icon { background: transparent; }
+.theme-switch[data-mode="dark"] .theme-icon { background: currentColor; }
+.theme-emoji { display: none; font-family: var(--apidocs-font-emoji); font-size: 15px; line-height: 1; }
+html[data-emoji] .theme-switch[data-mode="light"] .theme-icon, html[data-emoji] .theme-switch[data-mode="dark"] .theme-icon { display: none; }
+html[data-emoji] .theme-switch[data-mode="light"] .theme-emoji, html[data-emoji] .theme-switch[data-mode="dark"] .theme-emoji { display: block; }
+html[data-emoji] .theme-switch[data-mode="light"] .theme-emoji::before { content: "\2600\FE0F"; }
+html[data-emoji] .theme-switch[data-mode="dark"] .theme-emoji::before { content: "\1F319"; }
+
+/* ---- Layout ---- */
+
+.layout {
+  /* Full width: the navigator sits against the window's start edge however wide the window is, and the text column
+     keeps its own measure beside it. */
+  display: grid;
+  grid-template-columns: 17.5rem minmax(0, 1fr);
+  /* The content, then the footer. On a page shorter than the navigator, the content's row takes the extra height, so the
+     footer sits at the bottom of the window. */
+  grid-template-rows: 1fr auto;
+}
+/* Scrolling over the navigator scrolls it, and once it is at its end the page scrolls on: no overscroll-behavior. */
+.sidebar {
+  /* Both rows, the content and the footer under it: stuck under the bar to the page's very end. */
+  grid-row: 1 / span 2;
+  position: sticky; inset-block-start: var(--apidocs-topbar);
+  align-self: start;
+  height: calc(100vh - var(--apidocs-topbar));
+  overflow: auto;
+  scrollbar-width: thin;
+  font-size: var(--apidocs-size-sm); line-height: 1.5;
+  padding-block: 14px 40px; padding-inline: 10px 10px; border-inline-end: 1px solid var(--apidocs-rule);
+}
+/* Keep the native scrollbar's dimensions and dragging behavior when its thumb is idle. */
+html[data-js] .sidebar:not([data-scrolling]) { scrollbar-color: transparent transparent; }
+.nav-guides .nav-row { user-select: none; -webkit-user-select: none; }
+.content { padding-block: var(--apidocs-content-top) var(--apidocs-content-bottom); padding-inline: var(--apidocs-gutter); min-width: 0; }
+.content > * { max-width: 62rem; }
+
+/* The navigator: flat one-line rows. Nothing wraps; a row truncates and its title has the full name. */
+.nav-button {
+  display: grid; place-items: center; width: 32px; height: 32px; flex: none; cursor: pointer;
+  margin-inline-start: -6px; border-radius: var(--apidocs-radius); color: var(--apidocs-muted);
+}
+@media (hover: hover) and (pointer: fine) { .nav-button:hover { background: var(--apidocs-subtle); color: var(--apidocs-fg); } }
+.nav-button:active { background: var(--apidocs-subtle); color: var(--apidocs-fg); }
+.nav-button svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; }
+.nav-toggle:focus-visible + script + .nav-button, .nav-toggle:focus-visible + .nav-button { outline: 2px solid var(--apidocs-focus); outline-offset: 2px; }
+/* Wide screens: checked hides the navigator and gives its column to the content. No animation: the page is laid out once. */
+@media (min-width: 861px) {
+  body:has(.nav-toggle:checked) .layout { grid-template-columns: minmax(0, 1fr); }
+  body:has(.nav-toggle:checked) .layout .sidebar { display: none; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: with the navigator hidden, the text is centered. */
+  body:has(.nav-toggle:checked) .layout .content { padding-inline-start: max(var(--apidocs-gutter), calc((100% - 62rem) / 2)); }
+  /* good-css exception (fluid-clamp): see above. */
+  body:has(.nav-toggle:checked) .layout .footer { margin-inline-start: max(var(--apidocs-gutter), calc((100% - 62rem) / 2)); }
+}
+.nav-section + .nav-section { margin-block-start: 22px; }
+/* The module's heading is its overview's link; the index pages that hold more sit beside it. */
+.nav-heading a { color: inherit; }
+@media (hover: hover) and (pointer: fine) { .nav-heading a:hover { color: var(--apidocs-fg); text-decoration: none; } }
+.nav-heading a:active { color: var(--apidocs-fg); text-decoration: none; }
+/* The heading names the navigator, so it stays gray on its own page too: the current row is marked below it. */
+.nav-heading a[aria-current="page"] { color: inherit; }
+.nav-module { justify-content: space-between; }
+.nav-module > a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--apidocs-font-mono); text-transform: none; letter-spacing: 0; font-size: var(--apidocs-size-sm); color: var(--apidocs-fg); }
+.nav-index { display: flex; flex: none; gap: 2px; text-transform: none; letter-spacing: 0; font-weight: 450; }
+.nav-index a { display: inline-flex; align-items: center; min-block-size: 24px; padding-block: 0; padding-inline: 6px; border-radius: var(--apidocs-radius); color: var(--apidocs-muted); }
+.nav-index a[aria-current="page"] { color: var(--apidocs-accent); background: var(--apidocs-accent-soft); }
+/* The tree: a twisty, then the row. A folded branch hides its children only when the script runs, which can open it
+   again; a filter with text opens the branches that lead to its matches. */
+.nav-tree, .nav-children { list-style: none; margin: 0; padding: 0; }
+.nav-branch-row { display: flex; align-items: center; }
+.nav-branch-row > .nav-row { flex: 1; min-width: 0; }
+.nav-twisty {
+  /* 24px wide: the smallest target WCAG 2.2 accepts (2.5.8). */
+  flex: none; display: grid; place-items: center; width: 24px; height: 28px; padding: 0; margin: 0;
+  background: none; border: 0; border-radius: var(--apidocs-radius); color: var(--apidocs-faint); cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) { button.nav-twisty:hover { color: var(--apidocs-fg); background: var(--apidocs-subtle); } }
+button.nav-twisty:active { color: var(--apidocs-fg); background: var(--apidocs-subtle); }
+.nav-twisty svg { transform: rotate(90deg); }
+html[data-js] .nav-branch[data-folded]:not([data-filter-open]) > .nav-branch-row > .nav-twisty svg { transform: none; }
+html[data-js] .nav-branch[data-folded]:not([data-filter-open]) > .nav-branch-row > .nav-twisty svg:dir(rtl) { transform: scaleX(-1); }
+html[data-js] .nav-branch[data-folded]:not([data-filter-open]) > .nav-children { display: none; }
+/* A leaf has no twisty. Among branches that have glyphs (types with nested types), and under one, it keeps the twisty's room, so the
+   glyphs line up in one column. Elsewhere (guides, a group, packages) it takes none: its glyph sits in the twisties'
+   column, under the heading's first letter, and its name lines up with the branches' names. A branch's children hang
+   from a rule under its twisty, indented so their glyphs sit under the branch's name. */
+.nav-list:has(> .nav-branch > .nav-branch-row .glyph) > .nav-item > .nav-row,
+.nav-branch:has(> .nav-branch-row .glyph) > .nav-children .nav-item > .nav-row { margin-inline-start: 24px; }
+.nav-list.nav-children { margin-inline-start: 11px; padding-inline-start: 12px; border-inline-start: 1px solid var(--apidocs-rule); }
+.nav-children .nav-list { margin: 0; }
+.nav-group-row { color: var(--apidocs-muted); }
+.nav-heading {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-block: 0 8px; margin-inline: 0; padding-block: 0; padding-inline: 8px;
+  font-family: var(--apidocs-font-sans); font-size: var(--apidocs-size-xs); font-weight: 650;
+  letter-spacing: var(--apidocs-tracking-caps); text-transform: uppercase; color: var(--apidocs-faint);
+}
+/* The shared package prefix is a row of its own; the packages hang from it, each starting with the dot that joins them. */
+.nav-prefix { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-sm); color: var(--apidocs-muted); }
+.nav-dot { color: var(--apidocs-faint); }
+.nav-list { list-style: none; margin: 0; padding: 0; }
+.nav-row {
+  display: flex; align-items: center; gap: 8px;
+  height: 28px; padding-block: 0; padding-inline: 8px; border-radius: var(--apidocs-radius);
+  color: var(--apidocs-fg); white-space: nowrap;
+}
+@media (hover: hover) and (pointer: fine) { .nav-row:hover { background: var(--apidocs-subtle); text-decoration: none; } }
+.nav-row:active { background: var(--apidocs-subtle); text-decoration: none; }
+/* good-css exception (overflow-clip): hidden, not clip, so the ellipsis shows in every target browser, Safari before 16 among them. */
+.nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Every name from the API is set in the code face: packages, types, and their breadcrumbs. */
+:is(.nav-package, .nav-type) .nav-label, .crumb-symbol { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-sm); }
+.nav-count { flex: none; font-size: var(--apidocs-size-xs); font-variant-numeric: tabular-nums; color: var(--apidocs-faint); }
+.nav-row[data-open] { font-weight: 600; }
+.nav-package[data-open] { color: var(--apidocs-accent); }
+.nav-package[data-open] .nav-dot { color: inherit; opacity: 0.6; }
+.nav-row[aria-current="page"], .nav-row[aria-current="true"] { background: var(--apidocs-accent-soft); color: var(--apidocs-accent); font-weight: 600; }
+.nav-row[aria-current] .nav-count { color: inherit; }
+/* The sites, first in the drawer only: on a wide screen the top bar's switcher has them. */
+.nav-suites { display: none; }
+/* The filter and the fold-all button share the navigator's sticky first line. */
+.nav-filter {
+  position: sticky; inset-block-start: -14px; z-index: 1; display: flex; gap: 6px;
+  margin-block: -14px 10px; margin-inline: -10px; padding-block: 14px 8px; padding-inline: 10px;
+  background: var(--apidocs-bg);
+}
+.nav-fold-all {
+  flex: none; display: grid; place-items: center; width: 32px; padding: 0;
+  background: var(--apidocs-surface); border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  color: var(--apidocs-muted); cursor: pointer;
+}
+.nav-fold-all:not([data-action="collapse"]) .fold-all-collapse,
+.nav-fold-all:not([data-action="expand"]) .fold-all-expand,
+.nav-fold-all:not([data-action="restore"]) .fold-all-restore { display: none; }
+@media (hover: hover) and (pointer: fine) { .nav-fold-all:hover { color: var(--apidocs-fg); background: var(--apidocs-subtle); } }
+.nav-fold-all:active { color: var(--apidocs-fg); background: var(--apidocs-subtle); }
+.nav-filter input {
+  width: 100%; font: inherit; font-size: var(--apidocs-size-sm); color: var(--apidocs-fg);
+  background: var(--apidocs-surface); border: 1px solid var(--apidocs-rule-strong);
+  border-radius: var(--apidocs-radius); padding-block: 5px; padding-inline: 9px;
+}
+.nav-filter input:focus-visible { outline: 2px solid var(--apidocs-focus); outline-offset: 0; border-color: transparent; }
+[data-filtered-out] { display: none !important; }
+
+/* Kind glyphs: one letter in a small tile, colored by kind. */
+.glyph {
+  flex: none; width: 17px; height: 17px; display: inline-grid; place-items: center;
+  border-radius: var(--apidocs-radius); font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-xs); font-weight: 700; line-height: 1;
+  color: var(--glyph, var(--apidocs-muted));
+  background: color-mix(in srgb, var(--glyph, var(--apidocs-muted)) 13%, transparent);
+}
+/* A guide glyph's symbol, moved and scaled to the tile's center by client/glyphs.ts. */
+.glyph-ink { display: inline-block; }
+.glyph[data-tone="class"] { --glyph: var(--apidocs-syn-function); }
+.glyph[data-tone="interface"] { --glyph: var(--apidocs-syn-type); }
+.glyph[data-tone="record"] { --glyph: var(--apidocs-syn-string); }
+.glyph[data-tone="enum"] { --glyph: var(--apidocs-syn-number); }
+.glyph[data-tone="annotation"] { --glyph: var(--apidocs-syn-annotation); }
+.glyph[data-tone="object"] { --glyph: var(--apidocs-syn-keyword); }
+.glyph[data-tone="exception"] { --glyph: var(--apidocs-deprecated); }
+.glyph[data-tone="guide"] { --glyph: var(--apidocs-accent); font-family: var(--apidocs-font-system); }
+.nav-subheading { margin-block: 8px 2px; margin-inline: 0; padding-block: 0; padding-inline: 8px; font-size: var(--apidocs-size-xs); color: var(--apidocs-faint); user-select: none; -webkit-user-select: none; }
+.glyph-large { width: 28px; height: 28px; border-radius: var(--apidocs-radius); font-size: var(--apidocs-size-md); }
+
+/* The row above the title: where you are, and the page's other forms. */
+.page-tools { display: flex; align-items: center; gap: 12px; min-height: 30px; margin-block-end: 14px; }
+.page-tools .crumbs { flex: 1; min-width: 0; }
+.page-tools .crumbs ol { margin: 0; }
+/* The formats control: a mark and an arrow in one quiet box. */
+.formats {
+  display: flex; align-items: stretch; flex: none; margin-inline-start: auto; position: relative; height: 30px;
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  background: var(--apidocs-surface); color: var(--apidocs-muted);
+  user-select: none; -webkit-user-select: none;
+}
+.formats-main, .formats-menu > summary {
+  display: grid; place-items: center; color: inherit; background: none; border: 0; padding: 0; cursor: pointer;
+}
+.formats-main { width: 36px; border-radius: 0; border-start-start-radius: calc(var(--apidocs-radius) - 1px); border-end-start-radius: calc(var(--apidocs-radius) - 1px); }
+.formats-menu > summary { width: 28px; height: 100%; list-style: none; border-inline-start: 1px solid var(--apidocs-rule); border-radius: 0; border-start-end-radius: calc(var(--apidocs-radius) - 1px); border-end-end-radius: calc(var(--apidocs-radius) - 1px); }
+.formats-menu > summary::-webkit-details-marker { display: none; }
+.formats-menu[open] > summary { color: var(--apidocs-fg); background: var(--apidocs-subtle); }
+@media (hover: hover) and (pointer: fine) { .formats-main:hover, .formats-menu > summary:hover { color: var(--apidocs-fg); background: var(--apidocs-subtle); } }
+.formats-main:active, .formats-menu > summary:active { color: var(--apidocs-fg); background: var(--apidocs-subtle); }
+.formats-main .formats-done { display: none; color: var(--apidocs-non-null); }
+.formats-main[data-copied] .icon-markdown { display: none; }
+.formats-main[data-copied] .formats-done { display: block; }
+.formats-main .icon { vertical-align: 0; }
+.formats-list {
+  position: absolute; inset-inline-end: -1px; inset-block-start: calc(100% + 6px); z-index: 8; width: max-content; min-width: 16rem;
+  margin: 0; padding: 4px; list-style: none;
+  background: var(--apidocs-surface); border: 1px solid var(--apidocs-rule-strong);
+  border-radius: var(--apidocs-radius); box-shadow: 0 12px 32px -12px oklch(0% 0 none / 0.28);
+  font-size: var(--apidocs-size-sm); line-height: 1.5;
+}
+.formats-list button { background: none; border: 0; inline-size: 100%; font: inherit; cursor: pointer; }
+.formats-list :is(a, button) { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding-block: 5px; padding-inline: 10px; border-radius: var(--apidocs-radius); color: var(--apidocs-fg); }
+@media (hover: hover) and (pointer: fine) { .formats-list :is(a, button):hover { background: var(--apidocs-subtle); text-decoration: none; } }
+.formats-list :is(a, button):active { background: var(--apidocs-subtle); text-decoration: none; }
+.formats-list code { background: none; padding: 0; }
+.formats-list small { color: var(--apidocs-faint); font-size: var(--apidocs-size-xs); }
+.formats-sep { margin-block-start: 4px; padding-block-start: 4px; border-block-start: 1px solid var(--apidocs-rule); }
+.icon { display: inline-block; vertical-align: -0.125em; }
+
+/* A language's mark. */
+.lang { display: inline-flex; align-items: center; gap: 5px; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); white-space: nowrap; user-select: none; }
+.lang .icon { flex: none; vertical-align: 0; }
+.lang[data-lang="kotlin"] .icon { color: var(--apidocs-lang-kotlin, oklch(58.775% 0.24128 288.635)); }
+.lang[data-lang="java"] .icon { color: var(--apidocs-lang-java, oklch(60.725% 0.15353 48.401)); }
+.nav-row .lang, .type-link .lang { flex: none; }
+
+.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; margin-block: 0 18px; margin-inline: 0; padding: 0; font-size: var(--apidocs-size-sm); color: var(--apidocs-muted); }
+.crumbs li + li::before { content: "/"; margin-inline-end: 4px; color: var(--apidocs-rule-strong); }
+.crumbs a { color: var(--apidocs-muted); }
+
+/* The footer is the layout's last row, in the content's column and lined up with its text. */
+.footer {
+  grid-column: -2 / -1; min-width: 0; max-width: 62rem;
+  border-block-start: 1px solid var(--apidocs-rule);
+  padding-block: 20px 32px; padding-inline: 0; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm);
+  margin-block: 0; margin-inline: var(--apidocs-gutter);
+}
+.footer p { margin-block: 0 6px; margin-inline: 0; }
+.footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* ---- Page head and the declaration specimen ---- */
+
+.page-head { margin-block-end: 16px; }
+.page-head h1 { font-size: var(--apidocs-size-title); font-weight: 650; letter-spacing: var(--apidocs-tracking-display); overflow-wrap: anywhere; }
+/* The tile and the name share one line box and one center line, whatever fonts they come from. */
+.page-head h1[data-kind] { display: flex; align-items: center; gap: 12px; font-family: var(--apidocs-font-mono); letter-spacing: 0; font-weight: 700; line-height: 36px; }
+@supports (text-box: trim-both cap alphabetic) {
+  .page-head h1 { text-box: trim-both cap alphabetic; }
+  .page-head h1[data-kind] { line-height: 1; }
+  .page-head .page-meta { margin-block-start: 14px; }
+}
+.page-head h1 code { background: none; padding: 0; font-size: calc(var(--apidocs-code-scale) * 0.92); }
+.page-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-block: 8px 0; margin-inline: 0; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); }
+.kind-word { font-weight: 600; color: var(--apidocs-fg); user-select: none; -webkit-user-select: none; }
+.lede { font-size: var(--apidocs-size-lg); color: var(--apidocs-muted); }
+
+.sig { position: relative; container-type: inline-size; }
+/* A signature holds up to 100 columns (WIDTH in signature.ts). Its text is as large as the theme says, and smaller
+   when the box is too narrow for 100 columns of a monospace font (0.6em per column), down to 11px; below that the
+   box scrolls sideways. */
+.sig pre {
+  margin-block: 12px; margin-inline: 0; padding-block: 10px; padding-inline: 14px;
+  background: var(--apidocs-code-bg); color: var(--apidocs-code-fg);
+  border-radius: var(--apidocs-radius);
+  overflow-x: auto; font-size: clamp(11px, (100cqi - 28px) / 60.6, var(--apidocs-size-sm)); line-height: 1.5;
+}
+.sig-large pre {
+  margin-block: 18px 20px; margin-inline: 0; padding-block: var(--apidocs-specimen-pad-block); padding-inline: var(--apidocs-specimen-pad-inline);
+  font-size: clamp(11px, (100cqi - 2 * var(--apidocs-specimen-pad-inline)) / 60.6, var(--apidocs-size-specimen)); line-height: 1.6;
+  border: 1px solid var(--apidocs-rule);
+  border-radius: var(--apidocs-radius);
+}
+.sig-annotation { color: var(--apidocs-syn-annotation); }
+/* A signature is copied whole with its button, not selected in pieces. The button sits inside the box's corner,
+   below the box's top margin. */
+.sig pre { user-select: none; -webkit-user-select: none; }
+.sig .copy { inset-block-start: 18px; }
+.sig-large .copy { inset-block-start: 26px; inset-inline-end: 8px; }
+.tk-k { color: var(--apidocs-syn-keyword); }
+.tk-n { color: var(--apidocs-code-fg); font-weight: 700; }
+.tk-t { color: var(--apidocs-syn-type); }
+.tk-tp { color: var(--apidocs-syn-type); font-style: italic; }
+.tk-a { color: var(--apidocs-syn-annotation); }
+.tk-l { color: var(--apidocs-syn-string); }
+.tk-p { color: var(--apidocs-syn-param); }
+/* A declaration is quiet at rest, in shades of gray: its keywords darker, its visibility (public, private) and a
+   listing's punctuation lighter, its name in the text color, bold, and its type references in the text color.
+   Pointing at a declaration brings out its syntax: keywords in the keyword color. Its name and type references
+   stay in the text color, as an editor shows them, and show that they are links with a dotted underline; in the
+   link color they would run together with the keywords. */
+.decl-sig, :is(.decl-sig, .sig) .tk-vis { color: var(--apidocs-muted); }
+:is(.decl-sig, .sig) .tk-k:not(.tk-vis) { color: color-mix(in oklab, var(--apidocs-fg) 65%, var(--apidocs-muted)); }
+.sig a.tk-t { color: var(--apidocs-fg); text-decoration-line: none; }
+@media (prefers-reduced-motion: no-preference) { :is(.decl-sig, .sig) :is(.tk-k, a.tk-t) { transition: color 120ms ease-out; } }
+/* A member's row reads the same way: its types in the darker gray, its name in the text color. */
+.summary-sig :is(.tk-t, .tk-k) { color: color-mix(in oklab, var(--apidocs-fg) 65%, var(--apidocs-muted)); }
+.member-row .member-key { color: var(--apidocs-fg); }
+@media (prefers-reduced-motion: no-preference) { :is(.summary-sig .tk-t, .member-row .member-key) { transition: color 120ms ease-out; } }
+@media (hover: hover) and (pointer: fine) {
+  :is(.decl:hover, .sig:hover, .member-row:hover) .tk-k:not(.tk-vis) { color: var(--apidocs-syn-keyword); }
+  :is(.decl-item:not(.is-deprecated) .decl:hover .tk-n, .sig:hover a.tk-t) {
+    text-decoration-line: underline; text-decoration-style: dotted; text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, currentColor 55%, transparent); text-underline-offset: 3px;
+  }
+  .sig a.tk-t:hover { text-decoration-color: currentColor; }
+}
+a.tk-t, a.tk-a { color: var(--apidocs-link); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 30%, transparent); text-underline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { a.tk-t:hover, a.tk-a:hover { text-decoration-color: currentColor; } }
+a.tk-t:active, a.tk-a:active { text-decoration-color: currentColor; }
+
+.copy {
+  position: absolute; inset-block-start: 6px; inset-inline-end: 6px;
+  font: inherit; font-size: var(--apidocs-size-xs); line-height: 1;
+  padding-block: 5px; padding-inline: 7px;
+  color: var(--apidocs-muted);
+  background: var(--apidocs-surface);
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  cursor: pointer; opacity: 0;
+}
+.copy:focus-visible, .copy[data-copied] { opacity: 1; }
+/* A package's or type's name in its page heading: the reader copies it with the button that appears on pointing at
+   it, which copies the qualified name, so the name itself is not selectable text. */
+.page-name { display: flex; align-items: center; gap: 12px; user-select: none; -webkit-user-select: none; }
+.page-name .copy { position: static; flex: none; }
+@media (hover: hover) and (pointer: fine) { .page-name:hover .copy { opacity: 1; } }
+@media (hover: hover) and (pointer: fine) { .sig:hover .copy, .code-block:hover .copy { opacity: 1; } }
+.sig:active .copy, .code-block:active .copy { opacity: 1; }
+@media (hover: none) { .copy { opacity: 1; } }
+
+.lineage { display: grid; gap: 4px; margin-block: 0 22px; margin-inline: 0; font-size: var(--apidocs-size-sm); }
+.lineage > div { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 12px; }
+.lineage dt { color: var(--apidocs-muted); }
+.lineage dd { margin: 0; min-width: 0; }
+.chain, .inline-list { list-style: none; display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 0; padding: 0; }
+.chain li + li::before { content: "\203A"; margin-inline-end: 8px; color: var(--apidocs-faint); }
+.inline-list li:not(:last-child)::after { content: ","; color: var(--apidocs-faint); }
+
+/* ---- Badges, deprecation and notes ---- */
+
+.badge {
+  display: inline-block;
+  font-size: var(--apidocs-size-xs); line-height: 1.5; font-weight: 550;
+  padding-block: 0; padding-inline: 7px; border-radius: var(--apidocs-radius);
+  border: 1px solid var(--apidocs-rule-strong);
+  color: var(--apidocs-muted); white-space: nowrap;
+}
+.badge-since { border-color: transparent; background: var(--apidocs-subtle); }
+.badge-deprecated { color: var(--apidocs-deprecated); border-color: color-mix(in srgb, var(--apidocs-deprecated) 40%, transparent); }
+.badge-nullable { color: var(--apidocs-nullable); border-color: color-mix(in srgb, var(--apidocs-nullable) 40%, transparent); }
+.badge-non-null { color: var(--apidocs-non-null); border-color: color-mix(in srgb, var(--apidocs-non-null) 40%, transparent); }
+
+/* Callouts: an icon tile, a label and the text in a tinted panel. No side bars. The kind sets the tone
+   and the weight: API notes and deprecations are filled, implementation notes are an outline. */
+.callout {
+  --tone: var(--apidocs-note-api);
+  --tone-soft: var(--apidocs-note-api-soft);
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; align-items: start;
+  margin-block: 16px; margin-inline: 0; padding-block: 12px 13px; padding-inline: 12px 18px;
+  background: var(--tone-soft);
+  border: 1px solid color-mix(in srgb, var(--tone) 16%, transparent);
+  border-radius: var(--apidocs-radius);
+}
+.callout-icon {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  border-radius: var(--apidocs-radius);
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 13%, transparent);
+}
+.callout-icon svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.callout-body { min-width: 0; }
+.callout .callout-label {
+  margin: 0; line-height: 26px;
+  font-size: var(--apidocs-size-sm); font-weight: 650; letter-spacing: 0; color: var(--tone);
+}
+.callout-aside { font-weight: 450; }
+.callout-body > p:not(.callout-label) { margin: 0; }
+.callout-body > p:not(.callout-label) + p { margin-block-start: 0.5em; }
+.callout-body > :last-child { margin-block-end: 0; }
+.callout-implSpec { --tone: var(--apidocs-note-spec); --tone-soft: var(--apidocs-note-spec-soft); }
+.callout-implNote { --tone: var(--apidocs-note-impl); --tone-soft: transparent; border-color: var(--apidocs-rule-strong); }
+.callout-implNote .callout-icon { background: var(--apidocs-subtle); }
+.callout-deprecated { --tone: var(--apidocs-deprecated); --tone-soft: var(--apidocs-deprecated-soft); }
+/* Tones for prose. A note is an outline; the others are filled. */
+.callout-note { --tone: var(--apidocs-note-impl); --tone-soft: transparent; border-color: var(--apidocs-rule-strong); }
+.callout-note .callout-icon { background: var(--apidocs-subtle); }
+.callout-tip { --tone: var(--apidocs-non-null); --tone-soft: color-mix(in srgb, var(--apidocs-non-null) 7%, transparent); }
+.callout-important { --tone: var(--apidocs-note-api); --tone-soft: var(--apidocs-note-api-soft); }
+.callout-warning { --tone: var(--apidocs-nullable); --tone-soft: color-mix(in srgb, var(--apidocs-nullable) 8%, transparent); }
+.callout-caution { --tone: var(--apidocs-deprecated); --tone-soft: var(--apidocs-deprecated-soft); }
+
+/* ---- Prose and documentation content ---- */
+
+.prose { max-width: 46rem; }
+.prose p, .member p { margin-block: 0.6em; margin-inline: 0; }
+.prose ul, .prose ol, .member ul, .member ol { padding-inline-start: 1.4em; margin-block: 0.6em; margin-inline: 0; }
+.prose li + li, .member li + li { margin-block-start: 0.2em; }
+/* Guide images keep their aspect ratio inside the column; task-list items show their check box instead of a bullet. */
+.prose img, .member img { max-width: 100%; height: auto; }
+.prose li:has(> p:first-child > .task-check:first-child) { list-style: none; margin-inline-start: -1.4em; }
+.task-check { margin-block: 0; margin-inline: 0 0.45em; vertical-align: -0.1em; accent-color: var(--apidocs-accent); }
+.doc-heading { margin-block: 1.4em 0.4em; margin-inline: 0; font-size: var(--apidocs-size-lg); font-weight: 650; }
+blockquote { margin-block: 0.8em; margin-inline: 0; padding-block: 2px; padding-inline: 16px; border-inline-start: 3px solid var(--apidocs-rule-strong); color: var(--apidocs-muted); }
+.undocumented { color: var(--apidocs-faint); font-style: italic; }
+.inherited-from, .overrides, .default-value { color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); }
+.raw sup, .raw sub { line-height: 0; }
+
+.code-block { position: relative; margin-block: 0.9em; margin-inline: 0; }
+.code-block pre {
+  margin: 0; padding-block: 12px; padding-inline: 16px;
+  background: var(--apidocs-code-bg); color: var(--apidocs-code-fg);
+  border-radius: var(--apidocs-radius);
+  overflow-x: auto; font-size: var(--apidocs-size-sm); line-height: 1.5;
+}
+.hl-c { color: var(--apidocs-syn-comment); font-style: italic; }
+.hl-s { color: var(--apidocs-syn-string); }
+.hl-n { color: var(--apidocs-syn-number); }
+.hl-k { color: var(--apidocs-syn-keyword); }
+.hl-a { color: var(--apidocs-syn-annotation); }
+.hl-t { color: var(--apidocs-syn-type); }
+.hl-f { color: var(--apidocs-syn-function); }
+.hl-p { color: var(--apidocs-syn-param); }
+
+.table-scroll { overflow-x: auto; margin-block: 0.8em; margin-inline: 0; }
+
+/* Diagrams: SVG the importer drew from Mermaid source. Their colors are classes, set here from the tokens, so one SVG
+   follows the light and dark schemes and any theme. Labels were measured in the monospace font. */
+.diagram { margin-block: 1.2em; margin-inline: 0; }
+.diagram-scroll { overflow-x: auto; }
+.diagram-scroll > svg { display: block; max-width: 100%; height: auto; margin-inline: auto; }
+.diagram text { font-family: var(--apidocs-font-mono); }
+.diagram-caption { margin-top: 0.5em; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); text-align: center; }
+.diagram .d-fill-surface { fill: var(--apidocs-surface); }
+.diagram .d-fill-subtle { fill: var(--apidocs-subtle); }
+.diagram .d-fill-accent-soft { fill: var(--apidocs-accent-soft); }
+.diagram .d-fill-fg { fill: var(--apidocs-fg); }
+.diagram .d-fill-muted { fill: var(--apidocs-muted); }
+.diagram .d-fill-rule { fill: var(--apidocs-rule); }
+.diagram .d-fill-rule-strong { fill: var(--apidocs-rule-strong); }
+.diagram .d-fill-accent { fill: var(--apidocs-accent); }
+.diagram .d-stroke-fg { stroke: var(--apidocs-fg); }
+.diagram .d-stroke-muted { stroke: var(--apidocs-muted); }
+.diagram .d-stroke-rule { stroke: var(--apidocs-rule); }
+.diagram .d-stroke-rule-strong { stroke: var(--apidocs-rule-strong); }
+.diagram .d-stroke-accent { stroke: var(--apidocs-accent); }
+.diagram .d-text-fg { fill: var(--apidocs-fg); }
+.diagram .d-text-muted { fill: var(--apidocs-muted); }
+.diagram .d-text-accent { fill: var(--apidocs-accent); }
+table { border-collapse: collapse; width: 100%; font-size: var(--apidocs-size-sm); line-height: 1.5; }
+caption { text-align: start; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); padding-block-end: 6px; }
+th, td { text-align: start; vertical-align: top; padding-block: 7px; padding-inline: 0 12px; border-block-end: 1px solid var(--apidocs-rule); }
+thead th { color: var(--apidocs-muted); font-weight: 600; font-size: var(--apidocs-size-sm); border-block-end-color: var(--apidocs-rule-strong); }
+.doc-table td, .doc-table th { padding-inline-start: 10px; }
+
+/* ---- Guides: prose pages beside the reference ---- */
+
+.guide-kicker {
+  margin-block: 0 6px; margin-inline: 0; font-size: var(--apidocs-size-xs); font-weight: 650; letter-spacing: var(--apidocs-tracking-caps);
+  text-transform: uppercase; color: var(--apidocs-accent); user-select: none; -webkit-user-select: none;
+}
+.guide-head h1 { font-size: var(--apidocs-size-title); }
+.guide-summary { margin-block: 10px 0; margin-inline: 0; max-width: 44rem; }
+.guide-body { max-width: 46rem; }
+.guide-body > .guide-intro > :first-child { margin-block-start: 0; }
+.guide-section { margin-block-start: 44px; }
+.guide-heading { position: relative; scroll-margin-block-start: calc(var(--apidocs-topbar) + 16px); }
+h2.guide-heading { font-size: var(--apidocs-size-xl); font-weight: 700; margin-block: 0 12px; margin-inline: 0; padding-block-end: 8px; border-block-end: 1px solid var(--apidocs-rule-strong); }
+h3.guide-heading { font-size: var(--apidocs-size-lg); font-weight: 650; margin-block: 30px 8px; margin-inline: 0; }
+h4.guide-heading { font-size: var(--apidocs-size-md); font-weight: 650; margin-block: 22px 4px; margin-inline: 0; color: var(--apidocs-muted); }
+/* Paragraphs in a guide breathe a little more than reference text. */
+.guide-body p { margin-block: 0.75em; }
+.guide-body .callout { margin-block: 20px; }
+/* The section link sits in the margin and shows when the heading is pointed at or the link has focus. */
+.heading-anchor {
+  position: absolute; inset-inline-end: 100%; inset-block-start: 0; padding-inline-end: 8px;
+  color: var(--apidocs-faint); font-family: var(--apidocs-font-mono); font-weight: 400;
+  opacity: 0; text-decoration: none !important; user-select: none; -webkit-user-select: none;
+}
+.heading-anchor:focus-visible { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .guide-heading:hover .heading-anchor { opacity: 1; } }
+.guide-heading:active .heading-anchor { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .heading-anchor:hover { color: var(--apidocs-accent); } }
+.heading-anchor:active { color: var(--apidocs-accent); }
+.guide-heading:target { color: var(--apidocs-accent); }
+@media (hover: none) { .heading-anchor { position: static; opacity: 1; padding-block: 0; padding-inline: 8px 0; } }
+
+/* Previous and next: two quiet cards at the foot of a guide. */
+.guide-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-block-start: 56px; max-width: 46rem; }
+.guide-pager-link {
+  display: grid; gap: 2px; padding-block: 12px; padding-inline: 16px;
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  color: var(--apidocs-fg);
+}
+@media (hover: hover) and (pointer: fine) { .guide-pager-link:hover { border-color: var(--apidocs-accent); background: var(--apidocs-accent-soft); text-decoration: none; } }
+.guide-pager-link:active { border-color: var(--apidocs-accent); background: var(--apidocs-accent-soft); text-decoration: none; }
+.guide-next { grid-column: 2; text-align: end; }
+.guide-pager-dir { font-size: var(--apidocs-size-xs); color: var(--apidocs-faint); user-select: none; -webkit-user-select: none; }
+.guide-pager-title { font-weight: 600; }
+
+/* Guides on the overview: cards. */
+.guide-group-title { font-size: var(--apidocs-size-sm); font-weight: 600; margin-block: 20px 0; margin-inline: 0; color: var(--apidocs-muted); }
+.guide-cards { list-style: none; margin-block: 12px 0; margin-inline: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 12px; }
+.guide-card {
+  position: relative; padding-block: 14px 15px; padding-inline: 16px;
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  background: var(--apidocs-surface);
+}
+.guide-card:focus-within { border-color: var(--apidocs-accent); }
+@media (hover: hover) and (pointer: fine) { .guide-card:hover { border-color: var(--apidocs-accent); } }
+.guide-card:active { border-color: var(--apidocs-accent); }
+.guide-card-link { color: var(--apidocs-fg); font-weight: 600; text-decoration: none !important; }
+.guide-card-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.guide-card-summary { margin-block: 4px 0; margin-inline: 0; font-size: var(--apidocs-size-sm); line-height: 1.5; color: var(--apidocs-muted); }
+
+/* How far through a guide the reader is: a hairline under the top bar, driven by scrolling alone. */
+.readbar { display: none; }
+@supports (animation-timeline: scroll()) {
+  .readbar {
+    display: block; position: fixed; z-index: 11; inset-inline-start: 0; inset-inline-end: 0; inset-block-start: var(--apidocs-topbar); height: 2px;
+    background: var(--apidocs-accent); transform-origin: 0 50%; transform: scaleX(0); pointer-events: none;
+  }
+  .readbar:dir(rtl) { transform-origin: 100% 50%; }
+  /* Driven by scrolling, not by time; reduced motion hides the bar. */
+  @media (prefers-reduced-motion: no-preference) { .readbar { animation: apidocs-read linear both; animation-timeline: scroll(root block); } }
+}
+@keyframes apidocs-read { to { transform: scaleX(1); } }
+
+/* ---- Index pages ---- */
+
+.letter-bar { display: flex; flex-wrap: wrap; gap: 2px; margin-block: 18px 4px; margin-inline: 0; font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-sm); user-select: none; -webkit-user-select: none; }
+.letter-bar a { display: grid; place-items: center; min-width: 28px; height: 28px; border-radius: var(--apidocs-radius); color: var(--apidocs-muted); }
+@media (hover: hover) and (pointer: fine) { .letter-bar a:hover { color: var(--apidocs-accent); background: var(--apidocs-accent-soft); text-decoration: none; } }
+.letter-bar a:active { color: var(--apidocs-accent); background: var(--apidocs-accent-soft); text-decoration: none; }
+.index-letter { margin-block-start: 28px; }
+.index-letter > h2 { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-xl); padding-block-end: 6px; border-block-end: 1px solid var(--apidocs-rule-strong); }
+.index-list { list-style: none; margin: 0; padding: 0; font-size: var(--apidocs-size-sm); line-height: 1.5; }
+.index-entry { display: grid; grid-template-columns: minmax(0, 30%) minmax(0, 22%) minmax(0, 1fr); gap: 0 16px; align-items: baseline; padding-block: 7px; padding-inline: 0; border-block-end: 1px solid var(--apidocs-rule); }
+.index-name { font-family: var(--apidocs-font-mono); font-weight: 600; overflow-wrap: anywhere; }
+.index-where { color: var(--apidocs-muted); overflow-wrap: anywhere; }
+.index-summary { color: var(--apidocs-muted); }
+@media (max-width: 860px) { .index-entry { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Sections, summaries and members ---- */
+
+.section { margin-block-start: 40px; }
+.section > h2 {
+  font-size: var(--apidocs-size-xl); font-weight: 650;
+  padding-block-end: 8px; border-block-end: 1px solid var(--apidocs-rule-strong);
+  margin-block-end: 8px;
+}
+.section-tight { margin-block-start: 12px; }
+.summary-group h3, .type-index h3, .inherited h3 { font-size: var(--apidocs-size-md); font-weight: 600; margin-block: 22px 2px; margin-inline: 0; color: var(--apidocs-fg); }
+.type-index h3 code { background: none; padding: 0; }
+
+table.summary th[scope="row"] { font-weight: 400; width: 44%; padding-inline-end: 20px; }
+@media (hover: hover) and (pointer: fine) { table.summary tbody tr:hover { background: color-mix(in srgb, var(--apidocs-subtle) 60%, transparent); } }
+table.summary tbody tr:active { background: color-mix(in srgb, var(--apidocs-subtle) 60%, transparent); }
+.summary-sig { background: none !important; padding: 0 !important; font-size: var(--apidocs-size-sm); overflow-wrap: anywhere; }
+.summary-sig a { font-weight: 650; }
+.type-link { display: inline-flex; align-items: center; gap: 8px; }
+.type-link code { background: none !important; padding: 0 !important; font-weight: 600; }
+.kind-cell { color: var(--apidocs-muted); white-space: nowrap; }
+tr.is-deprecated .summary-sig a { text-decoration: line-through; text-decoration-color: var(--apidocs-deprecated); }
+td .badge { margin-inline-end: 6px; }
+
+/* Types as declaration code: the head of each declaration on one line, its summary under it in two lines at most. */
+.decls { list-style: none; margin-block: 6px 0; margin-inline: 0; padding: 0; }
+.decl-item { padding-block: 9px; padding-inline: 0; border-block-end: 1px solid var(--apidocs-rule); }
+.decls-nested { margin-block: 6px 0; margin-inline: 8px 0; padding-inline-start: 14px; border-inline-start: 1px solid var(--apidocs-rule); }
+.decls-nested .decl-item { padding-block: 6px; }
+.decls-nested .decl-item:last-child { border-block-end: 0; }
+.decl { display: flex; align-items: center; gap: 8px; min-width: 0; min-block-size: 24px; color: var(--apidocs-fg); }
+@media (hover: hover) and (pointer: fine) { .decl:hover { text-decoration: none; } }
+/* good-css exception (overflow-clip): hidden, not clip, so the ellipsis shows in every target browser, Safari before 16 among them. */
+.decl-sig { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: none !important; padding: 0 !important; font-size: var(--apidocs-size-sm); }
+.decl-item.is-deprecated .tk-n { text-decoration: line-through; text-decoration-color: var(--apidocs-deprecated); }
+/* good-css exception (overflow-clip): hidden, not clip: WebKit clamps lines with -webkit-line-clamp only under overflow: hidden. */
+.decl-summary {
+  margin-block: 2px 0; margin-inline: 25px 0; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); line-height: 1.5;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.decl-summary .badge { margin-inline-end: 6px; }
+.package-block { margin-block-start: 26px; }
+.package-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: var(--apidocs-size-lg); font-weight: 650; }
+.package-name code { background: none; padding: 0; }
+/* A package's name is a symbol, so it reads as code, in dark gray, and turns the link color when pointed at. */
+.package-name a { color: color-mix(in oklab, var(--apidocs-fg) 80%, var(--apidocs-muted)); text-decoration: none; }
+@media (prefers-reduced-motion: no-preference) { .package-name a { transition: color 120ms ease-out; } }
+@media (hover: hover) and (pointer: fine) { .package-name a:hover { color: var(--apidocs-link); } }
+.package-name a:active { color: var(--apidocs-link); }
+.package-count { font-family: var(--apidocs-font-sans); font-size: var(--apidocs-size-sm); font-weight: 400; color: var(--apidocs-faint); }
+.package-summary { margin-block: 4px 0; margin-inline: 0; color: var(--apidocs-muted); }
+.empty { color: var(--apidocs-muted); font-style: italic; margin-block: 24px 0; }
+
+/* A long description shows its first lines; "Show more" opens the rest. Folded only with the script, which shows the
+   control and opens the fold for a link into it. */
+/* good-css exception (overflow-clip): hidden, not clip, so find in page can scroll the body to a match in its hidden part,
+   which opens the fold (folds() in client/behaviors.tsx). */
+html[data-js] .fold:not([data-open]):not([data-short]) > .fold-body {
+  max-height: calc(4lh + 1.2em); overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.6lh), transparent calc(100% - 1lh));
+}
+/* Folded, the body is a scroll container (above), which keeps its children's margins inside it. Open, it is a flow root
+   too, and its first and last children have no outer margin, so the fold is as tall either way and the
+   script marking a short description moves nothing. */
+.fold-body { display: flow-root; }
+/* The part below the folded height (folds() in client/behaviors.tsx) ends the description: its last block has no outer
+   margin, as the body's last child has none, so the fold is as tall as before it was split. */
+.fold-rest > :last-child { margin-block-end: 0; }
+.fold-body > :first-child { margin-block-start: 0; }
+.fold-body > :last-child { margin-block-end: 0; }
+/* Folded, the control sits over the faded last line, so showing it (once the script finds the description long)
+   moves nothing on the page; open, it follows the text. */
+.fold { position: relative; }
+.fold-toggle {
+  position: absolute; inset-block-end: 0; inset-inline-start: 0;
+  min-block-size: 24px; padding-block: 0; padding-inline: 0 8px; font: inherit; font-size: var(--apidocs-size-sm);
+  color: var(--apidocs-link); background: var(--apidocs-bg); border: 0; cursor: pointer;
+}
+.fold[data-open] > .fold-toggle { position: static; margin-block-start: 2px; }
+@media (hover: hover) and (pointer: fine) { .fold-toggle:hover { text-decoration: underline; text-underline-offset: 2px; } }
+
+/* A member is a disclosure: a row when closed, the full entry when open. Rows far from the viewport are not
+   laid out or painted until they come near; find-in-page still searches them and opens the one it matches. */
+.members-heading { display: flex; align-items: baseline; gap: 10px; }
+.members-count { font-size: var(--apidocs-size-sm); font-weight: 400; color: var(--apidocs-faint); user-select: none; -webkit-user-select: none; }
+.members-toggle {
+  margin-inline-start: auto; font: inherit; font-size: var(--apidocs-size-xs); font-weight: 400; color: var(--apidocs-muted);
+  background: none; border: 0; padding-block: 2px; padding-inline: 4px; border-radius: var(--apidocs-radius); cursor: pointer; user-select: none; -webkit-user-select: none;
+}
+@media (hover: hover) and (pointer: fine) { .members-toggle:hover { color: var(--apidocs-fg); background: var(--apidocs-subtle); } }
+.members-toggle:active { color: var(--apidocs-fg); background: var(--apidocs-subtle); }
+.members > .member { border-block-end: 1px solid var(--apidocs-rule); content-visibility: auto; contain-intrinsic-size: auto 41px; }
+/* A group's first rows can be in the first viewport, where a placeholder that differs from the real row by a few
+   pixels would shift everything below it once the row is laid out: those render as usual. 24 rows fill any screen. */
+.members > .member:nth-of-type(-n+24) { content-visibility: visible; }
+.member-row {
+  display: grid; grid-template-columns: 12px minmax(0, 46%) minmax(0, 1fr) auto; gap: 0 12px; align-items: baseline;
+  padding-block: 9px; padding-inline: 0 4px; cursor: pointer; list-style: none;
+  font-size: var(--apidocs-size-sm); line-height: 1.5;
+}
+.member-row::-webkit-details-marker { display: none; }
+/* The chevron has no baseline: it sits on the first line, beside the signature's start, however tall the row. */
+.member-row > .member-chevron { align-self: start; margin-block-start: calc((1lh - 12px) / 2); }
+/* A long signature stays on one line and ends in an ellipsis, so the row stays one line tall and its types never
+   break; pointing at the row, focusing it or opening it shows the whole signature. */
+.member-sig .summary-sig { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:is(.member-row:hover, .member-row:focus-visible, .member[open] > .member-row) .summary-sig { overflow: visible; white-space: normal; }
+@media (hover: hover) and (pointer: fine) { .member-row:hover .summary-sig .tk-t { color: var(--apidocs-syn-type); } }
+@media (hover: hover) and (pointer: fine) { .member-row:hover { background: color-mix(in srgb, var(--apidocs-subtle) 60%, transparent); } }
+.member-row:active { background: color-mix(in srgb, var(--apidocs-subtle) 60%, transparent); }
+.member-chevron { align-self: center; color: var(--apidocs-faint); }
+.member[open] > .member-row .member-chevron { transform: rotate(90deg); }
+/* Right to left, a closed row points to the start of the line. */
+.member:not([open]) > .member-row .member-chevron:dir(rtl) { scale: -1 1; }
+.member[open] > .member-row { background: color-mix(in srgb, var(--apidocs-subtle) 60%, transparent); }
+.member[open] > .member-row .member-brief { visibility: hidden; }
+.member-sig { min-width: 0; }
+.member-brief[data-brief]::before { content: attr(data-brief); }
+/* good-css exception (overflow-clip): hidden, not clip: WebKit clamps lines with -webkit-line-clamp only under overflow: hidden. */
+.member-brief { min-width: 0; color: var(--apidocs-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.member-marks { display: flex; align-items: center; gap: 8px; user-select: none; -webkit-user-select: none; }
+/* A narrow page has no room for the signature and the sentence side by side: the sentence goes under the
+   signature, which then has the full line and breaks between words. */
+@media (max-width: 640px) {
+  .member-row { grid-template-columns: 12px minmax(0, 1fr) auto; grid-template-areas: "chevron sig marks" ". brief brief"; row-gap: 2px; }
+  .member-chevron { grid-area: chevron; align-self: start; margin-block-start: 5px; }
+  .member-sig { grid-area: sig; }
+  .member-marks { grid-area: marks; }
+  .member-brief { grid-area: brief; }
+  .member-sig .summary-sig { overflow-wrap: break-word; }
+  .member[open] > .member-row .member-brief { display: none; }
+}
+.member-noted { display: inline-grid; color: var(--apidocs-note-api); }
+.member-noted svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.member-key { font-weight: 650; color: var(--apidocs-link); }
+.member.is-deprecated .member-key { text-decoration: line-through; text-decoration-color: var(--apidocs-deprecated); }
+.member-body { padding-block: 14px 22px; padding-inline: 24px 0; }
+/* Opening fades the entry in: opacity only, so nothing is laid out twice. */
+.member::details-content { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { .member::details-content { transition: opacity 140ms ease-out; } }
+@starting-style { .member[open]::details-content { opacity: 0; } }
+.member-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.member-name { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-lg); font-weight: 700; overflow-wrap: anywhere; }
+.member-name .anchor { color: var(--apidocs-fg); }
+.member-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.source-link { font-size: var(--apidocs-size-sm); color: var(--apidocs-faint); }
+.member .prose { margin-block-start: 2px; }
+
+.facts { margin-block: 14px 0; margin-inline: 0; }
+.facts-title, .see .facts-title { font-family: var(--apidocs-font-sans); font-size: var(--apidocs-size-sm); font-weight: 650; color: var(--apidocs-muted); margin-block: 0 2px; margin-inline: 0; }
+.facts-list { margin: 0; }
+.fact {
+  display: grid; grid-template-columns: minmax(9rem, 18rem) minmax(0, 1fr); gap: 2px 20px;
+  padding-block: 6px; padding-inline: 0; border-block-start: 1px solid var(--apidocs-rule);
+  font-size: var(--apidocs-size-md);
+}
+.fact:first-child { border-block-start: 0; }
+.fact dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; }
+.fact dd { margin: 0; min-width: 0; }
+.fact dd p { margin-block: 0 0.4em; margin-inline: 0; }
+.fact-name { background: none !important; padding: 0 !important; font-weight: 700; }
+.fact-type { background: none !important; padding: 0 !important; color: var(--apidocs-muted); font-size: var(--apidocs-size-sm); }
+.fact:target { background: var(--apidocs-accent-soft); }
+.see { margin-block-start: 14px; }
+.see-list { margin: 0; padding-inline-start: 1.2em; }
+
+.inherited-list { margin-block: 2px 0; margin-inline: 0; line-height: 1.9; font-size: var(--apidocs-size-sm); }
+.member-head:target .member-name .anchor { color: var(--apidocs-accent); }
+.member-head { scroll-margin-block-start: calc(var(--apidocs-topbar) + 56px); }
+
+/* ---- Small screens ---- */
+
+@media (max-width: 1240px) {
+  .layout { grid-template-columns: 16.5rem minmax(0, 1fr); }
+}
+/* Half a desktop screen and less: the controls that are not needed to read give way, one by one, and rows are as tall
+   as a fingertip on a touch screen. */
+@media (max-width: 1100px) {
+  .formats-menu { display: none; }
+}
+@media (max-width: 860px), (pointer: coarse) {
+  .nav-row, .nav-twisty { height: 40px; }
+  .nav-twisty { width: 32px; }
+  .nav-list.nav-children { margin-inline-start: 15px; padding-inline-start: 16px; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: the twisty's room, as wide as the wider twisty. */
+  .nav-list:has(> .nav-branch > .nav-branch-row .glyph) > .nav-item > .nav-row,
+  .nav-branch:has(> .nav-branch-row .glyph) > .nav-children .nav-item > .nav-row { margin-inline-start: 32px; }
+  .member-row { padding-block: 12px; }
+  .decl-item { padding-block: 12px; }
+  .nav-fold-all { width: 40px; }
+  .nav-filter input { padding-block: 9px; }
+}
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  /* The drawer fills the space under the bar and scrolls. Stretch, not the wide layout's start: an absolutely
+     positioned box aligned to the start takes its content's height and, taller than the screen, is moved up behind
+     the bar, where it cannot scroll. */
+  .sidebar {
+    display: none; position: fixed; z-index: 9; inset-block: var(--apidocs-topbar) 0; inset-inline: 0; height: auto; align-self: stretch;
+    background: var(--apidocs-bg); border-inline-end: 0;
+    /* good-css exception (fluid-clamp): a layout, not a size step: the drawer's own padding, over the page. */
+    padding-block: 14px 40px; padding-inline: 12px;
+  }
+  body:has(.nav-toggle:checked) .layout .sidebar { display: block; }
+  .module-version { display: none; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: breadcrumbs keep only the page's parent. */
+  .crumbs li:not(:nth-last-child(-n+2)) { display: none; }
+  .product { display: none; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: with the name gone, the brand is its logo, which
+     never shrinks under what follows it in the bar. */
+  .brand { flex: none; }
+  /* The drawer lists the sites, so the switcher shows its row when it fits and leaves the bar when it does not. Once
+     it has left (or where there is none), the search field may narrow further, to 5rem. The tools' floor is then the
+     search field's narrowest, the theme switch and the gaps, not the switcher's labels. */
+  .topbar-tools { min-width: calc(5rem + 32px + 2 * var(--apidocs-tools-gap)); }
+  /* good-css exception (fluid-clamp): a layout, not a size step: the switcher sits beside the search field here. */
+  .suites { min-width: 0; margin-inline-start: 0; overflow: clip; }
+  .suite-menu, .suites-floor { display: none; }
+  .topbar-tools:not(:has(> .suites:not([data-fit="none"]))) .search { min-width: 5rem; }
+  .search-key { display: none; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: no keyboard hint to leave room for. */
+  .search input { padding-inline-end: 10px; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: the sites are the drawer's first block. */
+  .nav-suites { display: block; margin-block-end: 14px; }
+  /* good-css exception (fluid-clamp): see above. */
+  .nav-suites + .nav-filter { margin-block-start: 0; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: one column, so no gap between name and text. */
+  .lineage > div, .fact { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  table.summary th[scope="row"] { width: auto; }
+  table.summary, table.summary tbody, table.summary tr, table.summary th, table.summary td { display: block; }
+  table.summary thead { display: none; }
+  /* good-css exception (fluid-clamp): a layout, not a size step: the summary table's rows become blocks. */
+  table.summary tr { padding-block: 8px; padding-inline: 0; border-block-end: 1px solid var(--apidocs-rule); }
+  /* good-css exception (fluid-clamp): see above. */
+  table.summary th, table.summary td { border: 0; padding: 0; }
+}
+
+/* ---- Print ---- */
+
+@media print {
+  .topbar, .sidebar, .copy, .fold-toggle, .skip, .footer, .nav-toggle, .formats, .loadbar, .readbar, .guide-pager, .heading-anchor { display: none !important; }
+  .layout { display: block; }
+  .content { padding: 0; }
+  .content > * { max-width: none; }
+  .sig pre, .code-block pre { white-space: pre-wrap; border: 1px solid oklch(84.522% 0 none); }
+  .member::details-content { content-visibility: visible; display: block; }
+  .fold > .fold-body { max-height: none !important; mask-image: none !important; }
+  .members-toggle, .member-chevron { display: none; }
+  .member { break-inside: avoid-page; }
+  a { color: inherit; }
+}
+
+/* Moving between pages. The page being left runs a thin bar along the top, bright at its head; the page that
+   arrives finishes it and lets it fade. The content cross-fades and rises a few pixels; the top bar and the
+   navigator do not move. Only transform and opacity animate, so nothing is laid out again. */
+.loadbar {
+  position: fixed; inset-block: 0 auto; inset-inline: 0; height: 2px; z-index: 30; pointer-events: none;
+  transform: translateX(-101%); opacity: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--apidocs-loadbar-tail, var(--apidocs-accent)) 55%, var(--apidocs-loadbar-head, var(--apidocs-accent)) 100%);
+}
+.loadbar::after {
+  content: ""; position: absolute; inset-inline-end: 0; inset-block-start: -2px; width: 96px; height: 6px; border-radius: var(--apidocs-radius);
+  background: linear-gradient(90deg, transparent, var(--apidocs-loadbar-head, var(--apidocs-accent)));
+  filter: blur(3px); opacity: 0.9;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* good-css exception (motion-properties): the load bar shows progress, not a change of state. It eases out over 6s
+     so a slow page still shows movement, and the arriving page finishes it in 420ms: both longer than a 300ms UI
+     transition on purpose. */
+  html[data-leaving] .loadbar { opacity: 1; animation: apidocs-leave 6s cubic-bezier(0.08, 0.82, 0.17, 1) forwards; }
+  /* good-css exception (motion-properties): see above. */
+  html[data-arriving] .loadbar { animation: apidocs-arrive 420ms ease-out both; }
+}
+@keyframes apidocs-leave { from { transform: translateX(-101%); } to { transform: translateX(-12%); } }
+@keyframes apidocs-arrive {
+  0% { transform: translateX(-35%); opacity: 1; }
+  55% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(0); opacity: 0; }
+}
+
+/* Cross-document transitions only where motion is welcome; with reduced motion a page simply loads. */
+@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
+.topbar { view-transition-name: apidocs-topbar; }
+.sidebar { view-transition-name: apidocs-sidebar; }
+.content { view-transition-name: apidocs-content; }
+.loadbar { view-transition-name: apidocs-loadbar; }
+::view-transition-group(*) { animation-duration: 0s; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 120ms; }
+::view-transition-old(apidocs-topbar), ::view-transition-old(apidocs-sidebar), ::view-transition-old(apidocs-loadbar) { display: none; }
+::view-transition-new(apidocs-topbar), ::view-transition-new(apidocs-sidebar), ::view-transition-new(apidocs-loadbar) { animation: none; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(apidocs-content) { animation: apidocs-out 90ms ease-out both; }
+  ::view-transition-new(apidocs-content) { animation: apidocs-in 180ms 40ms ease-out both; }
+}
+@keyframes apidocs-out { to { opacity: 0; } }
+@keyframes apidocs-in { from { opacity: 0; transform: translateY(6px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+  .loadbar, .readbar { display: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+/* ---- Keyboard ---- */
+
+/* The footer's link to the shortcut list: a button that reads as a link. */
+.footer-keys { padding: 0; border: 0; background: none; font: inherit; color: var(--apidocs-link); cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .footer-keys:hover { text-decoration-line: underline; text-underline-offset: 0.22em; } }
+.footer-keys:active { text-decoration-line: underline; text-underline-offset: 0.22em; }
+kbd {
+  display: inline-block; min-inline-size: 1.6em; padding-block: 0.05em; padding-inline: 0.35em; text-align: center;
+  border: 1px solid var(--apidocs-rule-strong); border-block-end-width: 2px; border-radius: var(--apidocs-radius);
+  background: var(--apidocs-surface); color: var(--apidocs-fg); line-height: 1.4;
+}
+dialog.keys {
+  inline-size: min(30rem, calc(100vw - 32px)); padding-block: 18px 16px; padding-inline: 20px;
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  background: var(--apidocs-surface); color: var(--apidocs-fg); box-shadow: 0 16px 40px -16px oklch(0% 0 none / 0.35);
+}
+dialog.keys::backdrop { background: oklch(0% 0 none / 0.35); }
+dialog.keys h2 { margin-block: 0 10px; font-size: var(--apidocs-size-lg); }
+dialog.keys td:first-child { white-space: nowrap; inline-size: 6rem; }
+.keys-switch { display: flex; align-items: center; gap: 8px; margin-block: 14px 0; font-size: var(--apidocs-size-sm); accent-color: var(--apidocs-accent); }
+.keys-close {
+  float: inline-end; margin-block-start: -24px; padding-block: 4px; padding-inline: 12px; font: inherit; font-size: var(--apidocs-size-sm);
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius); background: var(--apidocs-surface); color: var(--apidocs-fg); cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) { .keys-close:hover { background: var(--apidocs-subtle); } }
+.keys-close:active { background: var(--apidocs-subtle); }
+
+/* ---- Hover cards (client/cards.ts) ---- */
+
+/* A link's card: kind and owner, name, first sentence. One element, a manual popover; the script places it from the
+   link's box unless the browser has anchor positioning, which places it below the link and flips it at the window's
+   edges. */
+.card {
+  inset: auto; margin: 0; inline-size: max-content; max-inline-size: min(26rem, calc(100vw - 16px));
+  padding-block: 9px 10px; padding-inline: 12px;
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  background: var(--apidocs-surface); color: var(--apidocs-fg); box-shadow: 0 10px 28px -14px oklch(0% 0 none / 0.35);
+  font-family: var(--apidocs-font-sans); font-size: var(--apidocs-size-sm); line-height: 1.5; text-align: start;
+}
+@supports (anchor-name: --apidocs-card) {
+  .card {
+    position-anchor: --apidocs-card; position-area: block-end span-inline-end; margin-block: 6px;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  }
+}
+.card p { margin: 0; }
+.card-kind { display: flex; align-items: center; gap: 6px; margin-block-end: 2px !important; color: var(--apidocs-faint); font-size: var(--apidocs-size-xs); user-select: none; -webkit-user-select: none; }
+.card-kind code { background: none; padding: 0; font-size: var(--apidocs-size-xs); color: inherit; }
+.card-name { font-family: var(--apidocs-font-mono); font-weight: 650; overflow-wrap: anywhere; }
+.card-summary { margin-block-start: 3px !important; color: var(--apidocs-muted); text-wrap: pretty; }
+@media (prefers-reduced-motion: no-preference) {
+  .card { transition: opacity 120ms ease-out, display 120ms allow-discrete, overlay 120ms allow-discrete; }
+  @starting-style { .card:popover-open { opacity: 0; } }
+}
+.card:not(:popover-open) { opacity: 0; }
+@media print { .card { display: none !important; } }
+
+/* ---- Overloads and inherited members ---- */
+
+/* A name's overloads sit together (memberGroups): the rows after the first keep the name quieter, so the parameters,
+   which are what differ, are what the eye meets, and the rule between them is fainter. */
+.member.is-overload > .member-row .member-key { color: var(--apidocs-muted); font-weight: 500; }
+.members > .member:has(+ .member.is-overload) { border-block-end-color: color-mix(in oklch, var(--apidocs-rule) 45%, transparent); }
+
+/* Declared, or with inherited members: two radio buttons styled as one control. */
+.members-filter {
+  display: flex; gap: 2px; inline-size: fit-content; min-inline-size: 0; margin-block: 32px 0; margin-inline: 0; padding: 2px;
+  border: 1px solid var(--apidocs-rule-strong); border-radius: var(--apidocs-radius);
+  font-size: var(--apidocs-size-sm); user-select: none; -webkit-user-select: none;
+}
+.members-filter label { display: flex; align-items: center; min-block-size: 26px; padding-inline: 10px; border-radius: var(--apidocs-radius); color: var(--apidocs-muted); cursor: pointer; }
+.members-filter input { position: absolute; opacity: 0; pointer-events: none; }
+.members-filter label:has(:checked) { color: var(--apidocs-accent); background: var(--apidocs-accent-soft); font-weight: 600; }
+.members-filter label:has(:focus-visible) { outline: 2px solid var(--apidocs-focus); outline-offset: 1px; }
+@media (hover: hover) and (pointer: fine) { .members-filter label:not(:has(:checked)):hover { color: var(--apidocs-fg); background: var(--apidocs-subtle); } }
+.members-filter label:not(:has(:checked)):active { color: var(--apidocs-fg); background: var(--apidocs-subtle); }
+.members-filter + .section { margin-block-start: 16px; }
+body:has([data-members-filter][value="declared"]:checked) :is(.member-inherited, section[data-inherited-only], .members-inherited-count) { display: none; }
+
+/* A member documented elsewhere (an inherited member, an extension): a row that links to its entry, with a mark. */
+.member-linked > .member-row { color: var(--apidocs-fg); }
+@media (hover: hover) and (pointer: fine) { .member-linked > .member-row:hover { text-decoration: none; } }
+.member-linked > .member-row:active { text-decoration: none; }
+.member-linked .member-key { color: var(--apidocs-fg); }
+.member-from { color: var(--apidocs-faint); font-size: var(--apidocs-size-xs); white-space: nowrap; }
+.members-inherited-count { color: var(--apidocs-faint); }
+
+/* A sentence a search result opened the page at (a text fragment): the accent's tint, the text's own color. */
+::target-text { background: color-mix(in oklch, var(--apidocs-accent) 22%, transparent); color: inherit; }
+
+/* The top bar lifts off the page once it scrolls: a soft shadow over the first 48px of scrolling, driven by the
+   scroll position alone (no script, nothing laid out again). At the top of a page the bar sits flat on it, and with
+   reduced motion it always does. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .topbar { animation: apidocs-topbar-lift linear both; animation-timeline: scroll(root block); animation-range: 0 48px; }
+  }
+}
+@keyframes apidocs-topbar-lift { from { box-shadow: 0 0 0 0 oklch(0% 0 none / 0); } to { box-shadow: 0 8px 20px -14px oklch(0% 0 none / 0.32); } }

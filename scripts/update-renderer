@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Rebuild the standalone renderer from its pinned components source and lockfile.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+revision=d9acdfe98d033b32c77982392bc2a22b8f38451f
+resources="$PWD/doclet/src/main/resources"
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+git -C "$1" archive "$revision" | tar -x -C "$work"
+cd "$work"
+bun install --frozen-lockfile --ignore-scripts
+bun run --filter '@elide/tokens' build
+(cd packages/apidocs && bun run build)
+dist=packages/apidocs/dist
+target="$resources/dev/elide/apidocs/renderer"
+mkdir -p "$target"
+cp "$dist"/{render.js,runner.mjs,apidocs-1.schema.json} "$target/"
+rsync -a --delete "$dist/assets/" "$target/assets/"
+for package in preact preact-render-to-string @fontsource-variable/jetbrains-mono; do
+  cp "packages/apidocs/node_modules/$package/LICENSE" "$resources/META-INF/licenses/${package##*/}.txt"
+done

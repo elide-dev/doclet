@@ -1,0 +1,40 @@
+{
+  "name": "Signal",
+  "productName": "Signal",
+  "brand": "Signal / API",
+  "symbols": "utf",
+  "tokens": {
+    "light": {
+      "bg": "#f4f4ff",
+      "accent": "#4a40ae",
+      "link": "#48369b",
+      "focus": "#6349cb",
+      "code-bg": "#eae9fb",
+      "syn-keyword": "#753284",
+      "font-display": "ui-monospace, monospace",
+      "radius": "0px"
+    },
+    "dark": {
+      "bg": "#19172c",
+      "surface": "#242139",
+      "accent": "#c5b8ff",
+      "link": "#cfc3ff",
+      "focus": "#d3c7ff",
+      "code-bg": "#302943",
+      "syn-keyword": "#f1a6ff",
+      "font-display": "ui-monospace, monospace",
+      "radius": "0px"
+    }
+  },
+  "footer": "Signal \u00b7 Runtime API reference",
+  "homeUrl": "./index.html",
+  "links": {
+    "footer": [
+      {
+        "label": "Theme gallery",
+        "url": "../index.html"
+      }
+    ]
+  },
+  "socialImage": null
+}

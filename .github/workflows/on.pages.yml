@@ -1,0 +1,58 @@
+name: Theme gallery
+on:
+  push:
+    branches: [main]
+    paths: ['samples/**', 'scripts/build-samples', 'doclet/**', 'elide.pkl', 'mise.toml', '.github/workflows/on.pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: theme-gallery-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    name: Render samples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read toolchain version
+        id: tools
+        run: |
+          python3 -c 'import tomllib; print("version=" + tomllib.load(open("mise.toml", "rb"))["tools"]["github:elide-dev/elide"])' >> "$GITHUB_OUTPUT"
+      - uses: elide-dev/setup-elide@10fbf30cebffd3538c428369950dc2094137f02b # v4.2.0
+        with:
+          version: ${{ steps.tools.outputs.version }}
+          channel: release
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '25'
+      - run: PATH="$JAVA_HOME/bin:$PATH" scripts/build-samples
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: .dev/pages
+  deploy:
+    name: Deploy gallery
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

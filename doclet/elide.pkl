@@ -7,7 +7,12 @@ name = "elide-doclet"
 version = "0.1.0" // x-release-please-version
 description = "Elide's Javadoc doclet"
 
-jvm { java { release = 17 } }
+jvm {
+  java {
+    release = 17
+    sourceSets { ["apidocs"] { release = 25 } }
+  }
+}
 
 artifacts {
   ["elide-doclet"] = new Jvm.Jar {}
@@ -17,5 +22,15 @@ coverage {
   jvm {
     excludes { "*Test" }
     reports { Coverage.xmlReport() }
+  }
+}
+
+sources {
+  ["test"] {
+    dependsOn { "main"; "apidocs" }
+  }
+  ["apidocs"] {
+    paths { "src/apidocs/java" }
+    dependsOn { "main" }
   }
 }
