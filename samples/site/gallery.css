@@ -25,3 +25,7 @@ code { white-space:pre-wrap; font:clamp(1rem,2vw,1.55rem)/1.55 ui-monospace,mono
 .signal { background:#eceaf9; color:#342951; border-top:3px solid #7862b8; } .signal h2 { font-family:ui-monospace,monospace; }
 footer { border:0; border-top:1px solid #87959b80; margin-bottom:1rem; }
 @media(max-width:46rem) { .featured,.alternates { grid-template-columns:1fr; } .specimen { gap:1rem; } }
+.notflix { background:#20191c; color:#fff7f8; border-top:3px solid #e50914; }
+.notflix h2 { color:#ff5968; font-weight:900; text-transform:uppercase; letter-spacing:.045em; }
+.rider { background:#101010; color:#fff; border-top:3px solid #9ee4cd; }
+.rider a { color:#b4eddb; }

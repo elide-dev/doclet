@@ -1,0 +1,46 @@
+{
+  "name": "Rider",
+  "productName": "Rider",
+  "brand": "Rider",
+  "symbols": "none",
+  "favicon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 32 32\"><rect width=\"32\" height=\"32\" rx=\"5\" fill=\"#101010\"/><path fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" d=\"M8 23V12h15\"/><circle fill=\"#9ee4cd\" cx=\"8\" cy=\"23\" r=\"4\"/><path fill=\"#fff\" d=\"M20 8h7v7h-7z\"/></svg>",
+  "tokens": {
+    "light": {
+      "bg": "#ffffff",
+      "surface": "#ffffff",
+      "fg": "#101010",
+      "accent": "#111111",
+      "link": "#174c47",
+      "focus": "#174c47",
+      "accent-soft": "#eaf3ef",
+      "syn-keyword": "#235e50",
+      "syn-type": "#174c47",
+      "code-bg": "#f1f4f3",
+      "radius": "0px"
+    },
+    "dark": {
+      "bg": "#111111",
+      "surface": "#1d1d1d",
+      "fg": "#f8f8f8",
+      "accent": "#ffffff",
+      "link": "#8fe1c9",
+      "focus": "#8fe1c9",
+      "accent-soft": "#20332d",
+      "syn-keyword": "#a5d9cb",
+      "syn-type": "#8fe1c9",
+      "code-bg": "#232a27",
+      "radius": "0px"
+    }
+  },
+  "css": ".brand, h1 { letter-spacing: -.045em; }",
+  "footer": "Rider · Independent theme sample",
+  "links": {
+    "footer": [
+      {
+        "label": "Theme gallery",
+        "url": "../index.html"
+      }
+    ]
+  },
+  "socialImage": null
+}

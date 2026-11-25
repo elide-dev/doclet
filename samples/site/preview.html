@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theme preview · Elide Doclet</title>
+<style>
+:root {color-scheme:light dark;font:1rem system-ui,sans-serif}
+* {box-sizing:border-box}
+body {margin:0;height:100dvh;display:flex;flex-direction:column}
+header {display:flex;align-items:center;gap:.8rem 1.4rem;flex-wrap:wrap;padding:.8rem 1rem;background:Canvas;border-bottom:1px solid GrayText}
+h1 {font-size:1.1rem;margin:0}
+select {font:inherit;padding:.25rem}
+label {display:flex;gap:.45rem;align-items:center}
+iframe {flex:1;width:100%;min-height:0;border:0}
+</style>
+</head>
+<body>
+<header>
+<a href="./index.html">Gallery</a><h1>Theme preview</h1>
+<label>Theme <select id="theme">
+<option value="graalvm">GraalVM Java OSS</option><option value="field-notes">Field Notes</option><option value="signal">Signal</option><option value="notflix">Notflix</option><option value="rider">Rider</option>
+</select></label>
+<label>Page <select id="page"><option value="example/runtime/BuildPlan.html">BuildPlan record</option><option value="index.html">Overview</option></select></label>
+<label>Colors <select id="scheme"><option value="">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+<a id="config" href="./themes/graalvm.json">Theme JSON</a>
+</header>
+<iframe id="reference" title="Generated API reference"></iframe>
+<script>
+const theme = document.querySelector('#theme');
+const page = document.querySelector('#page');
+const scheme = document.querySelector('#scheme');
+const frame = document.querySelector('#reference');
+function applyScheme() {
+  const root = frame.contentDocument?.documentElement;
+  if (!root) return;
+  if (scheme.value) root.dataset.theme = scheme.value;
+  else root.removeAttribute('data-theme');
+}
+function preview() {
+  frame.src = './' + theme.value + '/' + page.value;
+  document.querySelector('#config').href = './themes/' + theme.value + '.json';
+}
+theme.addEventListener('change', preview);
+page.addEventListener('change', preview);
+scheme.addEventListener('change', applyScheme);
+frame.addEventListener('load', applyScheme);
+preview();
+</script>
+</body>
+</html>

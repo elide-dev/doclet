@@ -1,0 +1,46 @@
+{
+  "name": "Notflix",
+  "productName": "Notflix",
+  "brand": "Notflix",
+  "symbols": "none",
+  "favicon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 32 32\"><rect width=\"32\" height=\"32\" rx=\"5\" fill=\"#181416\"/><path fill=\"#e50914\" d=\"m9 6 17 10L9 26z\"/></svg>",
+  "tokens": {
+    "light": {
+      "bg": "#fffafa",
+      "surface": "#ffffff",
+      "fg": "#211719",
+      "accent": "#b20710",
+      "link": "#aa1423",
+      "focus": "#aa1423",
+      "accent-soft": "#fce8ea",
+      "syn-keyword": "#a20818",
+      "syn-type": "#aa1423",
+      "code-bg": "#f8f0f1",
+      "radius": "4px"
+    },
+    "dark": {
+      "bg": "#121011",
+      "surface": "#1e191b",
+      "fg": "#fff7f8",
+      "accent": "#ff5162",
+      "link": "#ff8791",
+      "focus": "#ff8791",
+      "accent-soft": "#401e25",
+      "syn-keyword": "#ff7481",
+      "syn-type": "#ff8791",
+      "code-bg": "#291f22",
+      "radius": "4px"
+    }
+  },
+  "css": ".brand { text-transform: uppercase; font-weight: 900; letter-spacing: .06em; } h1 { font-weight: 850; }",
+  "footer": "Notflix · Independent theme sample",
+  "links": {
+    "footer": [
+      {
+        "label": "Theme gallery",
+        "url": "../index.html"
+      }
+    ]
+  },
+  "socialImage": null
+}
