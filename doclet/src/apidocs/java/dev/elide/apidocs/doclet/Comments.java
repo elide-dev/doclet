@@ -675,10 +675,12 @@ final class Comments {
           switch (tree.getKind()) {
             case INHERIT_DOC -> {
               var inherited = inherit == null ? null : inherit.get();
-              if (inherited == null) {
-                problem(ctx, tree, "{@inheritDoc} finds nothing to inherit");
-              } else {
+              if (inherited != null) {
                 events.addAll(inherited);
+              } else if (inherit != null && ctx.owner() instanceof ExecutableElement method) {
+                nothingToInherit(ctx, tree, method);
+              } else {
+                problem(ctx, tree, "{@inheritDoc} finds nothing to inherit");
               }
             }
             case COMMENT, DOC_TYPE -> {
@@ -694,6 +696,28 @@ final class Comments {
       }
     }
     return events;
+  }
+
+  /**
+   * {@code {@inheritDoc}} in {@code method} found no documentation. As with the standard doclet,
+   * the tag expands to nothing when every method it overrides is outside the documented set (an
+   * override of {@code Object.equals}, say, without the JDK's sources on the source path): that
+   * documentation is another project's, and javadoc cannot always see it. It is a problem when the
+   * method overrides nothing, or when an overridden method in the documented set leaves the part
+   * out.
+   */
+  private void nothingToInherit(Ctx ctx, DocTree tree, ExecutableElement method) {
+    var overridden = overridden(method);
+    if (overridden.isEmpty()) {
+      problem(
+          ctx,
+          tree,
+          "{@inheritDoc} used, but "
+              + method.getSimpleName()
+              + " does not override or implement any method");
+    } else if (overridden.stream().anyMatch(o -> linker.documented(o.getEnclosingElement()))) {
+      problem(ctx, tree, "{@inheritDoc} finds nothing to inherit");
+    }
   }
 
   private void checkMarkdown(Ctx ctx, List<? extends DocTree> body) {
