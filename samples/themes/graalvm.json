@@ -29,7 +29,7 @@
       "code-bg": "#262626"
     }
   },
-  "css": ".topbar .logo { height: clamp(26px, 3vw, 34px); width: auto; }\n.sig-large pre { background: light-dark(#fff0df, #38271e); border-color: light-dark(#edcab0, #6c4833); border-inline-start: 3px solid light-dark(#d78246, #efaa70); }",
+  "css": ".topbar .brand { font-family: var(--apidocs-font-mono); font-size: var(--apidocs-size-lg); }\n.topbar .logo { height: 1cap; font: inherit; width: auto; }\n.sig-large pre { background: light-dark(#fff0df, #38271e); border-color: light-dark(#edcab0, #6c4833); border-inline-start: 3px solid light-dark(#d78246, #efaa70); }",
   "footer": "Independent GraalVM theme demonstration by Elide. Example API.",
   "homeUrl": "./index.html",
   "links": {
