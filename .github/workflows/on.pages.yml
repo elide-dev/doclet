@@ -35,6 +35,13 @@ jobs:
           distribution: temurin
           java-version: '25'
       - run: PATH="$JAVA_HOME/bin:$PATH" scripts/build-samples
+      - name: Check gallery interactions in Chrome
+        run: |
+          npm ci --prefix samples/browser --ignore-scripts
+          python3 -m http.server 8787 --bind 127.0.0.1 --directory .dev/pages &
+          trap 'kill $!' EXIT
+          curl --retry 10 --retry-connrefused --silent --fail http://127.0.0.1:8787/preview.html -o /dev/null
+          node samples/browser/check.mjs http://127.0.0.1:8787/
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: .dev/pages

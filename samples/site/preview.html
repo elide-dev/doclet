@@ -21,7 +21,24 @@ iframe {flex:1;width:100%;min-height:0;border:0}
 <label>Theme <select id="theme">
 <option value="graalvm">GraalVM Java OSS</option><option value="field-notes">Field Notes</option><option value="signal">Signal</option><option value="notflix">Notflix</option><option value="rider">Rider</option>
 </select></label>
-<label>Page <select id="page"><option value="example/runtime/BuildPlan.html">BuildPlan record</option><option value="index.html">Overview</option></select></label>
+<label>Page <select id="page"><optgroup label="Documentation">
+<option value="index.html">Module overview</option>
+<option value="example/runtime/index.html">Package overview</option>
+<option value="guides/prepare-a-build.html">Guide · Prepare your first build</option>
+<option value="guides/custom-step.html">Guide · Write a preparation step</option>
+</optgroup>
+<optgroup label="Java declarations">
+<option selected value="example/runtime/BuildPlan.html">Record · BuildPlan</option>
+<option value="example/runtime/Planner.html">Sealed class · Planner</option>
+<option value="example/runtime/BuildStep.html">Interface · BuildStep</option>
+<option value="example/runtime/Target.html">Enum · Target</option>
+<option value="example/runtime/Experimental.html">Annotation · Experimental</option>
+<option value="example/runtime/PlanException.html">Exception · PlanException</option>
+<option value="example/runtime/Planner.Local.html">Nested class · Planner.Local</option>
+<option value="example/runtime/Planner.Options.html">Nested record · Planner.Options</option>
+<option value="example/runtime/Planner.Options.Detail.html">Nested enum · Options.Detail</option>
+</optgroup>
+<optgroup label="Indexes"><option value="types.html">All types</option><option value="deprecated.html">Deprecated API</option></optgroup></select></label>
 <label>Colors <select id="scheme"><option value="">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
 <a id="config" href="./themes/graalvm.json">Theme JSON</a>
 </header>

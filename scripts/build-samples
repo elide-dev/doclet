@@ -2,15 +2,28 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 elide build elide-doclet
-jar=doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar
+doclet="$PWD/doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar"
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
 out=.dev/pages
 mkdir -p "$out/themes"
 cp samples/site/* "$out/"
+
+# Extract the Java API once, then render the shared model and guides in every theme.
+"${JAVA_HOME:+$JAVA_HOME/bin/}javadoc" -quiet -public -doclet dev.elide.doclet.ElideDoclet \
+  -docletpath "$doclet" --module-name runtime-kit --module-version 1.0 \
+  -d "$work/reference" -sourcepath samples/java -subpackages example.runtime
+node samples/narrative.mjs "$work/reference/api.json" "$work/sample.json"
+renderer=dev/elide/apidocs/renderer
+(cd "$work" && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" xf "$doclet" "$renderer")
+renderer="$work/$renderer"
 for theme in samples/themes/*.json; do
   name=$(basename "$theme" .json)
-  "${JAVA_HOME:+$JAVA_HOME/bin/}javadoc" -quiet -public -doclet dev.elide.doclet.ElideDoclet -docletpath "$jar" \
-    --module-name runtime-kit --module-version 1.0 --theme "$theme" \
-    -d "$out/$name" -sourcepath samples/java -subpackages example.runtime
+  node "$renderer/runner.mjs" --bundle "$renderer/render.js" --assets "$renderer/assets" \
+    --model "$work/sample.json" --theme "$theme" --out "$out/$name"
   cp "$theme" "$out/themes/"
-  test -s "$out/$name/example/runtime/BuildPlan.html"
+  for page in index guides/prepare-a-build example/runtime/{index,BuildPlan,Planner,BuildStep,Target,Experimental,PlanException,Planner.Local,Planner.Options,Planner.Options.Detail}; do
+    test -s "$out/$name/$page.html"
+    test -s "$out/$name/$page.md"
+  done
 done

@@ -5,7 +5,8 @@ import java.util.List;
 /**
  * Describes how to build a Java application as a native executable.
  *
- * <p>A plan pairs an entry point with compiler arguments. For example:
+ * <p>Pass this plan to a {@link Planner.Local} for validation against a {@link Target}. For
+ * example:
  *
  * <pre>{@code
  * var plan = new BuildPlan("example.Main", List.of("-O2"));
