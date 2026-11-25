@@ -57,13 +57,21 @@ final class Extractor {
   private boolean protectedMembers;
 
   Extractor(DocletEnvironment env, Linker linker, Report report) {
+    this(env, linker, report, Map.of());
+  }
+
+  Extractor(
+      DocletEnvironment env,
+      Linker linker,
+      Report report,
+      Map<String, Comments.CustomTag> customTags) {
     this.env = env;
     this.trees = env.getDocTrees();
     this.elements = env.getElementUtils();
     this.types = env.getTypeUtils();
     this.linker = linker;
     this.report = report;
-    this.comments = new Comments(trees, elements, types, linker, report);
+    this.comments = new Comments(trees, elements, types, linker, report, customTags);
   }
 
   private Tokens tokens() {

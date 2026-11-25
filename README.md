@@ -98,6 +98,15 @@ The default theme uses the library name. Supply a JSON theme to change the heade
 
 For a logo, set `logo.light` and `logo.dark` to SVG markup and `logo.alt` to its accessible name. Set `baseUrl` to generate canonical URLs and a sitemap. The renderer accepts the complete [theme definition](https://github.com/elide-dev/components/blob/d9acdfe98d033b32c77982392bc2a22b8f38451f/packages/apidocs/src/theme.ts).
 
+## Standard doclet options
+
+The doclet accepts the standard doclet's common options, so an existing Javadoc configuration keeps working:
+
+- `-link <url>` and `-linkoffline <url> <dir-or-url>` read another Javadoc site's `element-list` (or `package-list`). Types, members and packages from that site link to its pages in signatures and in `{@link}`. Modular sites get a directory per module. For example, `-linkoffline https://docs.oracle.com/en/java/javase/25/docs/api/ <dir with the JDK's element-list>` links JDK types. If a list cannot be read, javadoc prints a warning and the run continues.
+- `-tag <name>:<locations>:<header>` defines a custom block tag. Its content follows the description under the header. A tag whose locations include `X` is left out.
+- `-windowtitle`, `-doctitle`, `-notimestamp` and `-quiet` work as before.
+- Javadoc accepts these options and prints a warning that they have no effect: `-header`, `-bottom`, `-footer`, `-top`, `-use`, `-author`, `-version`, `-splitindex`, `-nonavbar`, `-nodeprecated`, `-nodeprecatedlist`, `-nohelp`, `-noindex`, `-nosince`, `-notree`, `-linksource`, `-stylesheetfile`, `-overview`, `-group`, `-charset`, `-docencoding` and similar presentation options. To change branding and the footer, use a theme.
+
 ## Comment problems
 
 By default, any comment the API model cannot represent stops the run with an error, so the reference never silently loses content. Examples are an unknown inline tag, a reference that does not resolve, or `{@inheritDoc}` with nothing to inherit. Each error ends with its category, such as `[reference]`.
