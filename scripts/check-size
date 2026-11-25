@@ -1,0 +1,70 @@
+#!/usr/bin/env node
+// Checks rendered sites against a size budget, so the pages do not grow back (#5).
+//
+//   scripts/check-size .dev/pages/signal .dev/pages/graalvm ...
+//
+// Each site must keep its whole navigator in assets/nav.js; each page's own copy of the navigator, its shell
+// (everything outside <main>: head, top bar, navigator, footer) and its inline SVG must stay under a fixed size, so a
+// page's size follows its own content; and the HTML per page and the site's text files (everything but fonts and
+// images) must stay under the budgets below. Prints one line per site and exits 1 when a budget is exceeded.
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const KiB = 1024;
+const BUDGET = {
+  // A page's own copy of the navigator: the module's heading, a row per package, and the page's path.
+  nav: 8 * KiB,
+  // Everything in a page outside <main>.
+  shell: 15 * KiB,
+  // Inline <svg> in a page: icons repeated per row belong in the stylesheet.
+  svg: 3 * KiB,
+  // HTML bytes per page, on average.
+  page: 24 * KiB,
+  // Every text file of the site: pages, Markdown, llms files, api.json, scripts and stylesheets.
+  site: 768 * KiB,
+};
+
+const files = dir => readdirSync(dir, { recursive: true }).map(String).map(f => join(dir, f)).filter(f => statSync(f).isFile());
+const bytes = text => Buffer.byteLength(text);
+const kib = n => `${(n / KiB).toFixed(1)} KiB`;
+
+let failed = false;
+const sites = process.argv.slice(2);
+if (!sites.length) {
+  console.error("usage: scripts/check-size <site directory>...");
+  process.exit(2);
+}
+for (const site of sites) {
+  const problems = [];
+  const all = files(site);
+  const pages = all.filter(f => f.endsWith(".html"));
+  if (!pages.length) problems.push("no HTML pages");
+  try {
+    if (!readFileSync(join(site, "assets/nav.js"), "utf8").startsWith("window.apidocsNav=")) throw new Error();
+  } catch {
+    problems.push("no shared navigator (assets/nav.js)");
+  }
+  let html = 0;
+  let maxShell = 0;
+  for (const page of pages) {
+    const text = readFileSync(page, "utf8");
+    const name = relative(site, page);
+    html += bytes(text);
+    const main = /<main\b[\s\S]*?<\/main>/.exec(text)?.[0] ?? "";
+    const shell = bytes(text) - bytes(main);
+    maxShell = Math.max(maxShell, shell);
+    if (shell > BUDGET.shell) problems.push(`${name}: ${kib(shell)} outside <main>, over ${kib(BUDGET.shell)}`);
+    const svg = [...text.matchAll(/<svg\b[\s\S]*?<\/svg>/g)].reduce((n, m) => n + bytes(m[0]), 0);
+    if (svg > BUDGET.svg) problems.push(`${name}: ${kib(svg)} of inline SVG, over ${kib(BUDGET.svg)}`);
+    const nav = bytes(/<nav class="sidebar"[\s\S]*?<\/nav>/.exec(text)?.[0] ?? "");
+    if (nav > BUDGET.nav) problems.push(`${name}: ${kib(nav)} of navigator, over ${kib(BUDGET.nav)}`);
+  }
+  const perPage = pages.length ? html / pages.length : 0;
+  if (perPage > BUDGET.page) problems.push(`${kib(perPage)} of HTML per page, over ${kib(BUDGET.page)}`);
+  const text = all.filter(f => !/\.(woff2?|png|jpe?g|webp|avif|gif)$/i.test(f)).reduce((n, f) => n + statSync(f).size, 0);
+  if (text > BUDGET.site) problems.push(`${kib(text)} of text files, over ${kib(BUDGET.site)}`);
+  console.log(`${site}: ${pages.length} pages, ${kib(perPage)} HTML per page, largest shell ${kib(maxShell)}, ${kib(text)} of text files${problems.length ? "" : ": ok"}`);
+  for (const problem of problems) console.log(`  over budget: ${problem}`);
+  failed ||= problems.length > 0;
+}
+process.exit(failed ? 1 : 0);

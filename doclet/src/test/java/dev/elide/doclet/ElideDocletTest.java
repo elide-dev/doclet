@@ -1,5 +1,6 @@
 package dev.elide.doclet;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -36,6 +37,30 @@ class ElideDocletTest {
     assertTrue(model.contains("\"schema\":\"apidocs/1\""));
     assertTrue(model.contains("\"name\":\"catalogue\""));
     assertTrue(model.contains("Catalogue entry."));
+  }
+
+  @Test
+  void leavesOutTheOptionalFilesItIsToldTo(@TempDir Path directory) throws Exception {
+    var docs = generate(directory, List.of("--no-markdown", "--no-llms", "--no-model"));
+    var page = Files.readString(docs.resolve("default-package/Book.html"));
+    assertTrue(page.contains("Catalogue entry."));
+    assertTrue(Files.isRegularFile(docs.resolve("assets/nav.js")));
+    for (var omitted :
+        List.of("default-package/Book.md", "llms.txt", "llms-full.txt", "api.json")) {
+      assertFalse(Files.exists(docs.resolve(omitted)), omitted);
+    }
+    assertFalse(page.contains("Book.md"));
+    assertFalse(page.contains("llms.txt"));
+    assertFalse(page.contains("api.json"));
+  }
+
+  @Test
+  void sharesTheNavigatorBetweenPages(@TempDir Path directory) throws Exception {
+    var docs = generate(directory, List.of());
+    assertTrue(
+        Files.readString(docs.resolve("default-package/Book.html"))
+            .contains("<script src=\"../assets/nav.js\"></script>"));
+    assertTrue(Files.readString(docs.resolve("assets/nav.js")).startsWith("window.apidocsNav="));
   }
 
   private Path generate(Path directory, List<String> extraOptions) throws Exception {

@@ -2,7 +2,7 @@ name: Theme gallery
 on:
   push:
     branches: [main]
-    paths: ['samples/**', 'scripts/build-samples', 'doclet/**', 'elide.pkl', 'mise.toml', '.github/workflows/on.pages.yml']
+    paths: ['samples/**', 'scripts/build-samples', 'scripts/check-size', 'doclet/**', 'elide.pkl', 'mise.toml', '.github/workflows/on.pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,6 +35,8 @@ jobs:
           distribution: temurin
           java-version: '25'
       - run: PATH="$JAVA_HOME/bin:$PATH" scripts/build-samples
+      - name: Check the size budget
+        run: scripts/check-size $(for theme in samples/themes/*.json; do echo ".dev/pages/$(basename "$theme" .json)"; done)
       - name: Check gallery interactions in Chrome
         run: |
           npm ci --prefix samples/browser --ignore-scripts
