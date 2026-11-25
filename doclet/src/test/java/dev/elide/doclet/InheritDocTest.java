@@ -64,6 +64,27 @@ class InheritDocTest {
   }
 
   @Test
+  void interfaceRedeclaringAnObjectMethodInheritsNothing(@TempDir Path directory) throws Exception {
+    var result =
+        Javadoc.run(
+            directory,
+            Map.of(
+                "shelf/Book.java",
+                """
+                package shelf;
+
+                /** A book. */
+                public interface Book {
+                  /** {@inheritDoc} */
+                  @Override
+                  String toString();
+                }
+                """),
+            List.of());
+    assertTrue(result.ok(), result::toString);
+  }
+
+  @Test
   void inheritDocInsideTheDocumentedSetStillInherits(@TempDir Path directory) throws Exception {
     var result =
         Javadoc.run(

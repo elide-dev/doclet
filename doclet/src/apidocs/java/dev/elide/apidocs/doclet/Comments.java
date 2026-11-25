@@ -413,6 +413,13 @@ final class Comments {
     var owner = (TypeElement) method.getEnclosingElement();
     Set<TypeElement> supertypes = new LinkedHashSet<>();
     collectSupertypes(owner, supertypes);
+    if (owner.getKind().isInterface()) {
+      // An interface implicitly declares Object's public methods (JLS 9.2).
+      var object = elements.getTypeElement("java.lang.Object");
+      if (object != null) {
+        supertypes.add(object);
+      }
+    }
     List<ExecutableElement> found = new ArrayList<>();
     for (var supertype : supertypes) {
       for (var candidate :
