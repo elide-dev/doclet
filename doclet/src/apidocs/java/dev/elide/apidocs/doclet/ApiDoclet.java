@@ -37,6 +37,7 @@ public class ApiDoclet implements Doclet {
   private String moduleName;
   private String moduleVersion;
   private String title;
+  private Report.Severities severities = Report.Severities.STRICT;
 
   @Override
   public void init(Locale locale, Reporter reporter) {
@@ -72,6 +73,12 @@ public class ApiDoclet implements Doclet {
     options.add(
         new DocletOption(
             "--module-version", "Library version for api.json", value -> moduleVersion = value));
+    options.add(
+        new DocletOption(
+            "--problems",
+            "How to report comments the model cannot represent: error (default) or warning,"
+                + " optionally per category, e.g. warning or error,inheritdoc=warning",
+            value -> severities = Report.Severities.parse(value, severities)));
     return options;
   }
 
@@ -85,10 +92,16 @@ public class ApiDoclet implements Doclet {
               .findFirst()
               .orElse(title == null ? "API Reference" : title);
     }
-    var report = new Report(reporter);
+    var report = new Report(reporter, severities);
     var linker = new Linker(environment.getElementUtils(), environment.getTypeUtils(), List.of());
     Api.Model model =
         new Extractor(environment, linker, report).extract(moduleName, moduleVersion, List.of());
+    if (report.downgraded() > 0) {
+      report.note(
+          report.downgraded()
+              + " documentation problem(s) reported as warnings (--problems); the affected"
+              + " parts are simplified or left out");
+    }
     if (!report.ok()) return false;
     try {
       DocumentationSite.write(model, output, theme, runtime, sourceRef);

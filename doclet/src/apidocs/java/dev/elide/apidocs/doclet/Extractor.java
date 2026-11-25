@@ -232,7 +232,8 @@ final class Extractor {
       signature.punct(")");
       for (var name : parts.params().keySet()) {
         if (recordComponents.stream().noneMatch(c -> c.getSimpleName().contentEquals(name))) {
-          report.error(type, "@param " + name + " names no record component");
+          report.problem(
+              Report.Problem.PARAM, type, "@param " + name + " names no record component");
         }
       }
     }
@@ -439,7 +440,8 @@ final class Extractor {
     }
     for (var documented : parts.params().keySet()) {
       if (parameters.stream().noneMatch(p -> p.getSimpleName().contentEquals(documented))) {
-        report.error(member, "@param " + documented + " names no parameter");
+        report.problem(
+            Report.Problem.PARAM, member, "@param " + documented + " names no parameter");
       }
     }
     signature.punct(")");
