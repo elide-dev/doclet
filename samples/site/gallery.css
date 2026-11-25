@@ -9,17 +9,17 @@ a:focus-visible { outline:3px solid #da7c25; outline-offset:4px; }
 main { padding:clamp(2rem,6vw,5rem) 0 2rem; }
 h1,h2,p { margin:0; } h1 { font-size:clamp(3.4rem,8vw,6.5rem); letter-spacing:-.07em; line-height:1; } h1 span { color:#ca6524; }
 .intro { max-width:40rem; font-size:1.15rem; line-height:1.55; margin:1rem 0 2.5rem; }
-.featured { display:grid; grid-template-columns:1fr 1fr; background:#e9f2f5; color:#173643; border-top:5px solid #2c7493; }
+.featured { display:grid; grid-template-columns:1fr 1fr; background:#fff; color:#173643; border-top:5px solid #2c7493; }
 .feature-copy,.specimen,.alternates section { padding:clamp(1.45rem,3.5vw,3rem); }
-.wordmark { width:8rem; background:#fff; padding:.25rem .5rem; }
+.wordmark { width:clamp(9rem,17vw,13rem); background:#fff; padding:.25rem .5rem; }
 h2 { font-size:clamp(1.8rem,3vw,2.6rem); line-height:1.15; letter-spacing:-.04em; }
 .feature-copy h2 { margin:.8rem 0; }
 section p { max-width:36rem; line-height:1.6; }
 .links { margin-top:1.4rem; font-size:.92rem; font-weight:620; }
 .button { background:#15485f; color:white; padding:.85rem 1.1rem; text-decoration:none; }
-.specimen { display:flex; flex-direction:column; justify-content:space-between; gap:2rem; background:#153c50; color:#fff; text-decoration:none; border-left:5px solid #e78742; }
-.file,.caption { font-size:.82rem; color:#c4dce7; } .caption { text-decoration:underline; }
-code { white-space:pre-wrap; font:clamp(1rem,2vw,1.55rem)/1.55 ui-monospace,monospace; } code b { color:#ffad72; } code em { color:#97deff; font-style:normal; }
+.specimen { display:flex; flex-direction:column; justify-content:space-between; gap:2rem; background:light-dark(#fff0df,#38271e); color:light-dark(#33251e,#fff0df); text-decoration:none; border-left:3px solid light-dark(#d78246,#efaa70); }
+.file,.caption { font-size:.82rem; color:light-dark(#70503d,#e8c5a9); } .caption { text-decoration:underline; }
+code { white-space:pre-wrap; font:clamp(1rem,2vw,1.55rem)/1.55 ui-monospace,monospace; } code b { color:light-dark(#93410c,#ffad72); } code em { color:light-dark(#195c7e,#97deff); font-style:normal; }
 .alternates { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem; }
 .alternates p { margin-top:.65rem; } .field { background:#eef0e1; color:#314a35; border-top:3px solid #557455; } .field h2 { font-family:Georgia,serif; }
 .signal { background:#eceaf9; color:#342951; border-top:3px solid #7862b8; } .signal h2 { font-family:ui-monospace,monospace; }
