@@ -1,7 +1,7 @@
 {
   "name": "Rider",
   "productName": "Rider",
-  "brand": "Rider",
+  "brand": "API Docs",
   "symbols": "none",
   "favicon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 32 32\"><rect width=\"32\" height=\"32\" rx=\"5\" fill=\"#101010\"/><path fill=\"none\" stroke=\"#fff\" stroke-width=\"3\" d=\"M8 23V12h15\"/><circle fill=\"#9ee4cd\" cx=\"8\" cy=\"23\" r=\"4\"/><path fill=\"#fff\" d=\"M20 8h7v7h-7z\"/></svg>",
   "tokens": {
@@ -33,7 +33,7 @@
     }
   },
   "css": ".brand, h1 { letter-spacing: -.045em; }",
-  "footer": "Rider · Independent theme sample",
+  "footer": "Rider · Your API has arrived.",
   "links": {
     "footer": [
       {
@@ -42,5 +42,10 @@
       }
     ]
   },
-  "socialImage": null
+  "socialImage": null,
+  "logo": {
+    "light": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 148 48\" role=\"img\" aria-label=\"Rider\">\n  <g fill=\"#111111\" fill-rule=\"evenodd\">\n    <path d=\"M4 44V6h16c10 0 16 5 16 13 0 6-3 10-9 12l11 13H27L16 31h-3v13zm9-31v11h7c5 0 7-2 7-5 0-4-2-6-7-6z\"/>\n    <path d=\"M42 22h8v22h-8z\"/>\n    <path d=\"M76 5h8v39h-8v-3c-2 2-5 4-9 4-8 0-14-6-14-15s6-15 14-15c4 0 7 1 9 4zm-7 17a8 8 0 1 0 0 16 8 8 0 0 0 0-16z\"/>\n    <path d=\"M118 33H96c1 4 4 6 8 6 4 0 6-1 9-4l5 4c-3 4-8 6-14 6-10 0-16-6-16-15s6-15 15-15c10 0 15 7 15 16zm-22-6h14c-1-4-3-6-7-6s-6 2-7 6z\"/>\n    <path d=\"M123 16h8v4c3-4 8-5 13-4v8c-8-2-13 1-13 8v12h-8z\"/>\n  </g>\n  <path fill=\"#17634d\" fill-rule=\"evenodd\" d=\"M46 1a7 7 0 0 1 7 7c0 4-4 8-7 12-3-4-7-8-7-12a7 7 0 0 1 7-7zm0 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z\"/>\n</svg>",
+    "dark": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 148 48\" role=\"img\" aria-label=\"Rider\">\n  <g fill=\"#ffffff\" fill-rule=\"evenodd\">\n    <path d=\"M4 44V6h16c10 0 16 5 16 13 0 6-3 10-9 12l11 13H27L16 31h-3v13zm9-31v11h7c5 0 7-2 7-5 0-4-2-6-7-6z\"/>\n    <path d=\"M42 22h8v22h-8z\"/>\n    <path d=\"M76 5h8v39h-8v-3c-2 2-5 4-9 4-8 0-14-6-14-15s6-15 14-15c4 0 7 1 9 4zm-7 17a8 8 0 1 0 0 16 8 8 0 0 0 0-16z\"/>\n    <path d=\"M118 33H96c1 4 4 6 8 6 4 0 6-1 9-4l5 4c-3 4-8 6-14 6-10 0-16-6-16-15s6-15 15-15c10 0 15 7 15 16zm-22-6h14c-1-4-3-6-7-6s-6 2-7 6z\"/>\n    <path d=\"M123 16h8v4c3-4 8-5 13-4v8c-8-2-13 1-13 8v12h-8z\"/>\n  </g>\n  <path fill=\"#9ee4cd\" fill-rule=\"evenodd\" d=\"M46 1a7 7 0 0 1 7 7c0 4-4 8-7 12-3-4-7-8-7-12a7 7 0 0 1 7-7zm0 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z\"/>\n</svg>",
+    "alt": "Rider"
+  }
 }

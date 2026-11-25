@@ -1,7 +1,7 @@
 {
   "name": "Notflix",
   "productName": "Notflix",
-  "brand": "Notflix",
+  "brand": "API Docs",
   "symbols": "none",
   "favicon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 32 32\"><rect width=\"32\" height=\"32\" rx=\"5\" fill=\"#181416\"/><path fill=\"#e50914\" d=\"m9 6 17 10L9 26z\"/></svg>",
   "tokens": {
@@ -33,7 +33,7 @@
     }
   },
   "css": ".brand { text-transform: uppercase; font-weight: 900; letter-spacing: .06em; } h1 { font-weight: 850; }",
-  "footer": "Notflix · Independent theme sample",
+  "footer": "Notflix · Still documenting?",
   "links": {
     "footer": [
       {
@@ -42,5 +42,10 @@
       }
     ]
   },
-  "socialImage": null
+  "socialImage": null,
+  "logo": {
+    "light": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 206 58\" role=\"img\" aria-label=\"Notflix\">\n  <g fill=\"#b20710\" fill-rule=\"evenodd\">\n    <path d=\"M3 55V4h9l12 29V4h9v47l-10 1-11-27v29z\"/>\n    <path d=\"M40 12q0-8 9-8h12q9 0 9 8v29q0 8-9 8l-12 1q-9 0-9-8zm10 1v28l10-1V13z\"/>\n    <path d=\"M74 4h31v9H94v35H84V13H74z\"/>\n    <path d=\"M110 4h26v9h-16v9h13v9h-13v17h-10z\"/>\n    <path d=\"M141 4h10v36l13 1v9l-23-1z\"/>\n    <path d=\"M169 4l10 6-10 6zm0 15h10v32l-10-1z\"/>\n    <path d=\"M181 4h10l4 13 4-13h7l-7 23 7 28-10-1-4-16-4 15-9-1 9-25z\"/>\n  </g>\n</svg>",
+    "dark": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 206 58\" role=\"img\" aria-label=\"Notflix\">\n  <g fill=\"#ff5162\" fill-rule=\"evenodd\">\n    <path d=\"M3 55V4h9l12 29V4h9v47l-10 1-11-27v29z\"/>\n    <path d=\"M40 12q0-8 9-8h12q9 0 9 8v29q0 8-9 8l-12 1q-9 0-9-8zm10 1v28l10-1V13z\"/>\n    <path d=\"M74 4h31v9H94v35H84V13H74z\"/>\n    <path d=\"M110 4h26v9h-16v9h13v9h-13v17h-10z\"/>\n    <path d=\"M141 4h10v36l13 1v9l-23-1z\"/>\n    <path d=\"M169 4l10 6-10 6zm0 15h10v32l-10-1z\"/>\n    <path d=\"M181 4h10l4 13 4-13h7l-7 23 7 28-10-1-4-16-4 15-9-1 9-25z\"/>\n  </g>\n</svg>",
+    "alt": "Notflix"
+  }
 }
