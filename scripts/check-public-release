@@ -25,3 +25,10 @@ for site in "$work/build/docs/javadoc" "$work/target/reports/apidocs"; do
   test -s "$site/example/Example.html"
   test -s "$site/example/Example.md"
 done
+
+if [[ ${2:-} == --with-dokka ]]; then
+  cp -R tests/dokka "$work/kotlin"
+  GRADLE_USER_HOME="$work/gradle-home" gradle -p "$work/kotlin" -PdocletVersion="$version" \
+    -PdocletRepository=https://maven.elide.dev --no-daemon reference
+  grep -Fq 'Returns the greeting as plain text.' "$work/kotlin/build/site/example/Greeter.md"
+fi

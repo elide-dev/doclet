@@ -4,6 +4,7 @@
       "release-type": "simple",
       "initial-version": "0.1.0",
       "extra-files": [
+        "README.md",
         "doclet/elide.pkl",
         "dokka-plugin/elide.pkl",
         "gradle-plugin/elide.pkl",

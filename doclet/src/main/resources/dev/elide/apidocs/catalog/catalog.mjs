@@ -310,6 +310,7 @@ function serve(directory, port) {
       let file = fs.realpathSync(
         path.join(root, decodeURIComponent(url.pathname)),
       );
+      if (file !== root && !file.startsWith(root + path.sep)) throw new Error();
       if (fs.statSync(file).isDirectory()) {
         if (!url.pathname.endsWith("/")) {
           res
@@ -329,7 +330,13 @@ function serve(directory, port) {
           const q = params.map((x) => x.trim()).find((x) => x.startsWith("q="));
           return [type, q ? Number(q.slice(2)) : 1];
         });
-        const quality = (t) => types.find(([type]) => type === t)?.[1];
+        const quality = (t) => {
+          for (const range of [t, "text/*", "*/*"]) {
+            const match = types.find(([type]) => type.trim() === range);
+            if (match) return match[1];
+          }
+          return 0;
+        };
         const md = file.slice(0, -5) + ".md";
         if (
           (quality("text/markdown") ?? 0) > 0 &&
