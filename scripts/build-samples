@@ -11,7 +11,7 @@ cp samples/site/* "$out/"
 
 # Extract the Java API once, then render the shared model and guides in every theme.
 "${JAVA_HOME:+$JAVA_HOME/bin/}javadoc" -quiet -public -doclet dev.elide.doclet.ElideDoclet \
-  -docletpath "$doclet" --module-name runtime-kit --module-version 1.0 --guides samples/guides \
+  -docletpath "$doclet" --module-name runtime-kit --module-version 1.0 --guides samples/guides --model-only \
   -d "$work/reference" -sourcepath samples/java -subpackages example.runtime
 renderer=dev/elide/apidocs/renderer
 (cd "$work" && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" xf "$doclet" "$renderer")

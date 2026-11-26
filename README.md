@@ -18,6 +18,8 @@ Besides the HTML pages, a site has a Markdown twin of every page, `llms.txt` and
 
 Every page holds only its own path through the navigation tree: its package, that package’s types, and the current type’s nested types. The whole tree is loaded once from `assets/nav.js`, which works from `file://` too, so a page’s size follows its own content rather than the size of the library.
 
+For a standalone model export, use `--model-only`. It writes `api.json` into the output directory and skips the JavaScript runtime. Use an empty directory for a model-only build.
+
 ## Gradle
 
 For a released version, add the public Elide Maven repository to the top-level `pluginManagement` block in `settings.gradle.kts`.
@@ -84,6 +86,32 @@ Start each file with a level-one title. The first paragraph supplies the summary
 | Maven plugin configuration | `<guides>docs/guides</guides>` | `<signatureFormatter>none</signatureFormatter>` |
 
 By default the generator looks for `elide` on PATH and uses it to wrap long declarations while preserving type links. If Elide is unavailable, or you select `none`, declarations keep their single-line layout. Formatting and guide references are part of the shared API model, so HTML and Markdown use the same declarations and links.
+
+## Kotlin and Dokka
+
+Add `dev.elide:elide-doclet-dokka-plugin:<version>` from the public Elide Maven repository to Dokka's plugins classpath alongside `dokka-base` and `analysis-kotlin-symbols` 2.3.0. Include its transitive core dependency. The plugin reads a JVM source set and renders the same reference from Kotlin declarations and KDoc. Set its JSON configuration under `dev.elide.apidocs.dokka.ApiDocsPlugin`. Options include `theme`, `moduleVersion`, `signatureFormatter`, and `modelOnly`. See the [runnable Dokka consumer](tests/dokka/build.gradle).
+
+## Multiple modules and releases
+
+Build each module's standalone site with its model and search index. List the sites in a JSON manifest, newest version first. Module paths are relative to the manifest.
+
+```json
+{
+  "title": "Library documentation",
+  "latest": "v2",
+  "versions": [
+    {"id": "v2", "modules": {"core": "build/v2/core", "sdk": "build/v2/sdk"}},
+    {"id": "v1", "modules": {"core": "build/v1/core"}}
+  ]
+}
+```
+
+```sh
+java -cp elide-doclet.jar dev.elide.apidocs.render.Catalog build catalog.json build/reference
+java -cp elide-doclet.jar dev.elide.apidocs.render.Catalog serve build/reference 8080
+```
+
+Build into a new output directory, then publish its contents to any static host. The catalog offers version and module navigation, cross-module guide and API search, a `latest/` copy of the selected release, and API changes against each older release. Version links preserve the current page when it exists. The optional loopback HTTP server serves standalone sites too. Request an HTML URL with `Accept: text/markdown` to receive its Markdown twin, or use the explicit `.md` URL on GitHub Pages.
 
 ## Branding
 

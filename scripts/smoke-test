@@ -22,3 +22,7 @@ if javadoc -quiet -d "$work/invalid" -doclet dev.elide.doclet.ElideDoclet -docle
   exit 1
 fi
 grep -Fq 'usage.md: Unknown API reference example.Missing' "$work/diagnostics"
+
+javadoc -quiet -d "$work/model" --model-only --js-runtime "$work/no-runtime" \
+    -doclet dev.elide.doclet.ElideDoclet -docletpath "$jar" "$work/Example.java"
+test "$(ls "$work/model")" = api.json

@@ -32,6 +32,7 @@ public class ApiDoclet implements Doclet {
   private String sourceRef;
   private boolean writeMarkdown = true;
   private boolean writeLlms = true;
+  private boolean modelOnly;
   private boolean writeModel = true;
 
   @Override
@@ -153,6 +154,7 @@ public class ApiDoclet implements Doclet {
     options.add(
         new DocletOption(
             "--no-llms", "Omit llms.txt and llms-full.txt", 0, v -> writeLlms = false));
+    options.add(new DocletOption("--model-only", "Write only api.json", 0, v -> modelOnly = true));
     options.add(new DocletOption("--no-model", "Omit api.json", 0, v -> writeModel = false));
     options.add(
         new DocletOption(
@@ -262,6 +264,13 @@ public class ApiDoclet implements Doclet {
               });
       model = ModelLayout.apply(model, layout);
       if (guides != null) model = Guides.read(model, guides, Comments::guideBody);
+      if (modelOnly) {
+        if (!writeModel) throw new IOException("--model-only conflicts with --no-model");
+        java.nio.file.Files.createDirectories(output);
+        java.nio.file.Files.writeString(
+            output.resolve("api.json"), dev.elide.apidocs.model.Json.write(model, false));
+        return true;
+      }
       DocumentationSite.write(
           model,
           output,

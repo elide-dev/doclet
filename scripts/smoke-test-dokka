@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+cp -R tests/dokka/. "$work"
+for member in doclet dokka-plugin; do
+  mkdir -p "$work/repository"
+  cp -R "$member/.dev/staging/publish/maven/." "$work/repository/"
+done
+version=$(sed -n 's/^version = "\([^"]*\)".*/\1/p' dokka-plugin/elide.pkl)
+gradle -p "$work" --console=plain -PdocletVersion="$version" -PdocletRepository="$work/repository" reference
+grep -Fq 'Returns the greeting as plain text.' "$work/build/site/example/Greeter.md"
+test -s "$work/build/site/example/Greeter.html"
+grep -Fq '"kotlin"' "$work/build/site/api.json"

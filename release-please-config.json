@@ -5,6 +5,7 @@
       "initial-version": "0.1.0",
       "extra-files": [
         "doclet/elide.pkl",
+        "dokka-plugin/elide.pkl",
         "gradle-plugin/elide.pkl",
         "maven-plugin/elide.pkl",
         "maven-plugin/src/main/resources/META-INF/maven/plugin.xml"

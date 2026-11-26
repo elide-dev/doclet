@@ -1,0 +1,36 @@
+import groovy.json.JsonOutput
+
+repositories {
+    maven { url = uri(providers.gradleProperty('docletRepository').get()) }
+    mavenCentral()
+}
+configurations {
+    cli
+    pluginsClasspath
+}
+dependencies {
+    cli 'org.jetbrains.dokka:dokka-cli:2.3.0'
+    pluginsClasspath 'org.jetbrains.dokka:dokka-base:2.3.0'
+    pluginsClasspath 'org.jetbrains.dokka:analysis-kotlin-symbols:2.3.0'
+    pluginsClasspath "dev.elide:elide-doclet-dokka-plugin:${docletVersion}"
+}
+
+tasks.register('reference', JavaExec) {
+    classpath = configurations.cli
+    mainClass = 'org.jetbrains.dokka.MainKt'
+    doFirst {
+        def jars = configurations.pluginsClasspath.files
+        def config = [
+            moduleName: 'kotlin-example', outputDir: file('build/site').path, offlineMode: true,
+            suppressObviousFunctions: true, pluginsClasspath: jars*.path,
+            sourceSets: [[sourceSetID: [scopeId: 'example', sourceSetName: 'main'],
+                displayName: 'jvm', analysisPlatform: 'jvm', sourceRoots: [file('src').path],
+                classpath: jars.findAll { it.name.startsWith('kotlin-stdlib-') }*.path,
+                documentedVisibilities: ['PUBLIC'], noStdlibLink: true, noJdkLink: true]]
+        ]
+        def input = file('build/dokka.json')
+        input.parentFile.mkdirs()
+        input.text = JsonOutput.toJson(config)
+        args input.path
+    }
+}

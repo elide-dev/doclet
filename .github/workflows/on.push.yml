@@ -38,4 +38,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    secrets: inherit
+    secrets:
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

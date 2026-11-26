@@ -43,9 +43,11 @@ def existing(key, destination):
         return None
     return json.loads(aws("get-object", "--key", key, str(destination)))["ETag"]
 
-def put(key, data, mutable=False):
+def put(key, data, mutable=False, expected_etag=False):
     previous = work / "previous"
     etag = existing(key, previous)
+    if expected_etag is not False and etag != expected_etag:
+        raise ValueError("Metadata changed concurrently, retry publication: " + key)
     if etag and previous.read_bytes() == data:
         return
     if etag and not mutable:
@@ -55,8 +57,8 @@ def put(key, data, mutable=False):
     condition = ["--if-match", etag] if etag else ["--if-none-match", "*"]
     aws("put-object", "--key", key, "--body", str(body), *condition)
 
-def publish(key, data, mutable=False):
-    put(key, data, mutable)
+def publish(key, data, mutable=False, expected_etag=False):
+    put(key, data, mutable, expected_etag)
     for algorithm in ("sha1", "sha256", "sha512"):
         put(key + "." + algorithm, hashlib.new(algorithm, data).hexdigest().encode(), mutable)
 
@@ -71,7 +73,8 @@ with tempfile.TemporaryDirectory() as temp:
     for group, artifact in artifacts:
         key = group.replace(".", "/") + "/" + artifact + "/maven-metadata.xml"
         previous = work / "metadata"
-        if existing(key, previous):
+        original_etag = existing(key, previous)
+        if original_etag:
             root = ET.parse(previous).getroot()
         else:
             root = ET.Element("metadata")
@@ -89,5 +92,5 @@ with tempfile.TemporaryDirectory() as temp:
             info.find("latest").text = info.find("release").text = newest
             info.find("lastUpdated").text = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         ET.indent(root)
-        publish(key, ET.tostring(root, encoding="utf-8", xml_declaration=True), True)
+        publish(key, ET.tostring(root, encoding="utf-8", xml_declaration=True), True, original_etag)
         print("Published", group, artifact, version, flush=True)

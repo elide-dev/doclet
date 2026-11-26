@@ -68,13 +68,15 @@ jobs:
           PATH="$JAVA_HOME/bin:$PATH" scripts/build-samples
           scripts/check-size $(for theme in samples/themes/*.json; do echo ".dev/pages/$(basename "$theme" .json)"; done)
       - run: elide publish --dry-run
+      - name: Dokka plugin end-to-end
+        run: scripts/smoke-test-dokka
       - name: Gradle plugin end-to-end
         run: PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test-plugins gradle
       - name: Maven plugin end-to-end
         run: DOCLET_TEST_M2="$HOME/.m2/repository" PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test-plugins maven
       - run: |
           mkdir dist
-          for member in doclet gradle-plugin maven-plugin; do
+          for member in doclet gradle-plugin maven-plugin dokka-plugin; do
             find "$member/.dev/staging/publish/maven" -type f \( -name '*.pom' -o -name '*.jar' \) -exec cp {} dist/ \;
           done
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

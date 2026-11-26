@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Resolve the release with anonymous clients and empty dependency caches.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+version=${1:?Expected a Maven release version}
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+cp -R tests/consumer/. "$work/"
+python3 - "$work" <<'PY'
+from pathlib import Path
+import sys
+root = Path(sys.argv[1])
+settings = root / 'settings.gradle'
+settings.write_text(settings.read_text().replace("uri('repository')", "uri('https://maven.elide.dev')"))
+pom = root / 'pom.xml'
+pom.write_text(pom.read_text().replace('<build>', '''
+  <pluginRepositories><pluginRepository><id>elide</id><url>https://maven.elide.dev</url></pluginRepository></pluginRepositories>
+  <build>'''))
+PY
+echo '<settings/>' > "$work/settings.xml"
+GRADLE_USER_HOME="$work/gradle-home" gradle -p "$work" -PdocletVersion="$version" --no-daemon javadoc
+mvn -B -q -s "$work/settings.xml" -gs "$work/settings.xml" -f "$work/pom.xml" \
+  -Dmaven.repo.local="$work/m2" -Ddoclet.version="$version" elide-doclet:javadoc
+for site in "$work/build/docs/javadoc" "$work/target/reports/apidocs"; do
+  test -s "$site/example/Example.html"
+  test -s "$site/example/Example.md"
+done

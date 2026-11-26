@@ -5,6 +5,7 @@ workspace {
   members {
     "doclet"
     "gradle-plugin"
+    "dokka-plugin"
     "maven-plugin"
   }
 }
