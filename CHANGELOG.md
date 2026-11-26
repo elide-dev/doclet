@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/elide-dev/doclet/compare/v0.1.0...v0.2.0) (2026-11-26)
+
+
+### Features
+
+* publish Kotlin references and versioned documentation catalogs ([5ba7fd0](https://github.com/elide-dev/doclet/commit/5ba7fd06f64dd227b60aea47aaaaa72858ff5d53))
+
+
+### Bug Fixes
+
+* **release:** verify public plugins against empty consumer caches ([a4b2d20](https://github.com/elide-dev/doclet/commit/a4b2d2061c959901c49e9a5c5319fa12b5d9cb72))
+
 ## 0.1.0 (2026-11-26)
 
 
