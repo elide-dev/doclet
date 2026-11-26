@@ -282,6 +282,7 @@ final class Comments {
         case SpecTree spec when !safeUrl(spec.getURL().getBody()) ->
             problem(
                 ctx,
+                Report.Problem.URL,
                 tag,
                 "Unsafe URL in @spec: only http, https, mailto and relative URLs are allowed");
         case SpecTree spec ->
@@ -309,7 +310,11 @@ final class Comments {
                   path(ctx, tag), "@" + tagName(tag) + " is not part of the API model; left out");
             }
           } else {
-            problem(ctx, tag, "The API model cannot represent the block tag @" + tagName(tag));
+            problem(
+                ctx,
+                Report.Problem.BLOCK_TAG,
+                tag,
+                "The API model cannot represent the block tag @" + tagName(tag));
           }
         }
       }
@@ -580,9 +585,9 @@ final class Comments {
    * than drop it; nothing for documentation inherited from outside the documented set (the JDK's
    * sources, for one), whose tags and references are another project's, so the part is left out.
    */
-  private void problem(Ctx ctx, DocTree tree, String message) {
+  private void problem(Ctx ctx, Report.Problem problem, DocTree tree, String message) {
     if (!foreign(ctx)) {
-      report.error(path(ctx, tree), message);
+      report.problem(problem, path(ctx, tree), message);
     }
   }
 
@@ -619,7 +624,11 @@ final class Comments {
     for (var tree : trees) {
       switch (tree) {
         case ErroneousTree erroneous ->
-            problem(ctx, tree, "Malformed documentation: " + erroneous.getBody());
+            problem(
+                ctx,
+                Report.Problem.MALFORMED,
+                tree,
+                "Malformed documentation: " + erroneous.getBody());
         case EscapeTree escape -> events.add(new TextEvent(escape.getBody()));
         case TextTree text -> events.add(new TextEvent(text.getBody()));
         case EntityTree entity -> events.add(new TextEvent(entity(ctx, entity)));
@@ -669,6 +678,7 @@ final class Comments {
           if (snippet.getBody() == null) {
             problem(
                 ctx,
+                Report.Problem.SNIPPET,
                 tree,
                 "The API model cannot represent an external {@snippet}; inline its body");
           } else {
@@ -680,6 +690,7 @@ final class Comments {
         case UnknownInlineTagTree unknown ->
             problem(
                 ctx,
+                Report.Problem.INLINE_TAG,
                 tree,
                 "The API model cannot represent the inline tag {@" + unknown.getTagName() + "}");
         default -> {
@@ -691,7 +702,11 @@ final class Comments {
               } else if (inherit != null && ctx.owner() instanceof ExecutableElement method) {
                 nothingToInherit(ctx, tree, method);
               } else {
-                problem(ctx, tree, "{@inheritDoc} finds nothing to inherit");
+                problem(
+                    ctx,
+                    Report.Problem.INHERIT_DOC,
+                    tree,
+                    "{@inheritDoc} finds nothing to inherit");
               }
             }
             case COMMENT, DOC_TYPE -> {
@@ -699,7 +714,10 @@ final class Comments {
             }
             default ->
                 problem(
-                    ctx, tree, "The API model cannot represent " + tree.getKind() + ": " + tree);
+                    ctx,
+                    Report.Problem.UNSUPPORTED,
+                    tree,
+                    "The API model cannot represent " + tree.getKind() + ": " + tree);
           }
         }
       }
@@ -720,12 +738,13 @@ final class Comments {
     if (overridden.isEmpty()) {
       problem(
           ctx,
+          Report.Problem.INHERIT_DOC,
           tree,
           "{@inheritDoc} used, but "
               + method.getSimpleName()
               + " does not override or implement any method");
     } else if (overridden.stream().anyMatch(o -> linker.documented(o.getEnclosingElement()))) {
-      problem(ctx, tree, "{@inheritDoc} finds nothing to inherit");
+      problem(ctx, Report.Problem.INHERIT_DOC, tree, "{@inheritDoc} finds nothing to inherit");
     }
   }
 
@@ -753,7 +772,7 @@ final class Comments {
     return new Markdown(
             slots,
             index -> textContent(build(slots.get(index))),
-            message -> problem(ctx, at, message))
+            message -> problem(ctx, Report.Problem.URL, at, message))
         .parse(text.toString());
   }
 
@@ -802,6 +821,7 @@ final class Comments {
               default ->
                   problem(
                       ctx,
+                      Report.Problem.HTML,
                       part,
                       "The API model cannot represent " + part.getKind() + " in an attribute");
             }
@@ -811,6 +831,7 @@ final class Comments {
         if (URL_ATTRIBUTES.contains(name) && !safeUrl(value.toString())) {
           problem(
               ctx,
+              Report.Problem.URL,
               tree,
               "Unsafe URL in " + name + ": only http, https, mailto and relative URLs are allowed");
           continue;
@@ -831,7 +852,7 @@ final class Comments {
     }
     var text = ENTITIES.get(name);
     if (text == null) {
-      problem(ctx, entity, "Unknown HTML entity &" + name + ";");
+      problem(ctx, Report.Problem.HTML, entity, "Unknown HTML entity &" + name + ";");
       return "&" + name + ";";
     }
     return text;
@@ -851,7 +872,7 @@ final class Comments {
             ? List.of(new Doc.Text(text))
             : flatten(blocks(build(events(ctx, label, null))));
     if (target == null) {
-      problem(ctx, ref, "Cannot resolve the reference " + signature);
+      problem(ctx, Report.Problem.REFERENCE, ref, "Cannot resolve the reference " + signature);
       return code ? new Doc.Code(text) : new Doc.Text(text);
     }
     return switch (target.getKind()) {
@@ -867,7 +888,11 @@ final class Comments {
           ENUM_CONSTANT ->
           new Doc.Link(linker.ref(target, null), null, code, children);
       default -> {
-        problem(ctx, ref, "The API model cannot link to a " + target.getKind() + ": " + signature);
+        problem(
+            ctx,
+            Report.Problem.REFERENCE,
+            ref,
+            "The API model cannot link to a " + target.getKind() + ": " + signature);
         yield new Doc.Code(text);
       }
     };
@@ -875,7 +900,7 @@ final class Comments {
 
   private Doc.Inline value(Ctx ctx, ValueTree value) {
     if (value.getFormat() != null) {
-      problem(ctx, value, "The API model cannot represent a {@value} format");
+      problem(ctx, Report.Problem.VALUE, value, "The API model cannot represent a {@value} format");
     }
     Element target =
         value.getReference() == null ? ctx.owner() : resolve(ctx, value.getReference());
@@ -886,7 +911,7 @@ final class Comments {
       }
       return new Doc.Link(linker.ref(field, null), null, true, List.of(new Doc.Code(text)));
     }
-    problem(ctx, value, "{@value} names no compile-time constant");
+    problem(ctx, Report.Problem.VALUE, value, "{@value} names no compile-time constant");
     return new Doc.Code(value.toString());
   }
 

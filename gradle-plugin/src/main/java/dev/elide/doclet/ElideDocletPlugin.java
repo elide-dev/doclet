@@ -35,6 +35,10 @@ public final class ElideDocletPlugin implements Plugin<Project> {
             options.addStringOption("-theme", file.getAbsolutePath());
             task.getInputs().file(file);
           }
+          var problems = project.getProviders().gradleProperty("elideDoclet.problems");
+          if (problems.isPresent()) {
+            options.addStringOption("-problems", problems.get());
+          }
           task.getOptions().setDocletpath(List.of(jar));
           task.getInputs().file(jar);
         });

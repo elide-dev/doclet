@@ -49,7 +49,8 @@ if [[ "$consumer" != maven ]]; then
   gradle_args=(-p "$work" --console=plain -PdocletVersion="$version")
   gradle "${gradle_args[@]}" javadoc
   check_docs "$work/build/docs/javadoc"
-  gradle "${gradle_args[@]}" "-PelideDoclet.theme=site theme.json" javadoc
+  gradle "${gradle_args[@]}" "-PelideDoclet.theme=site theme.json" \
+    -PelideDoclet.problems=warning,reference=error javadoc
   check_brand "$work/build/docs/javadoc"
 fi
 
@@ -60,6 +61,7 @@ if [[ "$consumer" != gradle ]]; then
   mvn_args=(-B -q -f "$work/pom.xml" -Dmaven.repo.local="$m2" -Ddoclet.version="$version")
   mvn "${mvn_args[@]}" elide-doclet:javadoc
   check_docs "$work/target/reports/apidocs"
-  mvn "${mvn_args[@]}" -DelideDoclet.theme="$work/site theme.json" elide-doclet:javadoc
+  mvn "${mvn_args[@]}" -DelideDoclet.theme="$work/site theme.json" \
+    -DelideDoclet.problems=warning,reference=error elide-doclet:javadoc
   check_brand "$work/target/reports/apidocs"
 fi

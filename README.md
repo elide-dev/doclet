@@ -98,6 +98,26 @@ The default theme uses the library name. Supply a JSON theme to change the heade
 
 For a logo, set `logo.light` and `logo.dark` to SVG markup and `logo.alt` to its accessible name. Set `baseUrl` to generate canonical URLs and a sitemap. The renderer accepts the complete [theme definition](https://github.com/elide-dev/components/blob/d9acdfe98d033b32c77982392bc2a22b8f38451f/packages/apidocs/src/theme.ts).
 
+## Comment problems
+
+By default, any comment the API model cannot represent stops the run with an error, so the reference never silently loses content. Examples are an unknown inline tag, a reference that does not resolve, or `{@inheritDoc}` with nothing to inherit. Each error ends with its category, such as `[reference]`.
+
+To publish while you fix comments, report problems as warnings instead. The affected parts are simplified or left out. `--problems` takes `error` or `warning` and accepts per-category overrides. Later entries win.
+
+```sh
+--problems warning                           # every problem is a warning
+--problems error,inline-tag=warning          # only unknown inline tags are warnings
+--problems warning,reference=error           # everything but unresolved references is a warning
+```
+
+Categories: `inheritdoc`, `block-tag`, `inline-tag`, `snippet`, `reference`, `html`, `url`, `value`, `param`, `malformed`, `unsupported`.
+
+| Entry point | Problem severity |
+| --- | --- |
+| Javadoc | Add `--problems warning` to the command |
+| Gradle | Set `elideDoclet.problems=warning` in `gradle.properties` |
+| Maven | Add `<configuration><problems>warning</problems></configuration>` to the plugin, or pass `-DelideDoclet.problems=warning` |
+
 ## Build and verify
 
 ```sh

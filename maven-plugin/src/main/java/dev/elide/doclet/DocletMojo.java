@@ -21,6 +21,7 @@ import org.apache.maven.project.MavenProject;
 /** Runs Maven's Javadoc goal with the doclet from this plugin's class path. */
 public final class DocletMojo extends AbstractMojo {
   private File theme;
+  private String problems;
   private MavenProject project;
   private MavenSession session;
   private BuildPluginManager pluginManager;
@@ -36,6 +37,10 @@ public final class DocletMojo extends AbstractMojo {
                   project.getArtifactId(),
                   "--module-version",
                   project.getVersion()));
+      if (problems != null && !problems.isBlank()) {
+        arguments.add("--problems");
+        arguments.add(problems.strip());
+      }
       if (theme != null) {
         arguments.add("--theme");
         String path = theme.getAbsolutePath().replace(File.separatorChar, '/');
