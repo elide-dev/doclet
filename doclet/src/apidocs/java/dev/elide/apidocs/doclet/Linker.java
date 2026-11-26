@@ -31,9 +31,9 @@ import javax.lang.model.util.Types;
  * id>#<anchor>}; a package's is its qualified name. Anchors are the JDK doclet's: a method's name
  * and its parameter types (generic arguments erased, type variables by name, the last of a
  * variable-arity method as {@code T...}), {@code <init>} for constructors, a field's name. A target
- * outside the documented set links through the first {@link Api.External} whose prefix its
- * qualified name starts with, laid out as Javadoc lays out pages; {@code {module}} in the
- * external's URL stands for the target's module.
+ * outside the documented set links through the {@link Api.External} with the longest prefix its
+ * qualified name (a package's followed by a dot) starts with, laid out as Javadoc lays out pages;
+ * {@code {module}} in the external's URL stands for the target's module.
  */
 final class Linker {
   private final Elements elements;
@@ -137,33 +137,38 @@ final class Linker {
     var pkg = elements.getPackageOf(target);
     var qualified =
         switch (target) {
-          case PackageElement p -> p.getQualifiedName().toString();
+          case PackageElement p -> p.getQualifiedName() + ".";
           case TypeElement t -> t.getQualifiedName().toString();
           default -> ((TypeElement) target.getEnclosingElement()).getQualifiedName().toString();
         };
-    for (var external : externals) {
-      if (!qualified.startsWith(external.prefix())) {
-        continue;
+    // The longest prefix wins: java.util.logging. (java.logging) over java.util. (java.base).
+    Api.External external = null;
+    for (var candidate : externals) {
+      if (qualified.startsWith(candidate.prefix())
+          && (external == null || candidate.prefix().length() > external.prefix().length())) {
+        external = candidate;
       }
-      ModuleElement module = elements.getModuleOf(target);
-      var moduleName =
-          module == null || module.isUnnamed() ? "" : module.getQualifiedName().toString();
-      var base = external.url().replace("{module}", moduleName);
-      if (!base.endsWith("/")) {
-        base += "/";
-      }
-      var dir = base + pkg.getQualifiedName().toString().replace('.', '/') + "/";
-      return switch (target) {
-        case PackageElement p -> dir + "package-summary.html";
-        case TypeElement t -> dir + typeName(t) + ".html";
-        default ->
-            dir
-                + typeName((TypeElement) target.getEnclosingElement())
-                + ".html#"
-                + fragment(anchor(target));
-      };
     }
-    return null;
+    if (external == null) {
+      return null;
+    }
+    ModuleElement module = elements.getModuleOf(target);
+    var moduleName =
+        module == null || module.isUnnamed() ? "" : module.getQualifiedName().toString();
+    var base = external.url().replace("{module}", moduleName);
+    if (!base.endsWith("/")) {
+      base += "/";
+    }
+    var dir = base + pkg.getQualifiedName().toString().replace('.', '/') + "/";
+    return switch (target) {
+      case PackageElement p -> dir + "package-summary.html";
+      case TypeElement t -> dir + typeName(t) + ".html";
+      default ->
+          dir
+              + typeName((TypeElement) target.getEnclosingElement())
+              + ".html#"
+              + fragment(anchor(target));
+    };
   }
 
   /** An anchor as a URL fragment, escaped as the JDK doclet escapes it. */

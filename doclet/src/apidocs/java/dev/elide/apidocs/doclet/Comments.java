@@ -175,12 +175,63 @@ final class Comments {
   private final Linker linker;
   private final Report report;
 
+  private final Map<String, CustomTag> customTags;
+
   Comments(DocTrees trees, Elements elements, Types types, Linker linker, Report report) {
+    this(trees, elements, types, linker, report, Map.of());
+  }
+
+  Comments(
+      DocTrees trees,
+      Elements elements,
+      Types types,
+      Linker linker,
+      Report report,
+      Map<String, CustomTag> customTags) {
     this.trees = trees;
     this.elements = elements;
     this.types = types;
     this.linker = linker;
     this.report = report;
+    this.customTags = customTags;
+  }
+
+  /**
+   * A custom block tag from the standard doclet's {@code -tag name:locations:header}. Its content
+   * follows the description under its header. A tag whose locations include {@code X} is disabled:
+   * left out without a problem.
+   */
+  record CustomTag(String name, String header, boolean disabled) {
+    /**
+     * {@code spec} as a custom tag, or {@code null} for a bare name (which only orders standard
+     * tags in the standard doclet). Colons in the name or header can be escaped as {@code \:}.
+     */
+    static CustomTag parse(String spec) {
+      List<String> parts = new ArrayList<>();
+      var part = new StringBuilder();
+      for (int i = 0; i < spec.length(); i++) {
+        var c = spec.charAt(i);
+        if (c == '\\' && i + 1 < spec.length() && spec.charAt(i + 1) == ':') {
+          part.append(':');
+          i++;
+        } else if (c == ':' && parts.size() < 2) {
+          parts.add(part.toString());
+          part.setLength(0);
+        } else {
+          part.append(c);
+        }
+      }
+      parts.add(part.toString());
+      var name = parts.get(0).strip();
+      if (name.isEmpty()) {
+        throw new IllegalArgumentException("-tag needs a tag name: " + spec);
+      }
+      if (parts.size() == 1) {
+        return null;
+      }
+      var header = parts.size() > 2 && !parts.get(2).isBlank() ? parts.get(2).strip() : name;
+      return new CustomTag(name, header, parts.get(1).contains("X"));
+    }
   }
 
   /** What an element's comment says, with tags split out and inherited parts filled in. */
@@ -258,6 +309,7 @@ final class Comments {
     String since = null;
     List<Doc.Block> deprecated = null;
     boolean hidden = false;
+    List<Doc.Block> customBlocks = new ArrayList<>();
     for (var tag : dc.getBlockTags()) {
       switch (tag) {
         case ParamTree param -> {
@@ -304,6 +356,15 @@ final class Comments {
         default -> {
           if (tag.getKind() == DocTree.Kind.HIDDEN) {
             hidden = true;
+          } else if (tag instanceof UnknownBlockTagTree unknown
+              && customTags.containsKey(unknown.getTagName())) {
+            var custom = customTags.get(unknown.getTagName());
+            if (!custom.disabled()) {
+              customBlocks.add(
+                  new Doc.Paragraph(
+                      List.of(new Doc.Strong(List.of(new Doc.Text(custom.header()))))));
+              customBlocks.addAll(blocks(build(events(ctx, unknown.getContent(), null))));
+            }
           } else if (NOT_MODELED.contains(tagName(tag))) {
             if (!foreign(ctx)) {
               report.warning(
@@ -327,6 +388,10 @@ final class Comments {
           returns = inherited.returns();
         }
       }
+    }
+    if (!customBlocks.isEmpty()) {
+      body = new ArrayList<>(body);
+      body.addAll(customBlocks);
     }
     var doc = new Doc(summary, body, notes, see, null);
     return new Parts(doc, params, typeParams, returns, exceptions, since, deprecated, hidden);
