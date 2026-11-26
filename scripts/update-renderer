@@ -2,7 +2,7 @@
 # Rebuild the standalone renderer from its pinned components source and lockfile.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-revision=d9acdfe98d033b32c77982392bc2a22b8f38451f
+revision=84a7ea0c8aedf0fa3ee36a40be6c03afbe542671
 resources="$PWD/doclet/src/main/resources"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT

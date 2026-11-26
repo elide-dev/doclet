@@ -2,6 +2,7 @@ package dev.elide.apidocs.doclet;
 
 import dev.elide.apidocs.model.Api;
 import dev.elide.apidocs.render.DocumentationSite;
+import dev.elide.apidocs.render.RenderEngine;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +27,9 @@ public class ApiDoclet implements Doclet {
   private Path theme;
   private String runtime;
   private String sourceRef;
+  private boolean writeMarkdown = true;
+  private boolean writeLlms = true;
+  private boolean writeModel = true;
 
   @Override
   public String getName() {
@@ -132,6 +136,13 @@ public class ApiDoclet implements Doclet {
         new DocletOption("--source-ref", "Revision for source links", value -> sourceRef = value));
     options.add(
         new DocletOption(
+            "--no-markdown", "Omit the pages' Markdown twins", 0, v -> writeMarkdown = false));
+    options.add(
+        new DocletOption(
+            "--no-llms", "Omit llms.txt and llms-full.txt", 0, v -> writeLlms = false));
+    options.add(new DocletOption("--no-model", "Omit api.json", 0, v -> writeModel = false));
+    options.add(
+        new DocletOption(
             "--module-name", "Library name for api.json", value -> moduleName = value));
     options.add(
         new DocletOption(
@@ -224,7 +235,13 @@ public class ApiDoclet implements Doclet {
     }
     if (!report.ok()) return false;
     try {
-      DocumentationSite.write(model, output, theme, runtime, sourceRef);
+      DocumentationSite.write(
+          model,
+          output,
+          theme,
+          runtime,
+          sourceRef,
+          new RenderEngine.Outputs(writeMarkdown, writeLlms, writeModel));
       return true;
     } catch (IOException | IllegalStateException e) {
       reporter.print(
@@ -294,7 +311,10 @@ public class ApiDoclet implements Doclet {
     }
 
     public boolean process(String option, List<String> arguments) {
-      if (count == 0) return true;
+      if (count == 0) {
+        accept.accept("");
+        return true;
+      }
       if (arguments.getFirst().isBlank()) return false;
       try {
         accept.accept(arguments.getFirst());

@@ -62,6 +62,12 @@ public final class ExternalRuntime implements RenderEngine {
 
   @Override
   public Result render(Path model, Path theme, Path out, String sourceRef) throws IOException {
+    return render(model, theme, out, sourceRef, Outputs.ALL);
+  }
+
+  @Override
+  public Result render(Path model, Path theme, Path out, String sourceRef, Outputs outputs)
+      throws IOException {
     List<String> command =
         new ArrayList<>(
             List.of(
@@ -83,6 +89,9 @@ public final class ExternalRuntime implements RenderEngine {
       command.add("--source-ref");
       command.add(sourceRef);
     }
+    if (!outputs.markdown()) command.add("--no-markdown");
+    if (!outputs.llms()) command.add("--no-llms");
+    if (!outputs.model()) command.add("--no-model");
     var stdout = Files.createTempFile("apidocs-runner", ".out");
     var stderr = Files.createTempFile("apidocs-runner", ".err");
     try {

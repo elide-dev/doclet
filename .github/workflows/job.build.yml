@@ -63,6 +63,10 @@ jobs:
           files: doclet/.dev/reports/tests/jvm/test/TEST-dev.elide.doclet.ElideDocletTest.xml
       - name: Standalone Javadoc site
         run: PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test
+      - name: Site size budget
+        run: |
+          PATH="$JAVA_HOME/bin:$PATH" scripts/build-samples
+          scripts/check-size $(for theme in samples/themes/*.json; do echo ".dev/pages/$(basename "$theme" .json)"; done)
       - run: elide publish --dry-run
       - name: Gradle plugin end-to-end
         run: PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test-plugins gradle

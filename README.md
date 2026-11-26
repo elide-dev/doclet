@@ -14,6 +14,10 @@ javadoc -doclet dev.elide.doclet.ElideDoclet -docletpath tools/elide-doclet.jar 
 
 The name and version are optional. A named Java module supplies the default title. Gradle and Maven supply the project’s name and version.
 
+Besides the HTML pages, a site has a Markdown twin of every page, `llms.txt` and `llms-full.txt` for AI agents, and `api.json`, the model. Leave any of them out with `--no-markdown`, `--no-llms`, or `--no-model`; the pages then link only to the files the site has. In Gradle, add them to the Javadoc task with `options.addBooleanOption("-no-markdown", true)`.
+
+Every page holds only its own path through the navigation tree: its package, that package’s types, and the current type’s nested types. The whole tree is loaded once from `assets/nav.js`, which works from `file://` too, so a page’s size follows its own content rather than the size of the library.
+
 ## Gradle
 
 For a released version, add the GitHub Packages repository to the top-level `pluginManagement` block in `settings.gradle.kts`. Use a GitHub username and a token with read access to packages.
@@ -136,11 +140,12 @@ mise exec -- hk install
 elide build
 (cd doclet && elide test --coverage --reporter=junit)
 scripts/smoke-test
+scripts/build-samples && scripts/check-size .dev/pages/signal
 elide publish --dry-run
 scripts/smoke-test-plugins
 ```
 
-The standalone test loads the published JAR through Javadoc. The plugin tests build [one example API](tests/consumer/) with each tool, verify its model, HTML, Markdown, and search assets, then render it again with a custom theme. Run one consumer with `scripts/smoke-test-plugins gradle` or `scripts/smoke-test-plugins maven`.
+The standalone test loads the published JAR through Javadoc. `scripts/check-size` holds every sample theme’s site to a size budget: each page’s navigator, shell, and inline SVG, the HTML per page, and the site’s text files. The plugin tests build [one example API](tests/consumer/) with each tool, verify its model, HTML, Markdown, and search assets, then render it again with a custom theme. Run one consumer with `scripts/smoke-test-plugins gradle` or `scripts/smoke-test-plugins maven`.
 
 The shared model and `DocumentationSite.write` have no Javadoc dependencies. Another frontend can produce an `Api.Model` and use the same renderer. The renderer distribution is checked in so building the doclet or using it offline requires no frontend dependency installation. To refresh it from a components checkout, run `scripts/update-renderer /path/to/components`.
 
