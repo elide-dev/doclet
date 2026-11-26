@@ -357,6 +357,14 @@ final class Comments {
         default -> {
           if (tag.getKind() == DocTree.Kind.HIDDEN) {
             hidden = true;
+          } else if (tag instanceof ErroneousTree erroneous) {
+            // A block tag javadoc could not parse, such as @throws without a type. It has no
+            // tag name.
+            problem(
+                ctx,
+                Report.Problem.MALFORMED,
+                tag,
+                "Malformed documentation: " + erroneous.getBody());
           } else if (tag instanceof UnknownBlockTagTree unknown
               && customTags.containsKey(unknown.getTagName())) {
             var custom = customTags.get(unknown.getTagName());

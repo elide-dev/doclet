@@ -65,6 +65,33 @@ class ProblemsTest {
   }
 
   @Test
+  void malformedBlockTagIsAProblem(@TempDir Path directory) throws Exception {
+    var sources =
+        Map.of(
+            "shelf/Shelf.java",
+            """
+            package shelf;
+
+            /**
+             * A shelf.
+             *
+             * @throws
+             */
+            public interface Shelf {}
+            """);
+    var failed = Javadoc.run(directory.resolve("error"), sources, List.of());
+    assertFalse(failed.ok());
+    assertEquals(1, failed.errors().size(), failed::toString);
+    assertTrue(failed.errors().get(0).endsWith("[malformed]"), failed::toString);
+
+    var lenient =
+        Javadoc.run(
+            directory.resolve("warning"), sources, List.of("--problems", "malformed=warning"));
+    assertTrue(lenient.ok(), lenient::toString);
+    assertTrue(lenient.model().contains("A shelf."), lenient::toString);
+  }
+
+  @Test
   void unknownCategoryIsRejected(@TempDir Path directory) throws Exception {
     var result = Javadoc.run(directory, SOURCES, List.of("--problems", "bogus=warning"));
     assertFalse(result.ok());
