@@ -2,7 +2,6 @@ name: GitHub Release
 on: workflow_call
 permissions:
   contents: write
-  packages: write
   pull-requests: write
 jobs:
   release:
@@ -15,30 +14,37 @@ jobs:
           egress-policy: audit
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Identify release at this commit, including on retry
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(git tag --points-at HEAD --list 'v[0-9]*' | head -1)
+          if [[ -n "$tag" ]]; then
+            gh release view "$tag" >/dev/null
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        if: steps.release.outputs.release_created == 'true'
+        if: steps.publish.outputs.tag != ''
         with:
           name: maven-artifacts
           path: dist
-      - if: steps.release.outputs.release_created == 'true'
+      - name: Publish tested Maven artifacts to R2
+        if: steps.publish.outputs.tag != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ vars.R2_ENDPOINT }}
+          TAG: ${{ steps.publish.outputs.tag }}
+        run: scripts/publish-maven "${TAG#v}" dist
+      - name: Attach published artifacts to the release
+        if: steps.publish.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag_name }}
-        run: gh release upload "$TAG" dist/*.jar dist/*.pom --repo "$GITHUB_REPOSITORY" --clobber
-      - name: Set up Maven publication
-        if: steps.release.outputs.release_created == 'true'
-        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
-        with:
-          distribution: temurin
-          java-version: '17'
-          server-id: github
-      - name: Publish tested artifacts to GitHub Packages
-        if: steps.release.outputs.release_created == 'true'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          for pom in dist/*.pom; do
-            mvn -B org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy-file \
-              -DrepositoryId=github -Durl="https://maven.pkg.github.com/$GITHUB_REPOSITORY" \
-              -DpomFile="$pom" -Dfile="${pom%.pom}.jar"
-          done
+          TAG: ${{ steps.publish.outputs.tag }}
+        run: gh release upload "$TAG" dist/*.jar dist/*.pom --clobber

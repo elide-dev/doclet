@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Publish CI's tested artifacts and advance Maven metadata on R2."""
+import argparse
+import hashlib
+import json
+import os
+import re
+import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+from pathlib import Path
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("version")
+parser.add_argument("dist", type=Path)
+args = parser.parse_args()
+version = args.version
+if not re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", version):
+    parser.error("expected a stable release version")
+ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+artifacts = {}
+for pom in sorted(args.dist.glob("*.pom")):
+    project = ET.parse(pom)
+    group, artifact, declared = [project.findtext("m:" + key, namespaces=ns)
+                                  for key in ("groupId", "artifactId", "version")]
+    if (not group or not artifact or declared != version or
+            pom.name != f"{artifact}-{version}.pom" or
+            not re.fullmatch(r"[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*", group) or
+            not re.fullmatch(r"[a-zA-Z0-9_.-]+", artifact)):
+        parser.error(f"unexpected coordinates in {pom}")
+    artifacts[(group, artifact)] = (pom.with_suffix(".jar").read_bytes(), pom.read_bytes())
+if not artifacts:
+    parser.error("no artifacts to publish")
+
+def aws(command, *arguments):
+    return subprocess.check_output(["aws", "--endpoint-url", os.environ["R2_ENDPOINT"],
+                                    "s3api", command, "--bucket", "elide-maven", *arguments])
+
+def existing(key, destination):
+    listing = json.loads(aws("list-objects-v2", "--prefix", key, "--max-keys", "1"))
+    if not any(obj["Key"] == key for obj in listing.get("Contents", [])):
+        return None
+    return json.loads(aws("get-object", "--key", key, str(destination)))["ETag"]
+
+def put(key, data, mutable=False):
+    previous = work / "previous"
+    etag = existing(key, previous)
+    if etag and previous.read_bytes() == data:
+        return
+    if etag and not mutable:
+        raise ValueError("Released object differs: " + key)
+    body = work / "upload"
+    body.write_bytes(data)
+    condition = ["--if-match", etag] if etag else ["--if-none-match", "*"]
+    aws("put-object", "--key", key, "--body", str(body), *condition)
+
+def publish(key, data, mutable=False):
+    put(key, data, mutable)
+    for algorithm in ("sha1", "sha256", "sha512"):
+        put(key + "." + algorithm, hashlib.new(algorithm, data).hexdigest().encode(), mutable)
+
+with tempfile.TemporaryDirectory() as temp:
+    work = Path(temp)
+    for (group, artifact), (jar, pom) in artifacts.items():
+        prefix = group.replace(".", "/") + "/" + artifact
+        base = f"{prefix}/{version}/{artifact}-{version}"
+        publish(base + ".jar", jar)
+        publish(base + ".pom", pom)
+    # All coordinates must be available before discovery metadata advertises them.
+    for group, artifact in artifacts:
+        key = group.replace(".", "/") + "/" + artifact + "/maven-metadata.xml"
+        previous = work / "metadata"
+        if existing(key, previous):
+            root = ET.parse(previous).getroot()
+        else:
+            root = ET.Element("metadata")
+            ET.SubElement(root, "groupId").text = group
+            ET.SubElement(root, "artifactId").text = artifact
+            info = ET.SubElement(root, "versioning")
+            for tag in ("latest", "release", "versions", "lastUpdated"):
+                ET.SubElement(info, tag)
+        info = root.find("versioning")
+        versions = info.find("versions")
+        known = [v.text for v in versions.findall("version")]
+        if version not in known:
+            ET.SubElement(versions, "version").text = version
+            newest = max([*known, version], key=lambda v: tuple(map(int, v.split("."))))
+            info.find("latest").text = info.find("release").text = newest
+            info.find("lastUpdated").text = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        ET.indent(root)
+        publish(key, ET.tostring(root, encoding="utf-8", xml_declaration=True), True)
+        print("Published", group, artifact, version, flush=True)

@@ -20,17 +20,13 @@ Every page holds only its own path through the navigation tree: its package, tha
 
 ## Gradle
 
-For a released version, add the GitHub Packages repository to the top-level `pluginManagement` block in `settings.gradle.kts`. Use a GitHub username and a token with read access to packages.
+For a released version, add the public Elide Maven repository to the top-level `pluginManagement` block in `settings.gradle.kts`.
 
 ```kotlin
 pluginManagement {
     repositories {
         maven {
-            url = uri("https://maven.pkg.github.com/elide-dev/doclet")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
+            url = uri("https://maven.elide.dev")
         }
         gradlePluginPortal()
     }
@@ -54,7 +50,7 @@ Add the repository and plugin to the consuming POM, then run `mvn elide-doclet:j
 <pluginRepositories>
   <pluginRepository>
     <id>elide-doclet</id>
-    <url>https://maven.pkg.github.com/elide-dev/doclet</url>
+    <url>https://maven.elide.dev</url>
   </pluginRepository>
 </pluginRepositories>
 <build>
@@ -68,15 +64,6 @@ Add the repository and plugin to the consuming POM, then run `mvn elide-doclet:j
 </build>
 ```
 
-Configure a `<server>` with the matching ID in your Maven settings:
-
-```xml
-<server>
-  <id>elide-doclet</id>
-  <username>${env.GITHUB_ACTOR}</username>
-  <password>${env.GITHUB_TOKEN}</password>
-</server>
-```
 
 ## Guides and signature layout
 
@@ -173,7 +160,7 @@ To try the plugins before a release, run `elide publish` from the workspace root
 
 ## Releases
 
-Release Please updates the workspace members together from Conventional Commits on `main`. Enable Actions pull-request creation and GitHub Packages publication for the repository. On release, CI attaches the tested JARs and POMs to the GitHub release and deploys those same files to GitHub Packages. Maven Central and the Gradle Plugin Portal are future publication targets.
+Release Please updates the workspace members together from Conventional Commits on `main`. On release, CI publishes the tested JARs and POMs with checksums to the public Elide Maven repository on R2 and attaches them to the GitHub release.
 
 ## Theme gallery
 
