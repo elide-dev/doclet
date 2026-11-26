@@ -35,13 +35,16 @@ if not artifacts:
 
 def aws(command, *arguments):
     return subprocess.check_output(["aws", "--endpoint-url", os.environ["R2_ENDPOINT"],
-                                    "s3api", command, "--bucket", "elide-maven", *arguments])
+                                    "s3api", command, "--bucket", "elide-maven", *arguments], stderr=subprocess.PIPE)
 
 def existing(key, destination):
-    listing = json.loads(aws("list-objects-v2", "--prefix", key, "--max-keys", "1"))
-    if not any(obj["Key"] == key for obj in listing.get("Contents", [])):
-        return None
-    return json.loads(aws("get-object", "--key", key, str(destination)))["ETag"]
+    try:
+        response = aws("get-object", "--key", key, str(destination))
+    except subprocess.CalledProcessError as error:
+        if b"(NoSuchKey)" in error.stderr:
+            return None
+        raise RuntimeError(error.stderr.decode()) from error
+    return json.loads(response)["ETag"]
 
 def put(key, data, mutable=False, expected_etag=False):
     previous = work / "previous"

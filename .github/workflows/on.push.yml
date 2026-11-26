@@ -36,6 +36,7 @@ jobs:
     if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build.result == 'success' && (needs.format.result == 'success' || needs.format.result == 'skipped') }}
     uses: ./.github/workflows/job.release.yml
     permissions:
+      actions: read
       contents: write
       pull-requests: write
     secrets:
