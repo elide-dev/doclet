@@ -29,7 +29,9 @@ assert model["module"] == {"name": "doclet-consumer", "version": "1", "languages
 package, = model["packages"]
 example, = package["types"]
 assert package["name"] == "example" and example["id"] == "example.Example"
-method, = example["members"]
+method = next(m for m in example["members"] if m["name"] == "find")
+long_method = next(m for m in example["members"] if m["name"] == "selectBooksForCollection")
+assert any("\n" in t["text"] for t in long_method["signature"]), long_method["signature"]
 assert method["id"] == "example.Example#find(java.lang.String)"
 assert method["doc"]["summary"][0]["text"] == "Finds a book by title."
 assert method["params"][0]["name"] == "title"
@@ -42,7 +44,19 @@ PYTHON
 
 check_brand() {
   grep -Fq 'Field Guide SDK' "$1/index.html"
-  grep -Fq '#345b84' "$1/assets/theme.css"
+  grep -Fq '../example/Example.html#find(java.lang.String)' "$1/guides/lookup.html"
+  grep -Fq 'Look up a book' "$1/example/Example.md"
+  python3 - "$1/api.json" <<'PYTHON'
+import json, sys
+model = json.load(open(sys.argv[1]))
+guide, = model["module"]["guides"]
+assert guide["id"] == "guide:lookup"
+example, = model["packages"][0]["types"]
+assert len([entry for entry in example["doc"]["see"] if entry[0]["target"]["id"] == guide["id"]]) == 1
+long_method = next(m for m in example["members"] if m["name"] == "selectBooksForCollection")
+assert all("\n" not in t["text"] for t in long_method["signature"])
+PYTHON
+  grep -Fq '#345b84'  "$1/assets/theme.css"
 }
 
 if [[ "$consumer" != maven ]]; then
@@ -50,7 +64,7 @@ if [[ "$consumer" != maven ]]; then
   gradle "${gradle_args[@]}" javadoc
   check_docs "$work/build/docs/javadoc"
   gradle "${gradle_args[@]}" "-PelideDoclet.theme=site theme.json" \
-    -PelideDoclet.problems=warning,reference=error javadoc
+    -PelideDoclet.guides=guides -PelideDoclet.signatureFormatter=none -PelideDoclet.problems=warning,reference=error javadoc
   check_brand "$work/build/docs/javadoc"
 fi
 
@@ -62,6 +76,6 @@ if [[ "$consumer" != gradle ]]; then
   mvn "${mvn_args[@]}" elide-doclet:javadoc
   check_docs "$work/target/reports/apidocs"
   mvn "${mvn_args[@]}" -DelideDoclet.theme="$work/site theme.json" \
-    -DelideDoclet.problems=warning,reference=error elide-doclet:javadoc
+    -DelideDoclet.guides="$work/guides" -DelideDoclet.signatureFormatter=none -DelideDoclet.problems=warning,reference=error elide-doclet:javadoc
   check_brand "$work/target/reports/apidocs"
 fi

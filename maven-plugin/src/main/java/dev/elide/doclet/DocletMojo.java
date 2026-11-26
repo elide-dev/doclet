@@ -21,6 +21,8 @@ import org.apache.maven.project.MavenProject;
 /** Runs Maven's Javadoc goal with the doclet from this plugin's class path. */
 public final class DocletMojo extends AbstractMojo {
   private File theme;
+  private File guides;
+  private String signatureFormatter;
   private String problems;
   private MavenProject project;
   private MavenSession session;
@@ -43,12 +45,42 @@ public final class DocletMojo extends AbstractMojo {
       }
       if (theme != null) {
         arguments.add("--theme");
-        String path = theme.getAbsolutePath().replace(File.separatorChar, '/');
-        arguments.add("\"" + path.replace("\\", "\\\\").replace("\"", "\\\"") + "\"");
+        arguments.add(quoted(theme.getAbsolutePath()));
         // Maven fingerprints the Javadoc argument file but does not track theme file contents.
         byte[] digest =
             MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(theme.toPath()));
         arguments.add("# Theme SHA-256: " + HexFormat.of().formatHex(digest));
+      }
+      if (guides != null) {
+        arguments.add("--guides");
+        arguments.add(quoted(guides.getAbsolutePath()));
+        var digest = MessageDigest.getInstance("SHA-256");
+        try (var files = Files.walk(guides.toPath())) {
+          for (var file :
+              files
+                  .filter(f ->
+                      Files.isRegularFile(f, java.nio.file.LinkOption.NOFOLLOW_LINKS)
+                          && f.toString().endsWith(".md"))
+                  .sorted()
+                  .toList()) {
+            digest.update(
+                guides
+                    .toPath()
+                    .relativize(file)
+                    .toString()
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            digest.update((byte) 0);
+            digest.update(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file)));
+          }
+        }
+        arguments.add("# Guides SHA-256: " + HexFormat.of().formatHex(digest.digest()));
+      }
+      if (signatureFormatter != null && !signatureFormatter.isBlank()) {
+        arguments.add("--signature-formatter");
+        var value = signatureFormatter;
+        if (value.contains("/") || value.contains(File.separator))
+          value = project.getBasedir().toPath().resolve(value).toString();
+        arguments.add(quoted(value));
       }
       var options =
           configuration(
@@ -69,9 +101,14 @@ public final class DocletMojo extends AbstractMojo {
           options,
           executionEnvironment(project, session, pluginManager));
     } catch (IOException | NoSuchAlgorithmException e) {
-      throw new MojoExecutionException("Cannot read the documentation theme " + theme, e);
+      throw new MojoExecutionException("Cannot read documentation inputs: " + e.getMessage(), e);
     } catch (URISyntaxException e) {
       throw new MojoExecutionException("Cannot locate the Elide doclet", e);
     }
+  }
+
+  private static String quoted(String value) {
+    String path = value.replace(File.separatorChar, '/');
+    return "\"" + path.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
   }
 }

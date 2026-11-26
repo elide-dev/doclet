@@ -35,6 +35,7 @@ import com.sun.source.doctree.ValueTree;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import com.sun.source.util.TreePath;
+import dev.elide.apidocs.model.Api;
 import dev.elide.apidocs.model.Doc;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -991,6 +992,37 @@ final class Comments {
     };
   }
 
+  /** Parses authored Markdown with the same rules used for Markdown comments. */
+  static List<Doc.Block> guideBody(
+      String markdown, java.util.function.Function<String, Api.Ref> resolve) {
+    var events =
+        new Markdown(
+                List.of(),
+                i -> "",
+                message -> {
+                  throw new IllegalArgumentException(message);
+                })
+            .parse(markdown);
+    var nodes = build(events);
+    resolveGuideLinks(nodes, resolve);
+    return blocks(nodes);
+  }
+
+  private static void resolveGuideLinks(
+      List<Node> nodes, java.util.function.Function<String, Api.Ref> resolve) {
+    for (var iterator = nodes.listIterator(); iterator.hasNext(); ) {
+      if (iterator.next() instanceof ElementNode element) {
+        resolveGuideLinks(element.children(), resolve);
+        if (element.name().equals("a") && element.attributes().containsKey("href")) {
+          var target = resolve.apply(element.attributes().get("href"));
+          if (target != null)
+            iterator.set(
+                new InlineNode(new Doc.Link(target, null, false, inlines(element.children()))));
+        }
+      }
+    }
+  }
+
   // ---- The element tree.
 
   private sealed interface Node permits TextNode, ElementNode, InlineNode, BlockNode {}
@@ -1082,7 +1114,7 @@ final class Comments {
 
   // ---- Element tree to blocks and inlines.
 
-  private List<Doc.Block> blocks(List<Node> nodes) {
+  private static List<Doc.Block> blocks(List<Node> nodes) {
     List<Doc.Block> blocks = new ArrayList<>();
     List<Doc.Inline> pending = new ArrayList<>();
     for (var node : nodes) {
@@ -1110,7 +1142,7 @@ final class Comments {
     pending.clear();
   }
 
-  private void block(ElementNode element, List<Doc.Block> into) {
+  private static void block(ElementNode element, List<Doc.Block> into) {
     var kids = element.children();
     switch (element.name()) {
       case "p", "li", "dd", "dt", "td", "th", "tr", "thead", "tbody", "tfoot", "caption" ->
@@ -1192,7 +1224,7 @@ final class Comments {
     return null;
   }
 
-  private Doc.Table table(ElementNode table) {
+  private static Doc.Table table(ElementNode table) {
     List<Doc.Inline> caption = List.of();
     List<List<List<Doc.Block>>> head = new ArrayList<>();
     List<List<List<Doc.Block>>> rows = new ArrayList<>();
@@ -1241,7 +1273,7 @@ final class Comments {
     return false;
   }
 
-  private void rows(ElementNode section, List<List<List<Doc.Block>>> into) {
+  private static void rows(ElementNode section, List<List<List<Doc.Block>>> into) {
     for (var kid : section.children()) {
       if (kid instanceof ElementNode tr && tr.name().equals("tr")) {
         into.add(row(tr));
@@ -1249,7 +1281,7 @@ final class Comments {
     }
   }
 
-  private List<List<Doc.Block>> row(ElementNode tr) {
+  private static List<List<Doc.Block>> row(ElementNode tr) {
     List<List<Doc.Block>> cells = new ArrayList<>();
     for (var kid : tr.children()) {
       if (kid instanceof ElementNode cell
@@ -1260,7 +1292,7 @@ final class Comments {
     return cells;
   }
 
-  private List<Doc.Inline> inlines(List<Node> nodes) {
+  private static List<Doc.Inline> inlines(List<Node> nodes) {
     List<Doc.Inline> inlines = new ArrayList<>();
     for (var node : nodes) {
       switch (node) {
@@ -1273,7 +1305,7 @@ final class Comments {
     return inlines;
   }
 
-  private void inline(ElementNode element, List<Doc.Inline> into) {
+  private static void inline(ElementNode element, List<Doc.Inline> into) {
     var kids = element.children();
     var name = element.name();
     if (CODE.contains(name)) {

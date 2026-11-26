@@ -11,16 +11,15 @@ cp samples/site/* "$out/"
 
 # Extract the Java API once, then render the shared model and guides in every theme.
 "${JAVA_HOME:+$JAVA_HOME/bin/}javadoc" -quiet -public -doclet dev.elide.doclet.ElideDoclet \
-  -docletpath "$doclet" --module-name runtime-kit --module-version 1.0 \
+  -docletpath "$doclet" --module-name runtime-kit --module-version 1.0 --guides samples/guides \
   -d "$work/reference" -sourcepath samples/java -subpackages example.runtime
-node samples/narrative.mjs "$work/reference/api.json" "$work/sample.json"
 renderer=dev/elide/apidocs/renderer
 (cd "$work" && "${JAVA_HOME:+$JAVA_HOME/bin/}jar" xf "$doclet" "$renderer")
 renderer="$work/$renderer"
 for theme in samples/themes/*.json; do
   name=$(basename "$theme" .json)
   node "$renderer/runner.mjs" --bundle "$renderer/render.js" --assets "$renderer/assets" \
-    --model "$work/sample.json" --theme "$theme" --out "$out/$name"
+    --model "$work/reference/api.json" --theme "$theme" --out "$out/$name"
   cp "$theme" "$out/themes/"
   for page in index guides/prepare-a-build example/runtime/{index,BuildPlan,Planner,BuildStep,Target,Experimental,PlanException,Planner.Local,Planner.Options,Planner.Options.Detail}; do
     test -s "$out/$name/$page.html"

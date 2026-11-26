@@ -1,6 +1,9 @@
 package dev.elide.apidocs.doclet;
 
+import dev.elide.apidocs.format.ModelLayout;
+import dev.elide.apidocs.format.SignatureLayout;
 import dev.elide.apidocs.model.Api;
+import dev.elide.apidocs.model.Guides;
 import dev.elide.apidocs.render.DocumentationSite;
 import dev.elide.apidocs.render.RenderEngine;
 import java.io.IOException;
@@ -45,6 +48,8 @@ public class ApiDoclet implements Doclet {
   private String moduleName;
   private String moduleVersion;
   private String title;
+  private Path guides;
+  private String signatureFormatter;
   private Report.Severities severities = Report.Severities.STRICT;
 
   /** {@code -link} and {@code -linkoffline}: each site's URL and where its package list is. */
@@ -131,6 +136,14 @@ public class ApiDoclet implements Doclet {
         new DocletOption("-d", "Documentation output directory", value -> output = Path.of(value)));
     options.add(
         new DocletOption("--theme", "Renderer theme JSON file", value -> theme = Path.of(value)));
+    options.add(
+        new DocletOption(
+            "--guides", "Directory of Markdown guides", value -> guides = Path.of(value)));
+    options.add(
+        new DocletOption(
+            "--signature-formatter",
+            "Elide executable for signature layout, or none",
+            value -> signatureFormatter = value));
     options.add(new DocletOption("--js-runtime", "Path to Node or Bun", value -> runtime = value));
     options.add(
         new DocletOption("--source-ref", "Revision for source links", value -> sourceRef = value));
@@ -235,6 +248,20 @@ public class ApiDoclet implements Doclet {
     }
     if (!report.ok()) return false;
     try {
+      var layout =
+          SignatureLayout.elide(
+              signatureFormatter,
+              new SignatureLayout.Log() {
+                public void info(String message) {
+                  reporter.print(Diagnostic.Kind.NOTE, message);
+                }
+
+                public void warning(String message) {
+                  reporter.print(Diagnostic.Kind.WARNING, message);
+                }
+              });
+      model = ModelLayout.apply(model, layout);
+      if (guides != null) model = Guides.read(model, guides, Comments::guideBody);
       DocumentationSite.write(
           model,
           output,

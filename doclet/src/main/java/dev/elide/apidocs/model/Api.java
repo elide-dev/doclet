@@ -44,7 +44,20 @@ public final class Api {
    * @param doc the module's documentation, or {@code null}
    */
   public record Module(
-      String name, String version, String javaModule, List<String> languages, Doc doc) {}
+      String name,
+      String version,
+      String javaModule,
+      List<String> languages,
+      Doc doc,
+      List<Guide> guides) {
+    public Module(String name, String version, String javaModule, List<String> languages, Doc doc) {
+      this(name, version, javaModule, languages, doc, List.of());
+    }
+  }
+
+  /** An authored page cross-linked with declarations in the model. */
+  public record Guide(
+      String id, String slug, String title, List<Doc.Inline> summary, List<Doc.Block> body) {}
 
   /**
    * Documentation outside this model: a reference whose id starts with {@code prefix} links below
@@ -149,7 +162,32 @@ public final class Api {
       Deprecation deprecated,
       String since,
       boolean nullMarked,
-      Source source) {}
+      Source source) {
+    public Type withDoc(Doc replacement) {
+      return new Type(
+          id,
+          name,
+          kind,
+          language,
+          modifiers,
+          annotations,
+          typeParams,
+          signature,
+          superclass,
+          interfaces,
+          ancestors,
+          permits,
+          enclosing,
+          components,
+          members,
+          inherited,
+          replacement,
+          deprecated,
+          since,
+          nullMarked,
+          source);
+    }
+  }
 
   /** What a member is. */
   public enum MemberKind {

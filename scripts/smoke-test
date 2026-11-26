@@ -13,3 +13,12 @@ grep -Fq 'Example API.' "$work/docs/default-package/Example.md"
 test -s "$work/docs/api.json"
 test -s "$work/docs/assets/apidocs.css"
 test -s "$work/docs/assets/apidocs.js"
+
+mkdir "$work/guides"
+printf '# Usage\n\nSee [missing](api/example.Missing).\n' > "$work/guides/usage.md"
+if javadoc -quiet -d "$work/invalid" -doclet dev.elide.doclet.ElideDoclet -docletpath "$jar" \
+    --guides "$work/guides" "$work/Example.java" >"$work/diagnostics" 2>&1; then
+  echo "Expected an unknown guide reference to fail the build" >&2
+  exit 1
+fi
+grep -Fq 'usage.md: Unknown API reference example.Missing' "$work/diagnostics"

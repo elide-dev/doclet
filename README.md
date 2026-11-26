@@ -78,6 +78,26 @@ Configure a `<server>` with the matching ID in your Maven settings:
 </server>
 ```
 
+## Guides and signature layout
+
+Pass a directory of Markdown files to publish narrative pages with the API. For example, `docs/guides/lookup.md` generates `guides/lookup.html` and its Markdown twin.
+
+```markdown
+# Look up a book
+
+Use [the catalog](api/example.Example) to [find a title](api/example.Example#find(java.lang.String)).
+```
+
+Start each file with a level-one title. The first paragraph supplies the summary for listings and search. Use lowercase letters, digits, and hyphens for file and directory names. An optional root `index.md` supplies the module overview. An `api/` link uses the exact type or member ID from `api.json`, including `$` for nested types. The linked type lists the guide under **See also**. A missing API target fails the build and names the guide to fix.
+
+| Entry point | Guide directory | Signature formatter |
+| --- | --- | --- |
+| Javadoc | `--guides docs/guides` | `--signature-formatter <executable-or-none>` |
+| Gradle properties | `elideDoclet.guides=docs/guides` | `elideDoclet.signatureFormatter=none` |
+| Maven plugin configuration | `<guides>docs/guides</guides>` | `<signatureFormatter>none</signatureFormatter>` |
+
+By default the generator looks for `elide` on PATH and uses it to wrap long declarations while preserving type links. If Elide is unavailable, or you select `none`, declarations keep their single-line layout. Formatting and guide references are part of the shared API model, so HTML and Markdown use the same declarations and links.
+
 ## Branding
 
 The default theme uses the library name. Supply a JSON theme to change the header, light and dark colors, logos, navigation, footer, and source links. For example, save this as `docs/theme.json`:
@@ -100,7 +120,7 @@ The default theme uses the library name. Supply a JSON theme to change the heade
 | Gradle | Set `elideDoclet.theme=docs/theme.json` in `gradle.properties` |
 | Maven | Add `<configuration><theme>${project.basedir}/docs/theme.json</theme></configuration>` to the plugin |
 
-For a logo, set `logo.light` and `logo.dark` to SVG markup and `logo.alt` to its accessible name. Set `baseUrl` to generate canonical URLs and a sitemap. The renderer accepts the complete [theme definition](https://github.com/elide-dev/components/blob/d9acdfe98d033b32c77982392bc2a22b8f38451f/packages/apidocs/src/theme.ts).
+For a logo, set `logo.light` and `logo.dark` to SVG markup and `logo.alt` to its accessible name. Set `baseUrl` to generate canonical URLs and a sitemap. The renderer accepts the complete [theme definition](https://github.com/elide-dev/components/blob/84a7ea0c8aedf0fa3ee36a40be6c03afbe542671/packages/apidocs/src/theme.ts).
 
 ## Standard doclet options
 

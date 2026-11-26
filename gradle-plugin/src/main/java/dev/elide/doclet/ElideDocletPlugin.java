@@ -35,6 +35,22 @@ public final class ElideDocletPlugin implements Plugin<Project> {
             options.addStringOption("-theme", file.getAbsolutePath());
             task.getInputs().file(file);
           }
+          var guides = project.getProviders().gradleProperty("elideDoclet.guides");
+          if (guides.isPresent()) {
+            var dir = project.file(guides.get());
+            options.addStringOption("-guides", dir.getAbsolutePath());
+            task.getInputs().dir(dir);
+          }
+          var formatter = project.getProviders().gradleProperty("elideDoclet.signatureFormatter");
+          if (formatter.isPresent()) {
+            String value = formatter.get();
+            if (value.contains("/") || value.contains(File.separator)) {
+              var executable = project.file(value);
+              task.getInputs().file(executable);
+              value = executable.getAbsolutePath();
+            }
+            options.addStringOption("-signature-formatter", value);
+          }
           var problems = project.getProviders().gradleProperty("elideDoclet.problems");
           if (problems.isPresent()) {
             options.addStringOption("-problems", problems.get());
