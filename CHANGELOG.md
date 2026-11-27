@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/elide-dev/doclet/compare/v0.2.0...v0.3.0) (2026-11-27)
+
+
+### Features
+
+* publish shared guide suites with release quality gates ([da17c4d](https://github.com/elide-dev/doclet/commit/da17c4da241d0d10e29baa0ca047e8daac2c6e6c))
+
+
+### Bug Fixes
+
+* **doclet:** report a malformed block tag instead of crashing ([a885615](https://github.com/elide-dev/doclet/commit/a885615b76a6f0bdba9717f3862df56d79741b27))
+* **release:** resume tagged builds and read R2 objects by exact key ([5316bc0](https://github.com/elide-dev/doclet/commit/5316bc086b290c95d2831ef7811ceec7d8270bf2))
+
 ## [0.2.0](https://github.com/elide-dev/doclet/compare/v0.1.0...v0.2.0) (2026-11-26)
 
 
