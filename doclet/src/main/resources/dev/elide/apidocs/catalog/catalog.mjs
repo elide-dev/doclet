@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
+import os from "node:os";
+import { execFileSync } from "node:child_process";
 
 const escape = (value) =>
   String(value).replace(
@@ -12,7 +14,7 @@ const escape = (value) =>
   );
 const link = (href, label) => `<a href="${escape(href)}">${escape(label)}</a>`;
 const style =
-  "body{max-width:70rem;margin:3rem auto;padding:0 1rem;font:1rem/1.6 system-ui;color-scheme:light dark}nav{display:flex;gap:1rem;flex-wrap:wrap}input{font:inherit;padding:.4rem}pre{white-space:pre-wrap}";
+  "body{max-inline-size:70rem;margin:3rem auto;padding:0 1rem;font:1rem/1.6 system-ui;color-scheme:light dark}nav{display:flex;gap:1rem;flex-wrap:wrap}input{font:inherit;padding:.4rem}pre{white-space:pre-wrap}";
 const page = (title, content) =>
   `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)}</title><style>${style}</style><main><h1>${escape(title)}</h1>${content}</main></html>`;
 const list = (entries) =>
@@ -103,6 +105,104 @@ function segment(id) {
   return id;
 }
 
+// Build and validate symbol links before copying any catalog pages.
+function guideSuites(version, manifest, work) {
+  const backlinks = new Map();
+  if (!Object.keys(version.suites ?? {}).length) return backlinks;
+  const targets = new Map();
+  for (const [id, module] of Object.entries(version.modules)) {
+    for (const pkg of module.model.packages ?? []) {
+      const prefix = (pkg.name || "default-package").replaceAll(".", "/") + "/";
+      const register = (key, file, anchor) => {
+        if (!module.files.has(file))
+          throw new Error("Missing declaration page: " + file);
+        targets.set(
+          "api/" + id + "/" + key,
+          "api/" +
+            id +
+            "/" +
+            file +
+            (anchor ? "#" + encodeURIComponent(anchor) : ""),
+        );
+      };
+      for (const type of pkg.types ?? []) {
+        const file = prefix + type.name + ".html";
+        register(type.id, file);
+        register([pkg.name, type.name].filter(Boolean).join("."), file);
+        for (const member of type.members ?? [])
+          register(member.id, file, member.anchor);
+      }
+      for (const item of [
+        ...(pkg.functions ?? []),
+        ...(pkg.properties ?? []),
+        ...(pkg.typeAliases ?? []),
+      ])
+        register(item.id, prefix + "index.html", item.anchor ?? item.name);
+    }
+  }
+  const mapping = path.join(work, "targets.tsv");
+  fs.writeFileSync(
+    mapping,
+    [...targets].map((pair) => pair.join("\t")).join("\n"),
+  );
+  for (const [id, suite] of Object.entries(version.suites)) {
+    segment(id);
+    if (Object.hasOwn(version.modules, id))
+      throw new Error("Suite and module share an ID: " + id);
+    const src = fs.realpathSync(
+      path.resolve(path.dirname(manifest), suite.directory),
+    );
+    const temp = fs.mkdtempSync(path.join(work, "suite-"));
+    const input = path.join(temp, "input"),
+      dir = path.join(temp, "site");
+    fs.mkdirSync(input);
+    scan(src, (file) => {
+      if (
+        !file.endsWith(".md") ||
+        (!version.includeDrafts && file.split("/").includes("drafts"))
+      )
+        return;
+      const dest = path.join(input, file);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(path.join(src, file), dest);
+    });
+    execFileSync(
+      process.env.APIDOCS_JAVA || "java",
+      [
+        "-cp",
+        process.env.APIDOCS_CLASSPATH,
+        "dev.elide.apidocs.doclet.GuideSuite",
+        suite.title || id,
+        version.id,
+        input,
+        dir,
+        mapping,
+      ],
+      { stdio: "inherit" },
+    );
+    const files = new Set();
+    scan(dir, (file) => files.add(file));
+    const model = json(path.join(dir, "api.json"));
+    version.modules[id] = { dir, files, model, suite: true };
+    function collect(node, label, page) {
+      if (!node || typeof node !== "object") return;
+      const key = node.target?.id;
+      if (targets.has(key)) {
+        const target = targets.get(key).split("#")[0];
+        if (!backlinks.has(target)) backlinks.set(target, new Map());
+        backlinks.get(target).set("guides/" + id + "/" + page, label);
+      }
+      for (const child of Object.values(node)) collect(child, label, page);
+    }
+    collect(model.module.doc, model.module.name, "index.html");
+    for (const guide of model.module.guides ?? [])
+      collect(guide, guide.title, "guides/" + guide.slug + ".html");
+  }
+  return backlinks;
+}
+
+const sitePath = (module, id) => (module.suite ? "guides/" : "api/") + id + "/";
+
 function build(manifest, output) {
   const spec = json(manifest);
   const ids = new Set();
@@ -135,7 +235,11 @@ function build(manifest, output) {
     throw new Error("Choose a new output directory: " + output);
   fs.mkdirSync(path.dirname(output), { recursive: true });
   const staging = fs.mkdtempSync(output + ".tmp-");
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "catalog-guides-"));
   try {
+    const relations = new Map(
+      spec.versions.map((v) => [v, guideSuites(v, manifest, temp)]),
+    );
     const write = (name, data) => {
       const file = path.join(staging, name);
       fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -157,18 +261,19 @@ function build(manifest, output) {
         latest: spec.latest,
         versions: spec.versions.map((v) => ({
           id: v.id,
-          modules: Object.keys(v.modules),
+          modules: Object.keys(v.modules).filter((id) => !v.modules[id].suite),
+          suites: Object.keys(v.suites ?? {}),
         })),
       }),
     );
     for (const [index, v] of spec.versions.entries()) {
+      const backlinks = relations.get(v);
       const moduleLinks = [],
         search = [];
       for (const [id, m] of Object.entries(v.modules)) {
-        const base = v.id + "/api/" + id + "/";
-        moduleLinks.push(
-          link("api/" + id + "/index.html", m.model.module.name),
-        );
+        const prefix = sitePath(m, id);
+        const base = v.id + "/" + prefix;
+        moduleLinks.push(link(prefix + "index.html", m.model.module.name));
         const script = read(path.join(m.dir, "assets/search-index.js")).trim();
         const match = /^window\.apidocsSearch\s*=\s*([\s\S]*?);?$/.exec(script);
         if (!match) throw new Error("Unknown search index format: " + m.dir);
@@ -176,17 +281,36 @@ function build(manifest, output) {
           match[1],
         )) {
           if (!m.files.has(href.split("#")[0])) continue;
-          search.push([
-            label,
-            kind,
-            "api/" + id + "/" + href,
-            id,
-            owner,
-            summary,
-          ]);
+          search.push([label, kind, prefix + href, id, owner, summary]);
         }
         for (const file of m.files) {
           const src = path.join(m.dir, file);
+          const owner = prefix + file.replace(/\.md$/, ".html");
+          const related = [...(backlinks.get(owner) ?? [])].map(
+            ([dest, label]) => [
+              path.posix.relative(path.posix.dirname(owner), dest),
+              label,
+            ],
+          );
+          if (file.endsWith(".md") && related.length) {
+            write(
+              base + file,
+              read(src) +
+                "\n## Related guides\n\n" +
+                related
+                  .map(
+                    ([href, label]) =>
+                      "- [" +
+                      label.replace(/[\[\]]/g, "\\$&") +
+                      "](" +
+                      href.replace(/\.html$/, ".md") +
+                      ")",
+                  )
+                  .join("\n") +
+                "\n",
+            );
+            continue;
+          }
           if (!file.endsWith(".html")) {
             write(base + file, fs.readFileSync(src));
             continue;
@@ -195,15 +319,20 @@ function build(manifest, output) {
           const versions = spec.versions.map((other) => {
             const target = other.modules[id];
             const dest = target
-              ? "api/" +
-                id +
-                "/" +
+              ? sitePath(target, id) +
                 (target.files.has(file) ? file : "index.html")
               : "index.html";
             return link(root + other.id + "/" + dest, other.id);
           });
           const modules = Object.keys(v.modules).map((other) =>
-            link(root + v.id + "/api/" + other + "/index.html", other),
+            link(
+              root +
+                v.id +
+                "/" +
+                sitePath(v.modules[other], other) +
+                "index.html",
+              other,
+            ),
           );
           const menu =
             '<details class="catalog-menu"><summary>Versions and modules</summary><nav aria-label="Reference catalog"><p>Versions · ' +
@@ -215,9 +344,47 @@ function build(manifest, output) {
             "</nav></details>";
           write(
             base + file,
-            read(src).replace("</header>", () => menu + "</header>"),
+            read(src)
+              .replace(
+                '<a class="brand" ',
+                () =>
+                  '<a class="brand" aria-label="' +
+                  escape(m.model.module.name + " overview") +
+                  '" ',
+              )
+              .replace(
+                "</main>",
+                () =>
+                  (related.length
+                    ? "<section><h2>Related guides</h2>" +
+                      list(related.map(([href, label]) => link(href, label))) +
+                      "</section>"
+                    : "") + "</main>",
+              )
+              .replace("</header>", () => menu + "</header>"),
           );
         }
+      }
+      // Every page uses its module's index. Keep local entries first and append the version's other sites.
+      for (const [id, m] of Object.entries(v.modules)) {
+        const prefix = sitePath(m, id);
+        const ranked = [
+          ...search.filter((row) => row[3] === id),
+          ...search.filter((row) => row[3] !== id),
+        ];
+        const entries = ranked.map(
+          ([label, kind, href, module, owner, summary]) => [
+            label,
+            kind,
+            path.posix.relative(prefix, href),
+            module === id ? owner : module + " · " + owner,
+            summary,
+          ],
+        );
+        write(
+          v.id + "/" + prefix + "assets/search-index.js",
+          "window.apidocsSearch=" + JSON.stringify(entries) + ";",
+        );
       }
       const comparisons = [];
       for (const previous of spec.versions.slice(index + 1)) {
@@ -254,6 +421,7 @@ function build(manifest, output) {
     });
     fs.renameSync(staging, output);
   } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
     fs.rmSync(staging, { recursive: true, force: true });
   }
 }

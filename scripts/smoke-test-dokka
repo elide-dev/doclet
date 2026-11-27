@@ -13,3 +13,4 @@ gradle -p "$work" --console=plain -PdocletVersion="$version" -PdocletRepository=
 grep -Fq 'Returns the greeting as plain text.' "$work/build/site/example/Greeter.md"
 test -s "$work/build/site/example/Greeter.html"
 grep -Fq '"kotlin"' "$work/build/site/api.json"
+if [[ -n ${1:-} ]]; then cp -R "$work/build/site" "$1"; fi

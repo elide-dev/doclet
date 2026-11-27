@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+elide publish --dry-run
+scripts/smoke-test-dokka "$work/kotlin"
+python3 - "$work" "$PWD" <<'PY'
+import json,sys
+from pathlib import Path
+work,root=map(Path,sys.argv[1:])
+version=dict(id="release", modules=dict(java=str(root/".dev/pages/graalvm"),kotlin=str(work/"kotlin")),suites=dict(handbook=dict(title="Runtime handbook",directory=str(root/"samples/shared-guides"))))
+(work/"catalog.json").write_text(json.dumps(dict(title="Runtime documentation",latest="release",versions=[version])))
+PY
+java -cp doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar dev.elide.apidocs.render.Catalog build "$work/catalog.json" "$work/catalog"
+mkdir -p .dev/pages/catalog
+rsync -a --delete "$work/catalog/" .dev/pages/catalog/

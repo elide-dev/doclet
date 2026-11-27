@@ -25,17 +25,51 @@ try {
   fs.writeFileSync(modelPath, JSON.stringify(model));
   const manifest = path.join(dir, "catalog.json"),
     out = path.join(dir, "out");
+  const suite = path.join(dir, "handbook");
+  fs.mkdirSync(path.join(suite, "drafts"), { recursive: true });
+  fs.writeFileSync(
+    path.join(suite, "drafts", "preview.md"),
+    "# Draft guide\n\nRead [the plan](api/core/example.runtime.BuildPlan).\n",
+  );
   fs.writeFileSync(
     manifest,
     JSON.stringify({
       latest: "v2",
       versions: [
-        { id: "v2", modules: { core: source, tools: source } },
+        {
+          id: "v2",
+          includeDrafts: true,
+          suites: { handbook: { directory: suite } },
+          modules: { core: source, tools: source },
+        },
         { id: "v1", modules: { core: previous } },
       ],
     }),
   );
-  execFileSync(process.execPath, [cli, "build", manifest, out]);
+  const jar = path.resolve(
+    "doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar",
+  );
+  const build = (dest) =>
+    execFileSync(
+      "java",
+      ["-cp", jar, "dev.elide.apidocs.render.Catalog", "build", manifest, dest],
+      { stdio: "pipe" },
+    );
+  build(out);
+  assert.ok(
+    fs.existsSync(
+      path.join(out, "v2/guides/handbook/guides/drafts/preview.html"),
+    ),
+  );
+  fs.writeFileSync(
+    path.join(suite, "broken.md"),
+    "# Broken\n\n[missing](api/core/example.Missing)\n",
+  );
+  assert.throws(
+    () => build(path.join(dir, "invalid")),
+    /Unknown cross-module API link/,
+  );
+  assert.ok(!fs.existsSync(path.join(dir, "invalid")));
   assert.match(
     fs.readFileSync(path.join(out, "v2/changes/v1.html"), "utf8"),
     /Added core \/ example.runtime.BuildPlan#defaults/,

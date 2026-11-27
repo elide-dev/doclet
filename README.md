@@ -100,7 +100,8 @@ Build each module's standalone site with its model and search index. List the si
   "title": "Library documentation",
   "latest": "v2",
   "versions": [
-    {"id": "v2", "modules": {"core": "build/v2/core", "sdk": "build/v2/sdk"}},
+    {"id": "v2", "modules": {"core": "build/v2/core", "sdk": "build/v2/sdk"},
+     "suites": {"handbook": {"title": "Developer handbook", "directory": "docs/handbook"}}},
     {"id": "v1", "modules": {"core": "build/v1/core"}}
   ]
 }
@@ -112,6 +113,14 @@ java -cp elide-doclet.jar dev.elide.apidocs.render.Catalog serve build/reference
 ```
 
 Build into a new output directory, then publish its contents to any static host. The catalog offers version and module navigation, cross-module guide and API search, a `latest/` copy of the selected release, and API changes against each older release. Version links preserve the current page when it exists. The optional loopback HTTP server serves standalone sites too. Request an HTML URL with `Accept: text/markdown` to receive its Markdown twin, or use the explicit `.md` URL on GitHub Pages.
+
+A guide suite is a directory of Markdown files using the same title and first-paragraph summary format as module guides. In a suite, write links as `[label](api/<module>/<declaration-id>)`. Kotlin types also accept their qualified name. The catalog validates links against that version’s Java and Kotlin models, adds backlinks on the declaration pages, and makes all suites and modules searchable from the reference search box. Keep drafts under a `drafts/` directory. Set `"includeDrafts": true` on a preview version to include them. [Shared Java and Kotlin sample](https://elide-dev.github.io/doclet/catalog/latest/guides/handbook/guides/runtime-greetings.html)
+
+## Release quality checks
+
+CI builds the shared catalog from real Javadoc and Dokka output. Mobile Lighthouse checks the guide and both linked API pages for performance (90), accessibility (100), best practices (95), SEO (95), and layout shift (at most 0.05). Stylelint checks authored gallery, theme and catalog CSS against selected [Good CSS](https://good-css.com/) practices for logical properties, focus outlines and transitions.
+
+Agent-readiness checks follow the generated links and validate Markdown negotiation, JSON-LD, the API model, and LLM indexes. Push CI also records the public [Is Agentic report](https://is-agentic.com/scan/elide-dev.github.io/doclet/graalvm) and checks for regression against the initial score of 13. Several hosted probes target the parent GitHub Pages domain. The local checks exercise the exact candidate pages. Reports are downloadable from the build’s `quality-reports` artifact.
 
 ## Branding
 

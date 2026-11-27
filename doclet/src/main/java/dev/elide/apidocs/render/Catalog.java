@@ -21,7 +21,12 @@ public final class Catalog {
           new ArrayList<>(
               List.of(ExternalRuntime.locate(null, System.getenv()).toString(), script.toString()));
       command.addAll(List.of(args));
-      var process = new ProcessBuilder(command).inheritIO().start();
+      var builder = new ProcessBuilder(command).inheritIO();
+      builder.environment().put("APIDOCS_CLASSPATH", System.getProperty("java.class.path"));
+      builder
+          .environment()
+          .put("APIDOCS_JAVA", ProcessHandle.current().info().command().orElse("java"));
+      var process = builder.start();
       var hook = new Thread(process::destroy);
       Runtime.getRuntime().addShutdownHook(hook);
       try {

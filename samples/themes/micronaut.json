@@ -27,7 +27,7 @@
       "radius": "2px"
     }
   },
-  "css": ".topbar .logo { height: 2rem; width: auto; }\n.sig-large pre { border-inline-start: 3px solid currentColor; }",
+  "css": ".topbar .logo { block-size: 2rem; inline-size: auto; }\n.sig-large pre { border-inline-start: 3px solid currentColor; }",
   "footer": "Independent Micronaut theme demonstration by Elide.",
   "socialImage": null
 }

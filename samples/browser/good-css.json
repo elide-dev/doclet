@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "declaration-block-no-duplicate-properties": true,
+    "declaration-property-value-disallowed-list": {
+      "transition": ["/\\ball\\b/"],
+      "transition-property": ["all"],
+      "outline": ["none", "0"],
+      "outline-style": ["none"],
+      "text-align": ["left", "right"]
+    },
+    "property-disallowed-list": [
+      "/^(margin|padding|border)-(left|right|top|bottom)(-|$)/",
+      "/^(min-|max-)?(width|height)$/"
+    ]
+  }
+}

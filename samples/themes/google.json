@@ -26,7 +26,7 @@
       "radius": "12px"
     }
   },
-  "css": ".topbar .logo { height: 1.35rem; width: auto; }\n.topbar { border-image: linear-gradient(to right, #4285f4 25%, #ea4335 25% 50%, #fbbc04 50% 75%, #34a853 75%) 1; border-bottom-width: 3px; border-bottom-style: solid; }",
+  "css": ".topbar .logo { block-size: 1.35rem; inline-size: auto; }\n.topbar { border-image: linear-gradient(to right, #4285f4 25%, #ea4335 25% 50%, #fbbc04 50% 75%, #34a853 75%) 1; border-block-end-width: 3px; border-block-end-style: solid; }",
   "footer": "Independent Google theme demonstration by Elide.",
   "socialImage": null
 }

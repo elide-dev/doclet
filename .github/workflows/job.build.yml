@@ -68,8 +68,21 @@ jobs:
           PATH="$JAVA_HOME/bin:$PATH" scripts/build-samples
           scripts/check-size $(for theme in samples/themes/*.json; do echo ".dev/pages/$(basename "$theme" .json)"; done)
       - run: elide publish --dry-run
-      - name: Dokka plugin end-to-end
-        run: scripts/smoke-test-dokka
+      - name: Build shared Java and Kotlin catalog
+        run: PATH="$JAVA_HOME/bin:$PATH" scripts/build-shared-sample
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - name: Lighthouse, Good CSS and agent-readiness gates
+        run: |
+          npm ci --prefix samples/browser --ignore-scripts
+          node samples/browser/quality.mjs ${{ github.event_name == 'push' && '--public' || '' }}
+      - name: Save quality evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-reports
+          path: .dev/quality
       - name: Gradle plugin end-to-end
         run: PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test-plugins gradle
       - name: Maven plugin end-to-end
