@@ -59,11 +59,15 @@ try {
       const response = await fetch(new URL("contracts.ndjson", module));
       assert.equal(response.status, 200);
       assert.match(response.headers.get("content-type"), /ndjson/);
-      const records = (await response.text()).trim().split("\n").map(JSON.parse);
+      const contracts = await response.text();
+      const records = contracts.trim().split("\n").map(JSON.parse);
+      const index = await (await fetch(new URL("index-all.md", module))).text();
+      assert.ok(Buffer.byteLength(index) < Buffer.byteLength(contracts), resource);
       const lookups = resource === java
         ? [
             ["example.runtime.BuildPlan.defaults(String)", "example/runtime/BuildPlan.html#defaults(java.lang.String)"],
             ["example.runtime.Planner.Options.Detail", "example/runtime/Planner.Options.Detail.html"],
+            ["example.runtime.Planner.Local(Target)", "example/runtime/Planner.Local.html#<init>(example.runtime.Target)"],
           ]
         : [
             ["example.Greeter(String)", "example/Greeter.html#<init>(kotlin.String)"],
@@ -73,14 +77,20 @@ try {
       for (const [symbol, target] of lookups) {
         assert.ok(records.some(record => record.symbol === symbol &&
           decodeURIComponent(record.href) === target), symbol);
+        const label = symbol.slice((resource === java ? "example.runtime." : "example.").length);
+        const prefix = "- [`" + label + "`](";
+        const row = index.split("\n").find(line => line.startsWith(prefix));
+        assert.ok(row, symbol);
+        const dest = row.slice(prefix.length).split("), ")[0];
+        assert.equal(decodeURIComponent(dest), target.replace(".html", ".md"), symbol);
       }
       const advertised = await page.locator('head link:is([rel=alternate], [rel=help], [rel=describedby], [rel=index])')
         .evaluateAll(links => links.map(link => new URL(link.href).pathname.split("/").pop()));
       assert.deepEqual(advertised, [resource.split("/").pop().replace(/\.html$/, ".md"),
-        "llms.txt", "llms-full.txt", "contracts.ndjson", "api.json", "index-all.md"]);
-      assert.match(await page.locator('link[type="application/x-ndjson"]').getAttribute("title"), /exact Type\.member/);
+        "index-all.md", "llms.txt", "llms-full.txt", "contracts.ndjson", "api.json"]);
+      assert.match(await page.locator('link[rel="index"]').getAttribute("title"), /Type\.member or behavior.*declaring type and overload/);
       const llms = await (await fetch(new URL("llms.txt", module))).text();
-      assert.match(llms, /\[Alphabetical index\]\(index-all\.md\).*behavior.*declaring type and signature/);
+      assert.match(llms, /\[Alphabetical index\]\(index-all\.md\).*`Type\.member`.*behavior.*declaring type and overload/);
       assert.match(llms, /\[Declaration contracts\]\(contracts\.ndjson\).*known `Type\.member`/);
       const anchors = await page.locator("[id]").evaluateAll(nodes => nodes.map(node => node.id));
       const members = records.filter(record => new URL(record.href, module).pathname === new URL(page.url()).pathname);

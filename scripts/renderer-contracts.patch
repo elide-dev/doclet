@@ -1,5 +1,5 @@
 diff --git a/packages/apidocs/src/components/chrome.tsx b/packages/apidocs/src/components/chrome.tsx
-index 3196bcb..4cbfbcf 100644
+index 3196bcb..068f912 100644
 --- a/packages/apidocs/src/components/chrome.tsx
 +++ b/packages/apidocs/src/components/chrome.tsx
 @@ -11,7 +11,7 @@ import { createContext, Fragment, type ComponentChildren } from "preact";
@@ -41,8 +41,16 @@ index 3196bcb..4cbfbcf 100644
                ...(formats.model ? [{ "@type": "Dataset", name: "api.json", description: "The apidocs/1 model of the module.", encodingFormat: "application/json", url: formats.model }] : []),
              ],
            }]
-@@ -300,12 +303,16 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
+@@ -296,16 +299,21 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
+     ...(meta?.kind === "notfound" ? [{ name: "robots", content: "noindex" }] : []),
+   ];
+   // The same content for programs and AI agents: this page as Markdown, the index, the whole reference, the model.
++  const hasIndex = indexPages(site).some(entry => entry.page === INDEX_ALL_PAGE);
+   const links: HeadData["links"] = [
      ...(has.markdown ? [{ rel: "alternate", type: "text/markdown", href: `${name}.md`, title: "This page as Markdown" }] : []),
++    ...(hasIndex ? [{ rel: "index", type: has.markdown ? "text/markdown" : "text/html",
++      href: `${root}${INDEX_ALL_PAGE}${has.markdown ? ".md" : ".html"}`,
++      title: has.markdown ? "Find Type.member or behavior. Check declaring type and overload." : "Alphabetical declaration index" }] : []),
      ...(has.llms
        ? [
 -          { rel: "alternate", type: "text/markdown", href: `${root}llms.txt`, title: "llms.txt: index of every page, as Markdown links" },
@@ -53,16 +61,13 @@ index 3196bcb..4cbfbcf 100644
        : []),
 -    ...(has.model ? [{ rel: "alternate", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
 -    { rel: "index", href: `${root}index.html`, title: `${product} API reference` },
-+    ...(formats.contracts ? [{ rel: "describedby", type: "application/x-ndjson", href: `${root}contracts.ndjson`, title: "Declaration contracts for exact Type.member lookups" }] : []),
++    ...(formats.contracts ? [{ rel: "describedby", type: "application/x-ndjson", href: `${root}contracts.ndjson`, title: "Structured declaration contracts" }] : []),
 +    ...(has.model ? [{ rel: "describedby", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
-+    ...(indexPages(site).some(entry => entry.page === INDEX_ALL_PAGE)
-+      ? [{ rel: "index", type: has.markdown ? "text/markdown" : "text/html",
-+            href: `${root}${INDEX_ALL_PAGE}${has.markdown ? ".md" : ".html"}`, title: "Alphabetical declaration index" }]
-+      : [{ rel: "index", type: "text/html", href: `${root}index.html`, title: `${product} reference` }]),
++    ...(!hasIndex ? [{ rel: "index", type: "text/html", href: `${root}index.html`, title: `${product} reference` }] : []),
    ];
    return { title, description, keywords, product, canonical, meta: tags, links, formats, jsonLd: graph };
  }
-@@ -399,6 +406,7 @@ export function AgentNote({ formats }: { formats: Formats }) {
+@@ -399,6 +407,7 @@ export function AgentNote({ formats }: { formats: Formats }) {
      formats.markdown && `Markdown: ${formats.markdown} .`,
      formats.llms && `Index of every page (llms.txt): ${formats.llms} .`,
      formats.full && `The whole reference in one Markdown file: ${formats.full} .`,
@@ -85,14 +90,14 @@ index 6f89168..ab09905 100644
  /** The optional files a site has besides its HTML pages. */
 diff --git a/packages/apidocs/src/contracts.ts b/packages/apidocs/src/contracts.ts
 new file mode 100644
-index 0000000..c8c3424
+index 0000000..dbef1cb
 --- /dev/null
 +++ b/packages/apidocs/src/contracts.ts
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,47 @@
 +// Streamable member lookups for clients that need only one declaration or contract.
 +import type { Member, Type } from "./model";
 +import { INDEX, resolve, type Site, tokenText } from "./site";
-+import { blockText, memberTitle, summaryText } from "./structure";
++import { blockText, qualifiedMemberTitle, summaryText } from "./structure";
 +
 +export function declarationContracts(site: Site): string {
 +  const lines: string[] = [];
@@ -111,10 +116,7 @@ index 0000000..c8c3424
 +    };
 +  }
 +  function add(m: Member, owner: string) {
-+    const title = memberTitle(m, true);
-+    // Constructors use the type's name; their canonical href still carries <init>.
-+    const symbol = m.kind === "constructor" ? owner + title.slice(title.indexOf("(")) : [owner, title].filter(Boolean).join(".");
-+    const header = declaration(m, symbol);
++    const header = declaration(m, qualifiedMemberTitle(m, owner));
 +    if (!header) return;
 +    lines.push(JSON.stringify({
 +      ...header,
@@ -139,8 +141,41 @@ index 0000000..c8c3424
 +  }
 +  return lines.length ? lines.join("\n") + "\n" : "";
 +}
+diff --git a/packages/apidocs/src/index-data.ts b/packages/apidocs/src/index-data.ts
+index 8cada7c..097ce1c 100644
+--- a/packages/apidocs/src/index-data.ts
++++ b/packages/apidocs/src/index-data.ts
+@@ -5,7 +5,7 @@
+  */
+ import type { Deprecation, Inline, Member, Package, Type, TypeAlias } from "./model";
+ import { packagePage, type Site, typePage } from "./site";
+-import { memberTitle, typeKindWord } from "./structure";
++import { memberTitle, qualifiedMemberTitle, typeKindWord } from "./structure";
+
+ export function compareNames(a: string, b: string): number {
+   const x = a.toLowerCase();
+@@ -19,6 +19,8 @@ export interface IndexEntry {
+   name: string;
+   /** What it is and where: "method in Shapes", "class in com.example.geo". */
+   where: string;
++  /** Owner-qualified label for a Markdown lookup, with its kind displayed separately. */
++  lookup?: { name: string; kind: string };
+   id: string;
+   /** A page without an anchor, for entries without a model id (guides). */
+   page?: string;
+@@ -63,7 +65,9 @@ export function typeRows(site: Site): IndexEntry[] {
+ }
+
+ function memberEntry(member: Member, owner: string): IndexEntry {
+-  return { name: memberTitle(member), where: `${MEMBER_WORD[member.kind]} in ${owner}`, id: member.id, summary: member.doc?.summary, deprecation: member.deprecated };
++  const kind = MEMBER_WORD[member.kind];
++  return { name: memberTitle(member), where: `${kind} in ${owner}`, lookup: { name: qualifiedMemberTitle(member, owner), kind },
++    id: member.id, summary: member.doc?.summary, deprecation: member.deprecated };
+ }
+
+ function aliasEntry(alias: TypeAlias, pkg: Package): IndexEntry {
 diff --git a/packages/apidocs/src/markdown.ts b/packages/apidocs/src/markdown.ts
-index 91730b8..e776695 100644
+index 91730b8..11d502c 100644
 --- a/packages/apidocs/src/markdown.ts
 +++ b/packages/apidocs/src/markdown.ts
 @@ -6,16 +6,17 @@
@@ -333,7 +368,7 @@ index 91730b8..e776695 100644
    const g = entry.guide;
    // The same trail as the HTML page's breadcrumbs, without the page itself.
    const crumbs = guideCrumbs(site, entry).slice(0, -1);
-@@ -339,7 +376,7 @@ export function guideMarkdown(site: Site, entry: GuideEntry, symbols: SymbolMode
+@@ -339,17 +376,19 @@ export function guideMarkdown(site: Site, entry: GuideEntry, symbols: SymbolMode
  // ---- Index pages (src/indexes.tsx): the same lists as their HTML twins.
 
  function indexMd(site: Site, page: string, symbols: SymbolMode): Md {
@@ -341,9 +376,33 @@ index 91730b8..e776695 100644
 +  return { site, page, language: site.language, symbols, dest };
  }
 
- function entryLine(md: Md, entry: IndexEntry): string {
+-function entryLine(md: Md, entry: IndexEntry): string {
++function entryLine(md: Md, entry: IndexEntry, qualified = false): string {
+   const href = entry.page ? relative(md.page, entry.page, ".md") : resolve(md.site, md.page, ".md", entry.id);
+   // A declaration's name is code; a guide's title is prose, escaped like any other text.
+-  const name = entry.page?.startsWith("guides/") ? esc(entry.name) : codeSpan(entry.name);
++  const title = qualified ? entry.lookup?.name ?? entry.type?.name ?? entry.name : entry.name;
++  const where = qualified ? entry.lookup?.kind ?? entry.where : entry.where;
++  const name = entry.page?.startsWith("guides/") ? esc(title) : codeSpan(title);
+   const label = href ? `[${name}](${dest(href)})` : name;
+   const removal = entry.deprecation ? (entry.deprecation.forRemoval ? " (deprecated for removal)" : " (deprecated)") : "";
+   const summary = entry.summary?.length ? `: ${inlines(md, entry.summary)}` : "";
+-  return `- ${label}, ${esc(entry.where)}${removal}${summary}`;
++  return `- ${label}, ${esc(where)}${removal}${summary}`;
+ }
+
+ export function packagesIndexMarkdown(site: Site, symbols: SymbolMode = "utf"): string {
+@@ -369,7 +408,7 @@ export function indexAllMarkdown(site: Site, symbols: SymbolMode = "utf"): strin
+   const parts = [`# Index`, `Every declaration of ${esc(site.model.module.name)}, from A to Z.`];
+   const guides = guideEntriesForIndex(site);
+   if (guides.length) parts.push(`## Guides\n\n${guides.map(e => entryLine(md, e)).join("\n")}`);
+-  for (const group of letterGroups(site)) parts.push(`## ${group.letter}\n\n${group.entries.map(e => entryLine(md, e)).join("\n")}`);
++  for (const group of letterGroups(site)) parts.push(`## ${group.letter}\n\n${group.entries.map(e => entryLine(md, e, true)).join("\n")}`);
+   return join(parts);
+ }
+
 diff --git a/packages/apidocs/src/render.tsx b/packages/apidocs/src/render.tsx
-index ba0a8eb..5067d31 100644
+index ba0a8eb..bbe5358 100644
 --- a/packages/apidocs/src/render.tsx
 +++ b/packages/apidocs/src/render.tsx
 @@ -5,11 +5,12 @@
@@ -452,14 +511,14 @@ index ba0a8eb..5067d31 100644
      "## Overview", "",
      `- [${withSym(symbols, "module", md(m.name))}](index${ext}): ${guidesOnly ? "the overview" : "packages and types"}`,
 +    ...(hasContracts && indexes.some(p => p.page === INDEX_ALL_PAGE)
-+      ? [`- [Alphabetical index](${INDEX_ALL_PAGE}${ext}): search names and descriptions by behavior. Compare the declaring type and signature, then follow the matching declaration.`]
++      ? [`- [Alphabetical index](${INDEX_ALL_PAGE}${ext}): find ${outputs.markdown ? "`Type.member`" : "a member name"} or search by behavior. Check the declaring type and overload, then follow the matching link.`]
 +      : []),
-+    ...(hasContracts ? ["- [Declaration contracts](contracts.ndjson): look up a known `Type.member`. Match the qualified symbol and signature for the exact overload."] : []),
++    ...(hasContracts ? ["- [Declaration contracts](contracts.ndjson): full structured records for a known `Type.member`, including documented parameters, returns and throws."] : []),
      "- [llms-full.txt](llms-full.txt): every page in one file",
      ...(outputs.model ? ["- [api.json](api.json): the apidocs/1 model"] : []),
      "",
 diff --git a/packages/apidocs/src/structure.ts b/packages/apidocs/src/structure.ts
-index 97eb4db..29fc65c 100644
+index 97eb4db..32e73c1 100644
 --- a/packages/apidocs/src/structure.ts
 +++ b/packages/apidocs/src/structure.ts
 @@ -225,3 +225,3 @@ export function optionalEnd(tokens: Token[], i: number): number | undefined {
@@ -472,6 +531,15 @@ index 97eb4db..29fc65c 100644
 -  const shown = params.length > 3 ? [...params.slice(0, 2), "\u2026"] : params;
 +  const shown = !allParameters && params.length > 3 ? [...params.slice(0, 2), "\u2026"] : params;
    return `${receiver}${member.name}(${shown.join(", ")})`;
+@@ -233,2 +233,8 @@ export function memberTitle(member: Member): string {
+
++/** A searchable declaration label, including its owner and every parameter. */
++export function qualifiedMemberTitle(member: Member, owner: string): string {
++  const title = memberTitle(member, true);
++  return member.kind === "constructor" ? owner + title.slice(title.indexOf("(")) : [owner, title].filter(Boolean).join(".");
++}
++
+ // ---- Guides.
 diff --git a/packages/apidocs/src/url.ts b/packages/apidocs/src/url.ts
 index e700716..e15b672 100644
 --- a/packages/apidocs/src/url.ts

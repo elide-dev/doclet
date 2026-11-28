@@ -20,7 +20,9 @@ Each HTML page advertises its Markdown twin with one `rel="alternate" type="text
 
 At the top of a type’s Markdown page, **API at a glance** links each documented member it summarizes to its declaration on the same page. Follow the link to read the signature and full documentation or to cite a specific overload.
 
-For a behavior you know by description, search the alphabetical index and compare the declaring types and signatures. Its entries link to the individual declarations. For a known `Type.member`, API modules publish `contracts.ndjson` alongside `llms.txt`. Each JSON line has a qualified `symbol`, the declaration’s `signature` and canonical HTML `href`, plus its documented summary, parameters, return value, exceptions and deprecation details.
+Search `index-all.md` for a name such as `BuildPlan.defaults` or for words describing the behavior you need. Each member row shows its declaring type, parameter types, and documented summary when available. Follow the matching overload for the full declaration.
+
+For structured lookups, API modules publish `contracts.ndjson` alongside `llms.txt`. Each JSON line has a qualified `symbol`, the declaration’s `signature` and canonical HTML `href`, plus its documented summary, parameters, return value, exceptions and deprecation details.
 
 ```sh
 jq -c 'select(.symbol | contains("BuildStep.prepare(")) | {symbol, href, signature}' contracts.ndjson
