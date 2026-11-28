@@ -1,0 +1,74 @@
+[
+  {
+    "question": "Which builder method disables treating an @file argument as a file of command-line options?",
+    "page": "JCommander.Builder",
+    "anchors": [
+      "expandAtSign(java.lang.Boolean)"
+    ],
+    "answer": "\\bexpandAtSign\\b",
+    "evidence": "Disables expanding.{0,30}@file"
+  },
+  {
+    "question": "What does JCommander.getMainParameterValue() return when no main parameter is defined?",
+    "page": "JCommander",
+    "anchors": [
+      "getMainParameterValue()"
+    ],
+    "answer": "\\bnull\\b",
+    "evidence": "null if none is defined"
+  },
+  {
+    "question": "Which method reports whether a parameter received a value during command-line parsing?",
+    "page": "ParameterDescription",
+    "anchors": [
+      "isAssigned()"
+    ],
+    "answer": "\\bisAssigned\\b",
+    "evidence": "parameter received a value during the parsing phase"
+  },
+  {
+    "question": "Does DefaultUsageFormatter.wrapDescription(StringBuilder, int, String) automatically insert leading spaces before the description?",
+    "page": "DefaultUsageFormatter",
+    "anchors": [
+      "wrapDescription(java.lang.StringBuilder,int,java.lang.String)"
+    ],
+    "answer": "\\bno\\b|no extra spaces|must prepend|caller.{0,45}prepend",
+    "evidence": "No extra spaces are inserted before.{0,30}description"
+  },
+  {
+    "question": "In DefaultListConverter(IParameterSplitter, IStringConverter), what is the splitter used for?",
+    "page": "DefaultListConverter",
+    "anchors": [
+      "<init>(com.beust.jcommander.converters.IParameterSplitter,com.beust.jcommander.IStringConverter)"
+    ],
+    "answer": "split.{0,45}(?:list|arguments|values|elements)|break.{0,45}(?:list|arguments|values|elements)",
+    "evidence": "split value into list of arguments"
+  },
+  {
+    "question": "What is the option name passed to EnumConverter(String, Class) used for?",
+    "page": "EnumConverter",
+    "anchors": [
+      "<init>(java.lang.String,java.lang.Class)"
+    ],
+    "answer": "error.{0,30}(?:report|messag)|report.{0,20}error",
+    "evidence": "option name for error reporting"
+  },
+  {
+    "question": "Does UnixStyleUsageFormatter.appendAllParametersDetails(StringBuilder, int, String, List) add indentation to only the first line or to every line?",
+    "page": "UnixStyleUsageFormatter",
+    "anchors": [
+      "appendAllParametersDetails(java.lang.StringBuilder,int,java.lang.String,java.util.List)"
+    ],
+    "answer": "\\bevery line\\b|\\ball (?:of the )?lines\\b|\\beach line\\b",
+    "evidence": "indent(?:s|ing) every line"
+  },
+  {
+    "question": "What does Parameterized.findFieldGenericType() return when there is no applicable collection generic type?",
+    "page": "Parameterized",
+    "anchors": [
+      "findFieldGenericType()"
+    ],
+    "answer": "\\bnull\\b",
+    "evidence": "null if not applicable"
+  }
+]

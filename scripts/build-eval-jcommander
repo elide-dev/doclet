@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Build both sides of the frozen JCommander holdout from a locally cached sources JAR.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+coordinate=com/beust/jcommander/1.78/jcommander-1.78-sources.jar
+cache="${HOME}/.m2/repository/$coordinate"
+if [[ ! -f "$cache" ]]; then
+  cache=".dev/dependencies/m2/$coordinate"
+fi
+archive=${1:-"$cache"}
+target="$PWD/.dev/eval-jcommander"
+mkdir -p "$target"
+work=$(mktemp -d "$target/.build.XXXXXXXX")
+trap 'rm -rf "$work"' EXIT
+
+python3 - "$archive" "$work/source" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+import zipfile
+
+path, destination = map(Path, sys.argv[1:])
+if not path.is_file():
+    sys.exit(f"Missing {path}. Pass the local Maven Central JCommander 1.78 sources JAR as argument.")
+digest = hashlib.sha256(path.read_bytes()).hexdigest()
+if digest != "9e2aee95666a586918d0931bd1bee02628167da907e6adab86489708bbf2b39a":
+    sys.exit(f"Unexpected JCommander source archive SHA-256: {digest}")
+with zipfile.ZipFile(path) as archive:
+    for name in archive.namelist():
+        if name.startswith("com/beust/jcommander/") and name.endswith(".java"):
+            archive.extract(name, destination)
+PY
+
+elide build elide-doclet
+doclet="$PWD/doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar"
+javadoc="${JAVA_HOME:+$JAVA_HOME/bin/}javadoc"
+common=(-quiet -public -encoding UTF-8 -sourcepath "$work/source")
+packages=(com.beust.jcommander com.beust.jcommander.converters com.beust.jcommander.defaultprovider
+  com.beust.jcommander.validators)
+"$javadoc" "${common[@]}" -Xdoclint:none -notimestamp --no-platform-links \
+  -d "$work/javadoc" "${packages[@]}"
+"$javadoc" "${common[@]}" -doclet dev.elide.doclet.ElideDoclet -docletpath "$doclet" \
+  --module-name jcommander --module-version 1.78 -d "$work/markdown" "${packages[@]}"
+for format in javadoc markdown; do
+  mkdir -p "$target/$format"
+  rsync -a --delete "$work/$format/" "$target/$format/"
+done
