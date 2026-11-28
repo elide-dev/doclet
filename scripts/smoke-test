@@ -8,7 +8,9 @@ trap 'rm -rf "$work"' EXIT
 cat > "$work/Example.java" <<'EOF'
 /** Example API. Named &ouml; and &uuml;, numeric &#x1F642; and &#128578;. */
 public class Example {
+    /** Selects a utility date. */
     public void select(int a, int b, int c, java.util.Date date) {}
+    /** Selects a database date. */
     public void select(int a, int b, int c, java.sql.Date date) {}
 }
 EOF
@@ -20,15 +22,26 @@ test -s "$work/docs/api.json"
 test -s "$work/docs/assets/apidocs.css"
 test -s "$work/docs/assets/apidocs.js"
 python3 - "$work/docs/contracts.ndjson" <<'PY'
-import json, sys
+import json, re, sys
 from pathlib import Path
+from urllib.parse import unquote
 
-rows = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
+index = Path(sys.argv[1])
+rows = [json.loads(line) for line in index.read_text().splitlines()]
 overloads = [row for row in rows if row["symbol"] == "Example.select(int, int, int, Date)"]
 assert {row["href"] for row in overloads} == {
     "default-package/Example.html#select(int,int,int,java.sql.Date)",
     "default-package/Example.html#select(int,int,int,java.util.Date)",
 }
+md = (index.parent / "default-package/Example.md").read_text()
+glance = md.split("## API at a glance\n\n", 1)[1].split("\n\n", 1)[0]
+links = re.findall(r"^- \[`(select[^\n]+?)`\]\(#([^ )]+)\): (.+)$", glance, re.M)
+assert len(links) == 2 and links[0][0] == links[1][0], links
+for _, target, summary in links:
+    anchor = unquote(target)
+    assert f'<a id="{anchor}"></a>' in md, target
+    expected_type = {"Selects a utility date.": "java.util.Date", "Selects a database date.": "java.sql.Date"}[summary]
+    assert anchor == f"select(int,int,int,{expected_type})", (summary, target)
 PY
 
 echo '/** Unknown &docletTestUnknown;. */ public class Invalid {}' > "$work/Invalid.java"

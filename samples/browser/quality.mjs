@@ -107,6 +107,14 @@ try {
           new DOMParser().parseFromString(match[1], "text/html").querySelector("a").id),
       markdown);
       assert.deepEqual(markdownAnchors.sort(), memberAnchors.sort(), resource);
+      const glance = markdown.split("## API at a glance\n\n")[1].split("\n\n")[0];
+      const linked = [...glance.matchAll(/^- \[.+?\]\(#([^\s)]+)\):/gm)]
+        .map(match => decodeURIComponent(match[1]));
+      const expected = resource === java
+        ? ["<init>(java.lang.String,java.util.List)", "defaults(java.lang.String)"]
+        : ["greet()"];
+      for (const anchor of expected) assert.ok(linked.includes(anchor), anchor);
+      for (const anchor of linked) assert.ok(markdownAnchors.includes(anchor), anchor);
     }
     const jsonld = await page
       .locator('script[type="application/ld+json"]')
