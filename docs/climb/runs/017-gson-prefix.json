@@ -1,0 +1,489 @@
+{
+  "chars": 600,
+  "index_tokens": {
+    "with_cues": 3201,
+    "summary_only": 1292
+  },
+  "cases": [
+    {
+      "question": "What value does JsonObject.get return for a member name that does not exist?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonObject.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What value does JsonObject.get return for a member name that does not exist?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonObject.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What value does JsonObject.get return for a member name that does not exist?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/InstanceCreator.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "What value does JsonObject.get return for a member name that does not exist?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/InstanceCreator.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "In what order does JsonObject.entrySet iterate over members?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonObject.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "In what order does JsonObject.entrySet iterate over members?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonObject.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "In what order does JsonObject.entrySet iterate over members?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonObject.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "In what order does JsonObject.entrySet iterate over members?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonObject.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception does the indexed JsonArray.remove overload specify for an invalid position?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonArray.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception does the indexed JsonArray.remove overload specify for an invalid position?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonArray.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception does the indexed JsonArray.remove overload specify for an invalid position?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonArray.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception does the indexed JsonArray.remove overload specify for an invalid position?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonArray.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What should replace a new JsonNull() call?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What should replace a new JsonNull() call?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What should replace a new JsonNull() call?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What should replace a new JsonNull() call?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Does JsonNull.deepCopy allocate a fresh value or share an instance?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Does JsonNull.deepCopy allocate a fresh value or share an instance?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Does JsonNull.deepCopy allocate a fresh value or share an instance?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Does JsonNull.deepCopy allocate a fresh value or share an instance?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonNull.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which naming policy turns a camel-case field into lowercase words separated by underscores?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/FieldNamingPolicy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which naming policy turns a camel-case field into lowercase words separated by underscores?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/FieldNamingPolicy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which naming policy turns a camel-case field into lowercase words separated by underscores?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/ExclusionStrategy.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which naming policy turns a camel-case field into lowercase words separated by underscores?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/ExclusionStrategy.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which number policy decodes arbitrary-length JSON numbers using BigDecimal?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/ToNumberPolicy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which number policy decodes arbitrary-length JSON numbers using BigDecimal?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/ToNumberPolicy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which number policy decodes arbitrary-length JSON numbers using BigDecimal?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/ToNumberPolicy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which number policy decodes arbitrary-length JSON numbers using BigDecimal?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/ToNumberPolicy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception signals exhaustion when JsonStreamParser.next() has no JSON element left?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonStreamParser.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception signals exhaustion when JsonStreamParser.next() has no JSON element left?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonStreamParser.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception signals exhaustion when JsonStreamParser.next() has no JSON element left?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonSyntaxException.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which exception signals exhaustion when JsonStreamParser.next() has no JSON element left?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonSyntaxException.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonStreamParser.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonStreamParser.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonStreamParser.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonStreamParser.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which builder method enables serialization of fields whose values are null?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/GsonBuilder.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which builder method enables serialization of fields whose values are null?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/GsonBuilder.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which builder method enables serialization of fields whose values are null?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonSerializationContext.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which builder method enables serialization of fields whose values are null?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonSerializationContext.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "What does TypeAdapterFactory.create return when the factory cannot handle the requested type?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/TypeAdapterFactory.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What does TypeAdapterFactory.create return when the factory cannot handle the requested type?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/TypeAdapterFactory.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What does TypeAdapterFactory.create return when the factory cannot handle the requested type?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/TypeAdapterFactory.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What does TypeAdapterFactory.create return when the factory cannot handle the requested type?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/TypeAdapterFactory.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "For FieldAttributes backed by an unannotated field, what does getAnnotation return?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/FieldAttributes.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "For FieldAttributes backed by an unannotated field, what does getAnnotation return?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/FieldAttributes.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "For FieldAttributes backed by an unannotated field, what does getAnnotation return?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/FieldAttributes.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "For FieldAttributes backed by an unannotated field, what does getAnnotation return?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/FieldAttributes.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "How does Gson.fromJson(String, Class) represent an empty input string in its result?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonArray.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "How does Gson.fromJson(String, Class) represent an empty input string in its result?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonArray.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "How does Gson.fromJson(String, Class) represent an empty input string in its result?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/JsonIOException.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "How does Gson.fromJson(String, Class) represent an empty input string in its result?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/JsonIOException.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which JsonPrimitive predicate checks whether the wrapped value is a number?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/JsonPrimitive.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which JsonPrimitive predicate checks whether the wrapped value is a number?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/JsonPrimitive.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which JsonPrimitive predicate checks whether the wrapped value is a number?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/ToNumberStrategy.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which JsonPrimitive predicate checks whether the wrapped value is a number?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/ToNumberStrategy.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "On ExclusionStrategy, which method determines whether an entire class should be ignored?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "com/google/gson/ExclusionStrategy.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "On ExclusionStrategy, which method determines whether an entire class should be ignored?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "com/google/gson/ExclusionStrategy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "On ExclusionStrategy, which method determines whether an entire class should be ignored?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "com/google/gson/ExclusionStrategy.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "On ExclusionStrategy, which method determines whether an entire class should be ignored?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "com/google/gson/ExclusionStrategy.md",
+      "page_hit": true,
+      "evidence_hit": false
+    }
+  ]
+}

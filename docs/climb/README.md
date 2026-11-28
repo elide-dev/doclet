@@ -1,5 +1,20 @@
 # Agent documentation experiment ledger
 
+## 2026-11-27 · Separating index discovery from Markdown layout
+
+Run 017 crossed two independent changes. For discovery, each type entry in `llms.txt` retained either its published member cues or just its description. For reading, each Markdown page retained or omitted its opening member bullets. The same lexical ranker selected one type. The reader got the first 600 characters, including frontmatter. Results below count questions with matching evidence on the expected type. No model was called.
+
+| Type entries | Markdown prefix | Runtime Kit | Gson |
+|---|---|---:|---:|
+| Description only | No contract bullets | 0/10 | 0/15 |
+| Description only | Contract bullets | 6/10 | 3/15 |
+| Description and member cues | No contract bullets | 1/10 | 0/15 |
+| Description and member cues | Contract bullets | 10/10 | 3/15 |
+
+Cues raised correct type selection from 6 to 10 on Runtime Kit and from 9 to 14 on Gson. They raised whole-index size from 623 to 1,048 tokens and from 1,292 to 3,201 tokens, respectively (o200k_base). Gson shows where early type-page summaries stop helping: finding the right type still leaves the reader far from most overloads. Test a short index pointing to the member index and `contracts.ndjson` against the current inline cues; count the discovery tokens and fetches actually consumed. Start a separate HTML discovery test with only the HTML URL, since these runs supply the index directly. [Runtime Kit cases](runs/017-runtime-prefix.json) · [Gson cases](runs/017-gson-prefix.json)
+
+Reproduce with `uv run --no-project --with tiktoken==0.12.0 python scripts/eval-prefix.py .dev/eval-holdout/markdown samples/evals/holdout/questions.json`. Gson is a follow-up corpus after run 007.
+
 ## 2026-11-27 · Local lookups and complete contract fields
 
 **Outcome.** On the ten development questions, the two-stage reader (select a type, then select a member) achieved **8.36× the grounded answers per total model token** with GPT-6.2 Astra at ultra effort as fallback. The stronger control that pre-indexes every Javadoc member closed the gap. On the external Gson corpus, the initial blind result was a tie. Use the control name and corpus when quoting a multiplier.

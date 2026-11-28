@@ -1,0 +1,329 @@
+{
+  "chars": 600,
+  "index_tokens": {
+    "with_cues": 1048,
+    "summary_only": 623
+  },
+  "cases": [
+    {
+      "question": "What compiler arguments does BuildPlan.defaults use?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What compiler arguments does BuildPlan.defaults use?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What compiler arguments does BuildPlan.defaults use?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What compiler arguments does BuildPlan.defaults use?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "When does Planner.prepare reject a configuration?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/Planner.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "When does Planner.prepare reject a configuration?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/Planner.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "When does Planner.prepare reject a configuration?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/Planner.Options.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "When does Planner.prepare reject a configuration?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/Planner.Options.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which Target compiles an operating-system executable?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/Target.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which Target compiles an operating-system executable?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/Target.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which Target compiles an operating-system executable?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/Target.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which Target compiles an operating-system executable?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/Target.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which Planner.Options.Detail value reports each preparation step?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which Planner.Options.Detail value reports each preparation step?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which Planner.Options.Detail value reports each preparation step?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which Planner.Options.Detail value reports each preparation step?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What replaces the deprecated runtime method on Planner.Local?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/Planner.Local.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What replaces the deprecated runtime method on Planner.Local?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/Planner.Local.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What replaces the deprecated runtime method on Planner.Local?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/Planner.Local.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What replaces the deprecated runtime method on Planner.Local?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/Planner.Local.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What checked exception can a BuildStep throw when preparation fails?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What checked exception can a BuildStep throw when preparation fails?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What checked exception can a BuildStep throw when preparation fails?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What checked exception can a BuildStep throw when preparation fails?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which progress setting reports only the result while preparing a plan?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which progress setting reports only the result while preparing a plan?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which progress setting reports only the result while preparing a plan?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which progress setting reports only the result while preparing a plan?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/Planner.Options.Detail.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which constant selects the installed Java virtual machine as the runtime?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/Target.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which constant selects the installed Java virtual machine as the runtime?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/Target.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "Which constant selects the installed Java virtual machine as the runtime?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "Which constant selects the installed Java virtual machine as the runtime?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "What method prepares an artifact without executing the application?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What method prepares an artifact without executing the application?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What method prepares an artifact without executing the application?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "What method prepares an artifact without executing the application?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "What is the name of the record component that holds compiler arguments in invocation order?",
+      "index": "with_cues",
+      "bullets": true,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": true,
+      "evidence_hit": true
+    },
+    {
+      "question": "What is the name of the record component that holds compiler arguments in invocation order?",
+      "index": "with_cues",
+      "bullets": false,
+      "page": "example/runtime/BuildPlan.md",
+      "page_hit": true,
+      "evidence_hit": false
+    },
+    {
+      "question": "What is the name of the record component that holds compiler arguments in invocation order?",
+      "index": "summary_only",
+      "bullets": true,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": false,
+      "evidence_hit": false
+    },
+    {
+      "question": "What is the name of the record component that holds compiler arguments in invocation order?",
+      "index": "summary_only",
+      "bullets": false,
+      "page": "example/runtime/BuildStep.md",
+      "page_hit": false,
+      "evidence_hit": false
+    }
+  ]
+}
