@@ -124,11 +124,19 @@ AFDocs scans a specific Java type, Kotlin type, and cross-module guide before re
 
 ### Evaluating documentation for agents
 
-With the shared sample built (`scripts/build-samples` followed by `scripts/build-shared-sample`) and JDK 25 on PATH, run `python3 scripts/eval-docs.py`. CI runs the same experiment without credentials, model calls, or inference fees.
+Run the benchmark locally with JDK 25 on PATH after `scripts/build-samples` and `scripts/build-shared-sample`. The offline run needs no model account. CI continues to enforce AFDocs and the generated-site checks.
 
-The harness builds standard Javadoc from the same Java sources. It pairs each of ten API questions with three discovery indexes (standard Javadoc, generated llms.txt, and type names alone) and two reading formats (Javadoc main text and generated Markdown). Each variant uses the same lexical retriever, one page fetch, and a 4,000-character reading budget. It records top-page accuracy, whether the expected evidence fits, and context characters per question in `.dev/quality/doc-evals.json`. Change `--chars` to test tighter budgets. The scope is type lookup on the Java sample; guides and Kotlin are covered by the separate quality gates.
+```sh
+python3 scripts/eval-docs.py --chars 600
+python3 scripts/eval-docs.py --account codex --chars 600 --output .dev/luna.json
+python3 scripts/eval-docs.py --account claude --chars 600 --output .dev/sonnet.json
+```
 
-For an answer-level experiment, pass `--reader './your-model-wrapper'` and `--reader-label 'model/version and settings'`. The wrapper reads a prompt on stdin and prints a short answer on stdout. For a local Ollama instance with a model already installed, use `OLLAMA_MODEL=<installed-tag> python3 scripts/eval-docs.py --reader "python3 scripts/eval-ollama.py" --reader-label "<model tag/digest>, temperature 0, seed 42"`. A run makes 60 short calls. The report records answers and checks expected answer patterns against retrieved evidence. Use a fixed model and settings and inspect the paired answers before drawing conclusions. The default offline run measures retrieval, not model answer quality.
+The account runs use the locally signed-in CLI and hosted inference. Codex defaults to `gpt-6-luna` at low effort. Claude Code resolves `sonnet` for the account and the report records its returned model ID. Use `--model` to pin a target. Each question gets a fresh CLI process in a temporary directory with the question and one retrieved document excerpt. Paired mode alternates which format runs first across ten questions (20 calls). Use `--all-variants` for the full three-index by two-format ablation (60 calls).
+
+The JDK builds standard Javadoc from the same Java sources. Each variant uses the same lexical retriever and maximum reading budget. Reports include the chosen page, evidence and answer checks, and per-question elapsed time. Timing includes local retrieval, CLI startup, and the hosted turn; it excludes building the two sites. Account runs record provider input, cached input, cache writes, and output tokens. Cached counts are subsets of input; the local lexical index is read by Python and never sent to the model. Timing varies with provider load and cache state.
+
+The offline run measures page and evidence retrieval across all six variants. Account runs also check the answer against the fixture's expected pattern and require the expected evidence in the retrieved page. Inspect the recorded answers when comparing models. To use a different reader, pass `--reader './your-wrapper'` and `--reader-label 'model and settings'`; the wrapper reads a prompt on stdin and writes an answer to stdout. The default report is `.dev/quality/doc-evals.json`.
 
 ## Branding
 

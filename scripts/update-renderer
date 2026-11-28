@@ -7,6 +7,7 @@ resources="$PWD/doclet/src/main/resources"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 git -C "$1" archive "$revision" | tar -x -C "$work"
+patch -s -d "$work" -p1 < scripts/renderer-contracts.patch
 cd "$work"
 bun install --frozen-lockfile --ignore-scripts
 bun run --filter '@elide/tokens' build

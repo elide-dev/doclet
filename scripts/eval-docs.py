@@ -7,8 +7,11 @@ import math
 from pathlib import Path
 import re
 import shlex
+import statistics
 import subprocess
 import tempfile
+from time import perf_counter
+from eval_accounts import read_answer
 
 
 class VisibleText(HTMLParser):
@@ -67,45 +70,77 @@ def evaluate(args, standard):
     questions = json.loads(Path("samples/evals/questions.json").read_text())
     rows = []
     indexes = {"javadoc": jdk, "llms": llms, "names-only": {name: name for name in jdk}}
-    for discovery, index in indexes.items():
-        for fmt in ["html", "markdown"]:
-            for case in questions:
-                chosen = rank(case["question"], index)[0]
-                relative = Path("example/runtime") / chosen
-                if fmt == "html":
-                    body = visible((standard / (str(relative) + ".html")).read_text(), True)
-                else:
-                    body = (module / (str(relative) + ".md")).read_text()
-                context = body[:args.chars]
-                hit = chosen == case["page"]
-                evidence = bool(hit and re.search(case["evidence"], context, re.I | re.S))
-                row = dict(index=discovery, format=fmt, question=case["question"], page=chosen,
-                           page_hit=hit, evidence_hit=evidence, context_chars=len(context))
-                if args.reader:
-                    prompt = f"Answer briefly using only this document. If unknown, say unknown.\nQuestion: {case['question']}\nDocument:\n{context}"
-                    answer = subprocess.run(shlex.split(args.reader), input=prompt, text=True,
-                                            capture_output=True, timeout=90, check=True).stdout.strip()
-                    row.update(answer=answer, grounded_correct=bool(evidence and
-                               re.search(case["answer"], answer, re.I)))
-                rows.append(row)
-    report = dict(character_budget=args.chars, reader=args.reader_label, results=rows)
+    variants = [(i, f) for i in indexes for f in ("html", "markdown")]
+    if args.paired or args.account and not args.all_variants:
+        variants = [("javadoc", "html"), ("llms", "markdown")]
+    report = dict(character_budget=args.chars, reader=args.model or args.reader_label,
+                  cli_version=subprocess.check_output(
+                      [args.account, "--version"], text=True).strip() if args.account else None,
+                  results=rows)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2) + "\n")
+    for n, case in enumerate(questions):
+        for discovery, fmt in (variants if n % 2 == 0 else reversed(variants)):
+            start = perf_counter()
+            index = indexes[discovery]
+            chosen = rank(case["question"], index)[0]
+            relative = Path("example/runtime") / chosen
+            if fmt == "html":
+                body = visible((standard / (str(relative) + ".html")).read_text(), True)
+            else:
+                body = (module / (str(relative) + ".md")).read_text()
+            context = body[:args.chars]
+            hit = chosen == case["page"]
+            evidence = bool(hit and re.search(case["evidence"], context, re.I | re.S))
+            row = dict(index=discovery, format=fmt, question=case["question"], page=chosen,
+                       page_hit=hit, evidence_hit=evidence, context_chars=len(context))
+            if args.reader or args.account:
+                prompt = f"Answer briefly using only this document. If unknown, say unknown.\nQuestion: {case['question']}\nDocument:\n{context}"
+                if args.account:
+                    row.update(read_answer(args.account, args.model, prompt))
+                    answer = row["answer"]
+                else:
+                    answer = subprocess.run(shlex.split(args.reader), input=prompt, text=True,
+                                        capture_output=True, timeout=90, check=True).stdout.strip()
+                row.update(answer=answer, grounded_correct=bool(evidence and
+                           re.search(case["answer"], answer, re.I)))
+            row["wall_ms"] = round((perf_counter() - start) * 1000, 3)
+            rows.append(row)
+            # Preserve completed turns if a local account hits its quota mid-run.
+            pending = args.output.with_suffix(".tmp")
+            pending.write_text(json.dumps(report, indent=2) + "\n")
+            pending.replace(args.output)
     for index in indexes:
         for fmt in ("html", "markdown"):
             group = [r for r in rows if (r["index"], r["format"]) == (index, fmt)]
-            metrics = ["page_hit", "evidence_hit"] + (["grounded_correct"] if args.reader else [])
+            if not group:
+                continue
+            metrics = ["page_hit", "evidence_hit"] + (["grounded_correct"] if args.reader or args.account else [])
             print(index, fmt, *(f"{k}={sum(r[k] for r in group)}/{len(group)}" for k in metrics),
-                  "mean context chars=", round(sum(r["context_chars"] for r in group) / len(group)))
+                  f"median wall={statistics.median(r['wall_ms'] for r in group):.1f}ms",
+                  "mean context chars=", round(statistics.mean(r["context_chars"] for r in group)))
+            if args.account:
+                print("  token totals:", {key: sum(r[key] for r in group) for key in
+                      ("input_tokens", "cached_input_tokens", "cache_write_tokens", "output_tokens")})
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--account", choices=["codex", "claude"])
+    parser.add_argument("--model", help="Provider model ID or Claude alias")
+    variants = parser.add_mutually_exclusive_group()
+    variants.add_argument("--paired", action="store_true", help="Compare the two delivery stacks")
+    variants.add_argument("--all-variants", action="store_true", help="Include all discovery/format ablations")
     parser.add_argument("--chars", type=int, default=4000)
     parser.add_argument("--reader", help="Optional model wrapper command: prompt on stdin, answer on stdout")
     parser.add_argument("--reader-label", help="Model/version and settings to record")
     parser.add_argument("--output", type=Path, default=Path(".dev/quality/doc-evals.json"))
     args = parser.parse_args()
+    if args.account:
+        if args.reader:
+            parser.error("Choose either an account or an external reader")
+        args.model = args.model or ("gpt-6-luna" if args.account == "codex" else "sonnet")
+    elif args.model:
+        parser.error("--model requires --account")
     if args.chars <= 0 or bool(args.reader) != bool(args.reader_label):
         parser.error("Provide a positive budget and pair --reader with --reader-label")
     with tempfile.TemporaryDirectory() as tmp:

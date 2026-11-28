@@ -1,0 +1,71 @@
+diff --git a/packages/apidocs/src/markdown.ts b/packages/apidocs/src/markdown.ts
+index 91730b8..3066249 100644
+--- a/packages/apidocs/src/markdown.ts
++++ b/packages/apidocs/src/markdown.ts
+@@ -10,7 +10,7 @@ import { type GuideEntry, guideCrumbs, guideNav, INDEX, isThrowable, overviewGui
+ import { type SymbolKey, type SymbolMode, typeSymbolKey, withSym } from "./symbols";
+ import { NOTE_LABEL, sortedNotes } from "./components/declaration";
+ import { markdownDestination, safeUrl } from "./url";
+-import { ADMONITION_LABEL, inlineText, memberGroups, memberTitle, summaryText, typeGroups, typeKindWord } from "./structure";
++import { ADMONITION_LABEL, blockText, inlineText, memberGroups, memberTitle, summaryText, typeGroups, typeKindWord } from "./structure";
+ 
+ interface Md {
+   site: Site;
+@@ -221,6 +221,26 @@ export function packageMarkdown(site: Site, pkg: Package, symbols: SymbolMode =
+   return join(parts);
+ }
+ 
++/** Short, bounded discovery cues from the same contracts as the full declarations. */
++export function contractRows(type: Type): string[] {
++  const rows = (type.components ?? []).map(p => p.name + ": " + blockText(p.doc));
++  const members = [...(type.members ?? [])].sort((a, b) => Number(!!b.source) - Number(!!a.source));
++  for (const m of members) {
++    if (rows.length >= 8) break;
++    if (m.implicit) continue;
++    const summary = summaryText(m.doc);
++    const returns = blockText(m.returns?.doc);
++    const facts = [
++      m.deprecated && ("Deprecated. " + blockText(m.deprecated.doc)),
++      summary,
++      returns && returns !== summary && ("Returns " + returns),
++      ...(m.throws ?? []).map(t => "Throws " + tokenText(t.type) + " " + blockText(t.doc)),
++    ].filter(Boolean);
++    if (facts.length) rows.push(memberTitle(m) + ": " + facts.join(" "));
++  }
++  return rows.slice(0, 8).map(row => row.replace(/\s+/g, " ").trim().slice(0, 220));
++}
++
+ export function typeMarkdown(site: Site, type: Type, symbols: SymbolMode = "utf"): string {
+   const entry = site.types.get(type.id)!;
+   const page = entry.page;
+@@ -231,6 +251,8 @@ export function typeMarkdown(site: Site, type: Type, symbols: SymbolMode = "utf"
+   if (type.enclosing) facts.push(`Nested in [${codeSpan(refLabel(site, { id: type.enclosing }))}](${resolve(site, page, ".md", type.enclosing)}).`);
+   const crumbs = [{ label: site.model.module.name, page: INDEX }, { label: entry.pkg.name, page: packagePage(entry.pkg) }];
+   const parts = [`# ${withSym(symbols, typeSymbolKey(type.kind, isThrowable(type)), type.name)}`, location(md, crumbs), facts.join(" "), signature(md, type.signature, type.annotations)];
++  const contracts = contractRows(type);
++  if (contracts.length) parts.splice(1, 0, "## API at a glance\n\n" + contracts.map(row => "- " + esc(row)).join("\n"));
+   if (type.ancestors?.length) {
+     parts.push("Inheritance: " + [...type.ancestors].reverse().map(ref => link(md, ref)).join(" > ") + ` > ${codeSpan(type.name.split(".").pop()!)}`);
+   }
+diff --git a/packages/apidocs/src/render.tsx b/packages/apidocs/src/render.tsx
+index ba0a8eb..2632eb3 100644
+--- a/packages/apidocs/src/render.tsx
++++ b/packages/apidocs/src/render.tsx
+@@ -9,7 +9,7 @@ import { renderToString } from "preact-render-to-string";
+ import { DeprecatedPage, IndexAllPage, PackagesIndexPage, TypesIndexPage } from "./indexes";
+ import { Ctx, type Outputs, outputsOf, type PageContext } from "./context";
+ import { NAV_SCRIPT, NavTree, navScript } from "./components/chrome";
+-import { deprecatedIndexMarkdown, frontmatter, guideMarkdown, guideTwin, indexAllMarkdown, indexMarkdown, indexTwin, moduleTwin, NOT_FOUND, notFoundMarkdown, packageMarkdown, packagesIndexMarkdown, packageTwin, stripFrontmatter, typeMarkdown, typesIndexMarkdown, typeTwin } from "./markdown";
++import { contractRows, deprecatedIndexMarkdown, frontmatter, guideMarkdown, guideTwin, indexAllMarkdown, indexMarkdown, indexTwin, moduleTwin, NOT_FOUND, notFoundMarkdown, packageMarkdown, packagesIndexMarkdown, packageTwin, stripFrontmatter, typeMarkdown, typesIndexMarkdown, typeTwin } from "./markdown";
+ import type { Model } from "./model";
+ import { GuidePage } from "./narrative";
+ import { IndexPage, NotFoundPage, PackagePage, TypePage } from "./pages";
+@@ -79,7 +79,7 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
+       const tpage = typePage(pkg, type);
+       html(tpage, type.language, <TypePage type={type} />);
+       md[tpage] = frontmatter(site, typeTwin(type), canonical(tpage)) + typeMarkdown(site, type, symbols);
+-      pages.push({ page: tpage, title: `${type.name} (${typeKindWord(type)} in ${pkg.name})`, summary: summaryText(type.doc), symbol: typeSymbolKey(type.kind, isThrowable(type)) });
++      pages.push({ page: tpage, title: `${type.name} (${typeKindWord(type)} in ${pkg.name})`, summary: [summaryText(type.doc), contractRows(type).join(" ").slice(0, 600)].filter(Boolean).join(" "), symbol: typeSymbolKey(type.kind, isThrowable(type)) });
+     }
+   }
+ 
