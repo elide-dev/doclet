@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 from time import perf_counter
 from eval_accounts import read_answer
+from eval_passages import passage
 
 
 class VisibleText(HTMLParser):
@@ -73,7 +74,12 @@ def evaluate(args, standard):
     variants = [(i, f) for i in indexes for f in ("html", "markdown")]
     if args.paired or args.account and not args.all_variants:
         variants = [("javadoc", "html"), ("llms", "markdown")]
-    report = dict(character_budget=args.chars, reader=args.model or args.reader_label,
+    encoding = None
+    if args.count_tokens:
+        import tiktoken
+        encoding = tiktoken.get_encoding("o200k_base")
+    report = dict(layout=args.layout, passages=args.passages, terse=args.terse,
+                  encoding=encoding.name if encoding else None, character_budget=args.chars, reader=args.model or args.reader_label,
                   cli_version=subprocess.check_output(
                       [args.account, "--version"], text=True).strip() if args.account else None,
                   results=rows)
@@ -85,16 +91,24 @@ def evaluate(args, standard):
             chosen = rank(case["question"], index)[0]
             relative = Path("example/runtime") / chosen
             if fmt == "html":
-                body = visible((standard / (str(relative) + ".html")).read_text(), True)
+                source = (standard / (str(relative) + ".html")).read_text()
+                body = visible(source, True)
             else:
-                body = (module / (str(relative) + ".md")).read_text()
+                source = body = (module / (str(relative) + ".md")).read_text()
+            if args.layout != "prefix":
+                body = passage(source, fmt, args.layout, case["question"], chosen, rank, args.passages) or body
             context = body[:args.chars]
             hit = chosen == case["page"]
             evidence = bool(hit and re.search(case["evidence"], context, re.I | re.S))
             row = dict(index=discovery, format=fmt, question=case["question"], page=chosen,
                        page_hit=hit, evidence_hit=evidence, context_chars=len(context))
+            if encoding:
+                row["document_tokens"] = len(encoding.encode_ordinary(context))
+                row["excerpt"] = context
             if args.reader or args.account:
                 prompt = f"Answer briefly using only this document. If unknown, say unknown.\nQuestion: {case['question']}\nDocument:\n{context}"
+                if args.terse:
+                    prompt = f"Answer with the shortest correct identifier or phrase. No explanation. If unknown: unknown.\n{case['question']}\n{context}"
                 if args.account:
                     row.update(read_answer(args.account, args.model, prompt))
                     answer = row["answer"]
@@ -125,6 +139,10 @@ def evaluate(args, standard):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--layout", choices=["prefix", "bullets", "table", "symbols"], default="prefix")
+    parser.add_argument("--passages", type=int, choices=range(1, 9), default=1)
+    parser.add_argument("--terse", action="store_true")
+    parser.add_argument("--count-tokens", action="store_true", help="Count excerpt tokens using tiktoken o200k_base")
     parser.add_argument("--account", choices=["codex", "claude"])
     parser.add_argument("--model", help="Provider model ID or Claude alias")
     variants = parser.add_mutually_exclusive_group()

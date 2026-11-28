@@ -1,0 +1,74 @@
+{
+  "source": "002-bullets.json",
+  "model": "gpt-6-luna",
+  "arms": [
+    {
+      "index": "javadoc",
+      "format": "html",
+      "answers": [
+        "Empty argument list",
+        "unknown",
+        "NATIVE",
+        "VERBOSE",
+        "target()",
+        "PlanException",
+        "QUIET",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      "correct": [
+        true,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "wall_ms": 3228,
+      "model": "gpt-6-luna",
+      "input_tokens": 12360,
+      "cached_input_tokens": 0,
+      "cache_write_tokens": 0,
+      "output_tokens": 32
+    },
+    {
+      "index": "llms",
+      "format": "markdown",
+      "answers": [
+        "An empty argument list",
+        "When the entry point is blank",
+        "NATIVE",
+        "VERBOSE",
+        "target()",
+        "PlanException",
+        "QUIET",
+        "JVM",
+        "prepare(BuildPlan)",
+        "arguments"
+      ],
+      "correct": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "wall_ms": 3090,
+      "model": "gpt-6-luna",
+      "input_tokens": 12142,
+      "cached_input_tokens": 10752,
+      "cache_write_tokens": 0,
+      "output_tokens": 42
+    }
+  ]
+}
