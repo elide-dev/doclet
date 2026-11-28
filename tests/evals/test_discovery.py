@@ -88,3 +88,26 @@ Writes package B.
         rank = lambda q, docs: sorted(docs, key=lambda key: "leap seconds" not in docs[key])
         self.assertEqual(choose_contract("Which method includes leap seconds?", enriched, rank), enriched[2])
         self.assertEqual(choose_member("Which method includes leap seconds?", enriched, rank), enriched[0])
+
+    def test_explicit_overload_respects_type_names_arity_and_erasure(self):
+        from eval_discovery import choose_contract
+        methods = [Member("pkg/Queue", "write()", "write()", "preferred"),
+                   Member("pkg/Queue", "write(java.util.List,a.Item)", "write(List<E>, Item)", ""),
+                   Member("pkg/Queue", "write(java.util.List,b.Item)", "write(List<E>, Item)", ""),
+                   Member("pkg/Queue", "write(java.lang.String...)", "write(String...)", "")]
+        # The ranker favors the wrong overload whenever lookup fails to narrow the set.
+        rank = lambda _, docs: sorted(docs)
+        cases = [("How does Queue#write() behave?", 0),
+                 ("When can Queue.write(List<Map<K,V>>, b.Item) fail?", 2),
+                 ("What does pkg.Queue.write(String[]) return?", 3)]
+        for question, index in cases:
+            with self.subTest(question=question):
+                self.assertEqual(choose_contract(question, methods, rank), methods[index])
+
+    def test_method_name_in_scoped_prose_beats_incidental_description(self):
+        from eval_discovery import choose_contract
+        methods = [Member("pkg/Queue", "add()", "add()", "Implements purge."),
+                   Member("pkg/Queue", "purge()", "purge()", ""),
+                   Member("other/Stack", "purge()", "purge()", "")]
+        rank = lambda _, docs: sorted(docs)
+        self.assertEqual(choose_contract("When does purge on Queue return?", methods, rank), methods[1])

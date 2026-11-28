@@ -125,9 +125,71 @@ def _rank(question, candidates, rank, detailed):
     return entries[rank(question, descriptions)[0]]
 
 
+_IDENTIFIER = r"[A-Za-z_$][\w$]*"
+_CALL = re.compile(
+    rf"(?<![\w$])(?:(?P<owner>{_IDENTIFIER}(?:\.{_IDENTIFIER})*)[.#])?"
+    rf"(?P<name>{_IDENTIFIER})\s*\((?P<args>[^()]*)\)")
+
+
+def _parameter_types(parameters):
+    # JDK anchors use erasure; display names and queries can retain nested generics.
+    while re.search(r"<[^<>]*>", parameters):
+        parameters = re.sub(r"<[^<>]*>", "", parameters)
+    if not parameters.strip():
+        return ()
+    types = []
+    for parameter in parameters.split(","):
+        normalized = re.sub(r"\s+", "", parameter).replace("...", "[]").replace("$", ".")
+        if not re.fullmatch(r"[\w.]+(?:\[\])*", normalized):
+            return None
+        types.append(normalized)
+    return tuple(types)
+
+
+def _overloads(question, members):
+    """Resolve an explicitly written signature before lexical ranking."""
+    calls = list(_CALL.finditer(question))
+    if not calls:
+        return []
+    # A parameter name can also be the name of a documented type. It is not the owner.
+    outside = _CALL.sub(lambda m: m[0][:m[0].index("(")], question)
+    scoped = _scope(outside, members)
+    matches = []
+    for call in calls:
+        wanted = _parameter_types(call["args"])
+        if wanted is None:
+            continue
+        for m in scoped:
+            if m.label.partition("(")[0] != call["name"] or "(" not in m.anchor:
+                continue
+            if call["owner"]:
+                owner = m.path.replace("/", ".")
+                if owner != call["owner"] and not owner.endswith("." + call["owner"]):
+                    continue
+            # Check anchor and label because type variables can be erased in the anchor.
+            for signature in (m.anchor, m.label):
+                actual = _parameter_types(signature.partition("(")[2].removesuffix(")"))
+                if actual is not None and len(actual) == len(wanted) and all(
+                        a == w or a.endswith("." + w) for a, w in zip(actual, wanted)):
+                    matches.append(m)
+                    break
+    return matches
+
+
 def choose_contract(question, members, rank):
     """Rank full-text declarations under the same format-independent lookup policy."""
+    explicit = _overloads(question, members)
+    if explicit:
+        return _rank(question, explicit, rank, detailed=True)
     candidates = _scope(question, members)
+    # An owner plus an unparenthesized member name is a lookup across its overloads.
+    if any(re.search(r"(?<![\w$])" + re.escape(m.owner) + r"(?![\w$])", question)
+           for m in candidates):
+        mentioned = [m for m in candidates if "(" in m.anchor and not m.anchor.startswith("<init>")
+                     and re.search(r"(?<![\w$])" + re.escape(m.label.partition("(")[0]) +
+                                   r"(?![\w$])", question)]
+        if mentioned:
+            candidates = mentioned
     member_kind = re.search(
         r"^(?:which|what)\b[^?.!]{0,90}?\b(member|method|constructor|constant|setting|"
         r"field|property|function|component|option)\b", question, re.I)

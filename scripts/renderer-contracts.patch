@@ -1,26 +1,34 @@
 diff --git a/packages/apidocs/src/contracts.ts b/packages/apidocs/src/contracts.ts
 new file mode 100644
-index 0000000..c6eedb3
+index 0000000..e6af17d
 --- /dev/null
 +++ b/packages/apidocs/src/contracts.ts
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,45 @@
 +// Streamable member lookups for clients that need only one declaration or contract.
-+import type { Member } from "./model";
++import type { Member, Type } from "./model";
 +import { INDEX, resolve, type Site, tokenText } from "./site";
 +import { blockText, summaryText } from "./structure";
 +
-+export function memberContracts(site: Site): string {
++export function declarationContracts(site: Site): string {
 +  const lines: string[] = [];
-+  function add(m: Member) {
++  function declaration(m: Member | Type) {
 +    const href = resolve(site, INDEX, ".html", m.id);
 +    if (!href) return;
 +    const summary = summaryText(m.doc);
 +    // Include short supplementary prose when the summary omits a condition or guarantee.
 +    const prose = blockText(m.doc?.body).replace(/\s+/g, " ").trim();
 +    const details = prose.startsWith(summary) ? prose.slice(summary.length).trim() : prose;
-+    lines.push(JSON.stringify({
++    return {
 +      href, name: m.name, kind: m.kind, signature: tokenText(m.signature),
 +      summary: summary || undefined, details: details && details.length <= 512 ? details : undefined,
++      deprecated: m.deprecated && { since: m.deprecated.since, doc: blockText(m.deprecated.doc) || undefined },
++    };
++  }
++  function add(m: Member) {
++    const header = declaration(m);
++    if (!header) return;
++    lines.push(JSON.stringify({
++      ...header,
 +      params: m.params?.length ? m.params.map(p => ({
 +        name: p.name, type: tokenText(p.type), doc: blockText(p.doc) || undefined,
 +      })) : undefined,
@@ -28,13 +36,16 @@ index 0000000..c6eedb3
 +      throws: m.throws?.length ? m.throws.map(t => ({
 +        type: tokenText(t.type), doc: blockText(t.doc) || undefined,
 +      })) : undefined,
-+      deprecated: m.deprecated && { since: m.deprecated.since, doc: blockText(m.deprecated.doc) || undefined },
 +      value: m.constant, defaultValue: m.defaultValue,
 +    }));
 +  }
 +  for (const pkg of site.packages) {
 +    for (const m of [...pkg.functions ?? [], ...pkg.properties ?? []]) add(m);
-+    for (const type of pkg.types ?? []) for (const m of type.members ?? []) add(m);
++    for (const type of pkg.types ?? []) {
++      const header = declaration(type);
++      if (header) lines.push(JSON.stringify(header));
++      for (const m of type.members ?? []) add(m);
++    }
 +  }
 +  return lines.length ? lines.join("\n") + "\n" : "";
 +}
@@ -88,14 +99,14 @@ index 91730b8..e122cf2 100644
      parts.push("Inheritance: " + [...type.ancestors].reverse().map(ref => link(md, ref)).join(" > ") + ` > ${codeSpan(type.name.split(".").pop()!)}`);
    }
 diff --git a/packages/apidocs/src/render.tsx b/packages/apidocs/src/render.tsx
-index ba0a8eb..7d4ca2d 100644
+index ba0a8eb..423c663 100644
 --- a/packages/apidocs/src/render.tsx
 +++ b/packages/apidocs/src/render.tsx
 @@ -5,11 +5,12 @@
   * script) are references to the renderer's assets directory, which the caller
   * copies: { asset: "apidocs.css" } means <assets>/apidocs.css.
   */
-+import { memberContracts } from "./contracts";
++import { declarationContracts } from "./contracts";
  import { renderToString } from "preact-render-to-string";
  import { DeprecatedPage, IndexAllPage, PackagesIndexPage, TypesIndexPage } from "./indexes";
  import { Ctx, type Outputs, outputsOf, type PageContext } from "./context";
@@ -119,7 +130,7 @@ index ba0a8eb..7d4ca2d 100644
    if (outputs.markdown) for (const [page, text] of Object.entries(md)) out[`${page}.md`] = text;
    if (outputs.llms) {
 -    out["llms.txt"] = llms(site, pages, guides, symbols, indexes, theme.whenToUse, outputs);
-+    const contracts = memberContracts(site);
++    const contracts = declarationContracts(site);
 +    if (contracts) out["contracts.ndjson"] = contracts;
 +    out["llms.txt"] = llms(site, pages, guides, symbols, indexes, theme.whenToUse, outputs, !!contracts);
      // The twins without their frontmatter: in one file, each starts at the comment that names it.
@@ -138,7 +149,7 @@ index ba0a8eb..7d4ca2d 100644
      "## Overview", "",
      `- [${withSym(symbols, "module", md(m.name))}](index${ext}): ${guidesOnly ? "the overview" : "packages and types"}`,
      "- [llms-full.txt](llms-full.txt): every page in one file",
-+    ...(hasContracts ? ["- [Member contracts](contracts.ndjson): filter JSON lines by name or href for a declaration, its parameters, return value, exceptions, or replacement."] : []),
++    ...(hasContracts ? ["- [Declaration contracts](contracts.ndjson): filter JSON lines by name or href for a declaration, its parameters, return value, exceptions, or replacement."] : []),
      ...(outputs.model ? ["- [api.json](api.json): the apidocs/1 model"] : []),
      "",
    );

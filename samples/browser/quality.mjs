@@ -59,10 +59,12 @@ try {
       const records = (await response.text()).trim().split("\n").map(JSON.parse);
       const anchors = await page.locator("[id]").evaluateAll(nodes => nodes.map(node => node.id));
       const members = records.filter(record => new URL(record.href, module).pathname === new URL(page.url()).pathname);
-      assert.ok(members.length);
+      assert.ok(members.some(record => !new URL(record.href, module).hash));
+      assert.ok(members.some(record => new URL(record.href, module).hash));
       for (const member of members) {
         assert.ok(member.name && member.signature && member.kind);
-        assert.ok(anchors.includes(decodeURIComponent(new URL(member.href, module).hash.slice(1))), member.href);
+        const fragment = new URL(member.href, module).hash;
+        if (fragment) assert.ok(anchors.includes(decodeURIComponent(fragment.slice(1))), member.href);
       }
     }
     const twin = await page

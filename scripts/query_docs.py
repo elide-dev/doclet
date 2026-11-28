@@ -7,24 +7,24 @@ from urllib.parse import unquote, urlsplit
 
 from eval_discovery import choose_contract, choose_member, enrich_jdk_members, load_members, member_passage
 from eval_extract import extract_answer, extract_contract_answer
-from eval_rank import rank
+from eval_rank import rank, rank_contract
 
 
 def contract_passage(label, card):
     """Render only documented fields. Keep the member name and overload signature."""
     fields = [label + ":", card.get("summary", "")]
+    if card.get("details"):
+        fields.append(card["details"])
+    if "deprecated" in card:
+        fields.append("Deprecated. " + card["deprecated"].get("doc", ""))
+    for param in card.get("params", []):
+        if param.get("doc"):
+            fields.append("Parameters: " + param["name"] + " - " + param["doc"])
     returns = card.get("returns", {}).get("doc")
     if returns:
         fields.append("Returns: " + returns)
     for thrown in card.get("throws", []):
         fields.append("Throws: " + thrown["type"] + " - " + thrown.get("doc", ""))
-    if "deprecated" in card:
-        fields.append("Deprecated. " + card["deprecated"].get("doc", ""))
-    if card.get("details"):
-        fields.insert(2, card["details"])
-    for param in card.get("params", []):
-        if param.get("doc"):
-            fields.insert(2, "Parameters: " + param["name"] + " - " + param["doc"])
     return " ".join(" ".join(fields).split())
 
 
@@ -53,7 +53,7 @@ class Reference:
 
     def lookup(self, question, chars):
         choose = choose_contract if self.full_index else choose_member
-        member = choose(question, self.members, rank)
+        member = choose(question, self.members, rank_contract if self.full_index else rank)
         card = self.cards.get((member.path, member.anchor))
         if self.full_index and member.search_text:
             excerpt = member.search_text
