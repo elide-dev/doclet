@@ -5,14 +5,22 @@ jar=doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-echo '/** Example API. */ public class Example {}' > "$work/Example.java"
+echo '/** Example API. Named &ouml; and &uuml;, numeric &#x1F642; and &#128578;. */ public class Example {}' > "$work/Example.java"
 javadoc -quiet -d "$work/docs" -doclet dev.elide.doclet.ElideDoclet \
     -docletpath "$jar" "$work/Example.java"
 test -s "$work/docs/index.html"
-grep -Fq 'Example API.' "$work/docs/default-package/Example.md"
+grep -Fq 'Example API. Named ö and ü, numeric 🙂 and 🙂.' "$work/docs/default-package/Example.md"
 test -s "$work/docs/api.json"
 test -s "$work/docs/assets/apidocs.css"
 test -s "$work/docs/assets/apidocs.js"
+
+echo '/** Unknown &docletTestUnknown;. */ public class Invalid {}' > "$work/Invalid.java"
+if javadoc -quiet -d "$work/invalid-entity" -doclet dev.elide.doclet.ElideDoclet \
+    -docletpath "$jar" "$work/Invalid.java" >"$work/entity-diagnostics" 2>&1; then
+  echo "Expected an unknown HTML entity to fail the build" >&2
+  exit 1
+fi
+grep -Fq 'Unknown HTML entity &docletTestUnknown;' "$work/entity-diagnostics"
 
 mkdir "$work/guides"
 printf '# Usage\n\nSee [missing](api/example.Missing).\n' > "$work/guides/usage.md"

@@ -1,0 +1,95 @@
+[
+  {
+    "question": "Which method returns a URL-safe Base64 string without padding or chunking, rather than returning bytes?",
+    "page": "Base64",
+    "anchors": [
+      "encodeBase64URLSafeString(byte[])"
+    ],
+    "answer": "\\bencodeBase64URLSafeString\\b",
+    "evidence": "(?=.*does not chunk)(?=.*no padding)(?=.*String containing Base64)"
+  },
+  {
+    "question": "Which factory method obtains a SHA3-384 MessageDigest?",
+    "page": "DigestUtils",
+    "anchors": [
+      "getSha3_384Digest()"
+    ],
+    "answer": "\\bgetSha3_384Digest\\b",
+    "evidence": "gets an SHA3-384 digest"
+  },
+  {
+    "question": "Which named phonetic encoder instance treats H and W like vowels that separate duplicate codes?",
+    "page": "Soundex",
+    "anchors": [
+      "US_ENGLISH_SIMPLIFIED"
+    ],
+    "answer": "\\bUS_ENGLISH_SIMPLIFIED\\b",
+    "evidence": "treats H and W the same as vowels.{0,160}separators"
+  },
+  {
+    "question": "What happens to the number of remaining bytes after Hex.encodeHex(ByteBuffer) succeeds?",
+    "page": "Hex",
+    "anchors": [
+      "encodeHex(java.nio.ByteBuffer)"
+    ],
+    "answer": "\\bzero\\b|\\b0\\b|(?:all|every).{0,25}consumed|none",
+    "evidence": "after this method.{0,130}will be zero"
+  },
+  {
+    "question": "What checked exception does Hex.decodeHex(char[], byte[], int) throw for an odd number of input digits?",
+    "page": "Hex",
+    "anchors": [
+      "decodeHex(char[],byte[],int)"
+    ],
+    "answer": "\\bDecoderException\\b",
+    "evidence": "DecoderException.{0,100}odd number of characters"
+  },
+  {
+    "question": "With PercentCodec(byte[], boolean), what character represents a space if plusForSpace is true?",
+    "page": "PercentCodec",
+    "anchors": [
+      "<init>(byte[],boolean)"
+    ],
+    "answer": "\\+|\\bplus\\b",
+    "evidence": "space character should be encoded as.{0,8}\\+"
+  },
+  {
+    "question": "Does Base64.Builder.setDecodeTableFormat change encoding, and what table applies if null is passed?",
+    "page": "Base64.Builder",
+    "anchors": [
+      "setDecodeTableFormat(org.apache.commons.codec.binary.Base64.DecodeTableFormat)"
+    ],
+    "answer": "\\bno\\b|(?:doesn't|does not|leaves|never).{0,60}encod",
+    "evidence": "(?=.*does not modify behavior on encoding)(?=.*MIXED.{0,30}or null to reset)",
+    "answer_all": [
+      "\\bMIXED\\b"
+    ]
+  },
+  {
+    "question": "When does URLCodec.decodeUrl(BitSet, byte[]) turn a plus into a space instead of preserving the plus?",
+    "page": "URLCodec",
+    "anchors": [
+      "decodeUrl(java.util.BitSet,byte[])"
+    ],
+    "answer": "(?=.*plus.{0,35}(?:unsafe|(?:not|isn't)\\s+(?:(?:marked|deemed)\\s+)?safe))(?=.*space.{0,35}(?:marked|is|deemed)\\s+(?:marked\\s+)?safe)|(?=.*space.{0,35}safe)(?=.*(?:not|unless).{0,40}plus.{0,25}safe)",
+    "evidence": "plus sign marked safe is copied literally.{0,60}plus sign becomes a space only if space is marked safe"
+  },
+  {
+    "question": "What is the documented outcome if Charsets.toCharset(String) is passed null instead of a charset name?",
+    "page": "Charsets",
+    "anchors": [
+      "toCharset(java.lang.String)"
+    ],
+    "answer": "\\bdefault\\b",
+    "evidence": "if the name is null.{0,45}default Charset"
+  },
+  {
+    "question": "Why was Soundex.setMaxLength(int) deprecated?",
+    "page": "Soundex",
+    "anchors": [
+      "setMaxLength(int)"
+    ],
+    "answer": "(?:encoding|code|output).{0,30}(?:constant|fixed)|(?:constant|fixed).{0,30}(?:size|length)",
+    "evidence": "encoding size must be constant"
+  }
+]

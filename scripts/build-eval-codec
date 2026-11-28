@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Build both sides of the frozen Commons Codec replication fixture from a locally cached sources JAR.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+coordinate=commons-codec/commons-codec/1.23.0/commons-codec-1.23.0-sources.jar
+archive=${1:-"${HOME}/.m2/repository/$coordinate"}
+target="$PWD/.dev/eval-codec"
+mkdir -p "$target"
+work=$(mktemp -d "$target/.build.XXXXXXXX")
+trap 'rm -rf "$work"' EXIT
+
+python3 - "$archive" "$work/source" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+import zipfile
+
+path, destination = map(Path, sys.argv[1:])
+if not path.is_file():
+    sys.exit(f"Missing {path}. Pass the local Maven Central Commons Codec 1.23.0 sources JAR as argument.")
+digest = hashlib.sha256(path.read_bytes()).hexdigest()
+if digest != "7d54a06a0b7b24cf5e91eff068f0b5fd16fcbdeee1e8db49475468d842a54704":
+    sys.exit(f"Unexpected Commons Codec source archive SHA-256: {digest}")
+with zipfile.ZipFile(path) as archive:
+    for name in archive.namelist():
+        if name.startswith("org/apache/commons/codec/") and name.endswith(".java"):
+            archive.extract(name, destination)
+PY
+
+elide build elide-doclet
+doclet="$PWD/doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar"
+javadoc="${JAVA_HOME:+$JAVA_HOME/bin/}javadoc"
+common=(-quiet -public -encoding UTF-8 -sourcepath "$work/source")
+packages=(org.apache.commons.codec org.apache.commons.codec.binary org.apache.commons.codec.cli
+  org.apache.commons.codec.digest org.apache.commons.codec.language org.apache.commons.codec.language.bm
+  org.apache.commons.codec.net)
+"$javadoc" "${common[@]}" -Xdoclint:none -notimestamp --no-platform-links \
+  -d "$work/javadoc" "${packages[@]}"
+"$javadoc" "${common[@]}" -doclet dev.elide.doclet.ElideDoclet -docletpath "$doclet" \
+  --module-name commons-codec --module-version 1.23.0 -d "$work/markdown" "${packages[@]}"
+for format in javadoc markdown; do
+  mkdir -p "$target/$format"
+  rsync -a --delete "$work/$format/" "$target/$format/"
+done

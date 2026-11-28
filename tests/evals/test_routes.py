@@ -67,13 +67,58 @@ class Routes(unittest.TestCase):
         self.assertEqual(lazy["fetches"], 4)
         self.assertNotIn("p/Other.html", [r["path"] for r in lazy["requests"]])
 
+
+    def test_javadoc_scoped_follows_native_package_type_links(self):
+        self.write("index.html", '<link rel="canonical" href="p/package-summary.html">')
+        self.write("p/package-summary.html", """
+<a href="../index-all.html">Index</a>
+<div class="class-summary col-first"><a href="Value.html">Value</a></div>
+""")
+        self.write("p/Value.html", """
+<section class="detail" id="read(java.lang.String)"><h3>read</h3> Returns: a string</section>
+<section class="detail" id="read(java.lang.Class)"><h3>read</h3> Returns: a class</section>
+""")
+        result = route(self.entry, "What does Value.read(Class) return?", "javadoc-scoped")
+        self.assertEqual(result["anchor"], "read(java.lang.Class)")
+        self.assertEqual(result["extraction"]["answer"], "a class")
+        self.assertEqual([r["path"] for r in result["requests"]],
+                         ["index.html", "p/package-summary.html", "p/Value.html"])
+
+    def test_javadoc_scoped_reads_native_search_index_without_executing_javascript(self):
+        self.write("index.html", """<script src="script-files/script.js"></script>
+<a href="index-all.html">Index</a>""")
+        self.write("script-files/script.js", "createElem(doc, tag, 'type-search-index.js');")
+        self.write("type-search-index.js", """typeSearchIndex =
+[{"p":"p","l":"Value"},{"p":"q","l":"Value"}];updateSearchResults();""")
+        self.write("q/Value.html", """
+<section class="detail" id="read()"><h3>read</h3> Returns: a class</section>
+""")
+        result = route(self.entry, "What does q.Value.read() return?", "javadoc-scoped")
+        self.assertEqual(result["path"], "q/Value")
+        self.assertEqual(result["extraction"]["answer"], "a class")
+        self.assertEqual([r["path"] for r in result["requests"]],
+                         ["index.html", "script-files/script.js", "type-search-index.js", "q/Value.html"])
+
+    def test_javadoc_scoped_falls_back_to_lazy_index_when_type_is_not_named(self):
+        self.write("index.html", '<a href="index-all.html">Index</a>')
+        self.write("index-all.html", """
+<dl class="index">
+<dt><a class="member-name-link" href="p/Value.html#read()">read()</a></dt><dd>Reads a class.</dd>
+</dl>""")
+        self.write("p/Value.html", '<section id="read()" class="detail"><h3>read</h3> Returns: a class</section>')
+        result = route(self.entry, "Which method reads a class?", "javadoc-scoped")
+        self.assertEqual(result["anchor"], "read()")
+        self.assertEqual([r["path"] for r in result["requests"]],
+                         ["index.html", "index-all.html", "p/Value.html"])
+
     def test_ignores_links_to_external_documents(self):
         self.write("index.html", '<link rel="help" href="https://example.test/llms.txt">')
         with self.assertRaisesRegex(ValueError, "escaped local origin"):
             route(self.entry, "What does this library do?", "inline")
 
     def test_adaptive_uses_exact_markdown_anchor_after_sparse_contract(self):
-        self.write("index.html", '<link rel="describedby" href="contracts.ndjson">')
+        self.write("index.html", '<link rel="describedby" href="contracts.ndjson">'
+                   '<link rel="alternate" type="text/markdown" href="index.md">')
         self.write("contracts.ndjson", """
 {"href":"p/Value.html#read(a.Class)","name":"read","signature":"String read(Class type)","summary":"Read a value."}
 {"href":"p/Value.html#read(b.Class)","name":"read","signature":"String read(Class type)","summary":"Read a value."}
@@ -96,6 +141,31 @@ B result for type b.
         self.assertEqual(result["fetches"], 3)
         self.assertIn("B result", result["excerpt"])
         self.assertNotIn("A result", result["excerpt"])
+
+    def test_scoped_finds_native_type_and_exact_overload_without_a_global_read(self):
+        self.write("index.html", """
+<link rel="alternate" type="text/markdown" href="index.md">
+<link rel="describedby" href="contracts.ndjson">
+<link rel="index" href="index-all.md">
+<a class="nav-type" href="a/Value.html">Value</a>
+<a class="nav-type" href="b/Value.html">Value</a>""")
+        self.write("b/Value.md", """
+### read(Class)
+<a id="read(a.Class)"></a>
+
+**Returns** String: the first result.
+
+### read(Class)
+<a id="read(b.Class)"></a>
+
+**Returns** String: the second result.
+""")
+        result = route(self.entry, "What does b.Value.read(b.Class) return?", "scoped")
+        self.assertEqual(result["path"], "b/Value")
+        self.assertEqual(result["anchor"], "read(b.Class)")
+        self.assertEqual([r["path"] for r in result["requests"]], ["index.html", "b/Value.md"])
+        self.assertIn("the second result", result["excerpt"])
+        self.assertNotIn("the first result", result["excerpt"])
 
     def test_budget_preserves_whole_return_and_skips_unrelated_long_prose(self):
         member = Member("Value", "read()", "read()", "")

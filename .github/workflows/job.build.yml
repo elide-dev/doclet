@@ -63,6 +63,8 @@ jobs:
           files: doclet/.dev/reports/tests/jvm/test/TEST-dev.elide.doclet.ElideDocletTest.xml
       - name: Standalone Javadoc site
         run: PATH="$JAVA_HOME/bin:$PATH" scripts/smoke-test
+      - name: Test documentation lookup and citations
+        run: python3 -m unittest discover -s tests/evals
       - name: Site size budget
         run: |
           PATH="$JAVA_HOME/bin:$PATH" scripts/build-samples

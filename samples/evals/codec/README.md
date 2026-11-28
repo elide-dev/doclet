@@ -1,0 +1,9 @@
+# Apache Commons Codec 1.23.0 replication fixture
+
+The ten frozen questions cover binary, URL, and phonetic encoders, character sets, and digest factories. The fixture includes questions that describe an API by behavior without naming its class, questions tied to an exact overload, and questions that distinguish normal behavior from a configuration edge case. This answers a separate question from the original Runtime Kit, Gson, and CommonMark benchmarks. Its SHA-256 is `5d437b9313afc33d611965188852acae28cb14f68f6db125c1a9897d91b6fa42`. Each record gives one or more decoded member anchors, the expected type, and patterns for scoring the answer and its supporting evidence. The fixture was frozen from source before retrieval or model evaluation.
+
+With JDK 25 and Elide on PATH, run `scripts/build-eval-codec`. It reads `commons-codec:commons-codec:1.23.0:sources` from the local Maven cache or the path given as its first argument. It verifies source archive SHA-256 `7d54a06a0b7b24cf5e91eff068f0b5fd16fcbdeee1e8db49475468d842a54704`, then builds standard Javadoc and the generated site from the same seven source packages. Results go to `.dev/eval-codec/javadoc` and `.dev/eval-codec/markdown`. [Upstream source archive](https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.23.0/commons-codec-1.23.0-sources.jar)
+
+Both sites publish 110 public types. The alphabetical indexes include 1,008 Javadoc and 1,007 generated declaration keys. Four inherited accessors in `BCodec` and `QCodec` appear only in the JDK index. Three public overrides in `BaseNCodecInputStream` appear only in the generated index. Every expected anchor is present and its member section contains the expected source evidence in both outputs.
+
+Archived excerpts are derived from Apache Commons Codec 1.23.0, copyright 2002–2026 The Apache Software Foundation. [Apache License 2.0](LICENSE.txt) · [Upstream notice](NOTICE.txt)

@@ -918,13 +918,22 @@ final class Comments {
 
   private String entity(Ctx ctx, EntityTree entity) {
     var name = entity.getName().toString();
-    if (name.startsWith("#x") || name.startsWith("#X")) {
-      return Character.toString(Integer.parseInt(name.substring(2), 16));
-    }
+    // Keep code points intact. Some JDK versions convert numeric entities to a single char.
     if (name.startsWith("#")) {
-      return Character.toString(Integer.parseInt(name.substring(1)));
+      var hex = name.startsWith("#x") || name.startsWith("#X");
+      try {
+        var codePoint = Integer.parseInt(name.substring(hex ? 2 : 1), hex ? 16 : 10);
+        if (Character.isValidCodePoint(codePoint)
+            && (codePoint < Character.MIN_SURROGATE || codePoint > Character.MAX_SURROGATE)) {
+          return Character.toString(codePoint);
+        }
+      } catch (NumberFormatException ignored) {
+        // Report malformed references at their source location.
+      }
+      problem(ctx, Report.Problem.HTML, entity, "Invalid HTML character reference &" + name + ";");
+      return "&" + name + ";";
     }
-    var text = ENTITIES.get(name);
+    var text = trees.getCharacters(entity);
     if (text == null) {
       problem(ctx, Report.Problem.HTML, entity, "Unknown HTML entity &" + name + ";");
       return "&" + name + ";";

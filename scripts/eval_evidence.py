@@ -49,7 +49,7 @@ def markdown_members(body):
         yield heading[2], unescape(tag[1]) if tag else None, block[tag.end():] if tag else block
 
 
-def markdown_detail(body, member, card):
+def markdown_detail(body, member, card, *, normalize_contracts=False):
     """Use the exact signature when display headings collapse overloads."""
     if not member.anchor:
         return member_passage(body, "markdown", member)
@@ -62,15 +62,29 @@ def markdown_detail(body, member, card):
         matches = _legacy_sections(sections, member, signature)
     if len(matches) != 1:
         return ""
-    return markdown_member_passage(member.label, matches[0])
+    return markdown_member_passage(member.label, matches[0], normalize_contracts=normalize_contracts)
 
 
-def markdown_member_passage(label, body):
+def markdown_member_passage(label, body, *, normalize_contracts=False):
     block = re.sub(r"^`{3,}[^\n]*\n.*?\n`{3,}\s*$", "", body, flags=re.M | re.S)
     block = MARKDOWN_LINK.sub(r"\1", block).replace("`", "")
     block = re.sub(r"^\*\*[^*\n]*\bReturns\*\* [^:\n]*:\s*", "Returns: ", block, flags=re.M)
+    if normalize_contracts:
+        block = re.sub(r"^\*\*[^*\n]*\bThrows\*\*\n+((?:- [^\n]+\n?)+)", _markdown_throws,
+                       block, flags=re.M)
+        block = re.sub(r"^(Overrides|Since|See also)\s+", r"\1: ", block, flags=re.M)
     block = re.sub(r"^\*\*([^*\n]+)\*\*\s*$", r"\1:", block, flags=re.M)
     return label + ": " + " ".join(block.split())
+
+
+def _markdown_throws(match):
+    lines = []
+    for entry in match[1].splitlines():
+        exception, _, condition = entry[2:].partition(": ")
+        if condition and condition[-1] not in ".!?":
+            condition += "."
+        lines.append("Throws: " + exception + (" - " + condition if condition else ""))
+    return "\n".join(lines) + "\n"
 
 
 def _legacy_sections(sections, member, signature):

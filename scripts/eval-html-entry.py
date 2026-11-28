@@ -1,6 +1,7 @@
 """Matched local HTTP discovery experiments. Hosted turns always use Luna low."""
 import argparse
 from contextlib import contextmanager
+from dataclasses import asdict
 from functools import lru_cache, partial
 from hashlib import sha256
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -62,13 +63,16 @@ def summarize(rows, resources):
                 correct=total("correct") if all(r["correct"] is not None for r in rows) else None,
                 anchor_hits=sum(r["anchor_hit"] is True for r in rows),
                 anchors_graded=sum(r["anchor_hit"] is not None for r in rows),
+                local_answers=sum(r["extraction"] is not None for r in rows),
                 model_calls=total("model_called"), input_tokens=total("input_tokens"),
                 cached_input_tokens=total("cached_input_tokens"), output_tokens=total("output_tokens"),
+                uncached_input_tokens=total("input_tokens") - total("cached_input_tokens"),
                 total_model_tokens=total("input_tokens") + total("output_tokens"),
                 excerpt_tokens=total("excerpt_tokens"), discovery_tokens=total("discovery_tokens"),
                 fetched_tokens=total("fetched_tokens"), fetches=total("fetches"), bytes=total("bytes"),
                 unique_fetches=len(unique), unique_bytes=sum(resources[path]["bytes"] for path in unique),
-                wall_ms=round(total("wall_ms"), 2), median_wall_ms=median(r["wall_ms"] for r in rows))
+                wall_ms=round(total("wall_ms"), 2), median_wall_ms=median(r["wall_ms"] for r in rows),
+                median_lookup_ms=median(r["lookup_ms"] for r in rows))
 
 
 def main():
@@ -77,16 +81,23 @@ def main():
     p.add_argument("--markdown", required=True, type=Path)
     p.add_argument("--questions", required=True, type=Path)
     p.add_argument("--output", required=True, type=Path)
-    p.add_argument("--routes", nargs="+", choices=["javadoc", "inline", "contracts", "compact", "direct", "adaptive", "javadoc-adaptive", "javadoc-lazy"],
+    p.add_argument("--routes", nargs="+", choices=["javadoc", "inline", "contracts", "compact", "direct", "adaptive", "javadoc-adaptive", "javadoc-lazy", "javadoc-scoped", "scoped"],
                    default=["javadoc", "inline", "contracts", "compact", "direct"])
     p.add_argument("--offset", type=int, default=0, help="Rotate the starting arm across repeated paired runs")
+    p.add_argument("--chars", type=int, default=600, help="Same maximum excerpt characters for every arm")
+    p.add_argument("--cited", action="store_true", help="Try additional verbatim documented facts before Luna in every arm")
     p.add_argument("--offline", action="store_true")
     args = p.parse_args()
     rows, resources = [], {}
     arms = list(dict.fromkeys(args.routes))
     cases = json.loads(args.questions.read_text())
-    report = dict(model="gpt-6-luna", effort="low", offline=args.offline,
-                  fixtures=sha256(args.questions.read_bytes()).hexdigest(), excerpt_chars=600,
+    if args.chars < 1:
+        p.error("--chars must be positive")
+    if args.cited:
+        from eval_cited import extract_cited_answer
+    report = dict(model="gpt-6-luna", effort="low", offline=args.offline, cited=args.cited,
+                  revision=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+                  fixtures=sha256(args.questions.read_bytes()).hexdigest(), excerpt_chars=args.chars,
                   entry="index.html", tokenizer="o200k_base", routes=arms, order_offset=args.offset,
                   cli_version=None if args.offline else subprocess.check_output(["codex","--version"], text=True).strip(),
                   resources=resources, results=rows)
@@ -110,10 +121,14 @@ def main():
                     encoding_s += perf_counter() - start
                     return result
 
-                folder = {"javadoc": "jdk", "javadoc-adaptive": "jdk", "javadoc-lazy": "jdk", "compact": "compact"}.get(arm, "api")
+                folder = "jdk" if arm.startswith("javadoc") else ("compact" if arm == "compact" else "api")
                 start = perf_counter()
                 outcome = route(base + folder + "/index.html", case["question"],
-                                "contracts" if arm == "compact" else arm, encode=encode)
+                                "contracts" if arm == "compact" else arm, chars=args.chars, encode=encode)
+                if args.cited and outcome["page"] and not outcome["extraction"]:
+                    hit = extract_cited_answer(case["question"], outcome["excerpt"], outcome["page"])
+                    if hit:
+                        outcome["extraction"] = asdict(hit)
                 lookup_ms = (perf_counter() - start - encoding_s) * 1000
                 reads = []
                 for request in outcome.pop("requests"):

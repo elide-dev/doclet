@@ -88,7 +88,7 @@ new file mode 100644
 index 0000000..e6af17d
 --- /dev/null
 +++ b/packages/apidocs/src/contracts.ts
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,46 @@
 +// Streamable member lookups for clients that need only one declaration or contract.
 +import type { Member, Type } from "./model";
 +import { INDEX, resolve, type Site, tokenText } from "./site";
@@ -106,6 +106,7 @@ index 0000000..e6af17d
 +    return {
 +      href, name: m.name, kind: m.kind, signature: tokenText(m.signature),
 +      summary: summary || undefined, details: details && details.length <= 512 ? details : undefined,
++      detailsOmitted: details.length > 512 || undefined,
 +      deprecated: m.deprecated && { since: m.deprecated.since, doc: blockText(m.deprecated.doc) || undefined },
 +    };
 +  }

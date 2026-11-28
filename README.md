@@ -18,7 +18,16 @@ Besides the HTML pages, a site has a Markdown twin of every page, `llms.txt` and
 
 Each HTML page advertises its Markdown twin with one `rel="alternate" type="text/markdown"` link. Clients can also discover the alphabetical index, `llms.txt`, and the declaration contracts from the HTML head without running scripts.
 
-API modules also publish `contracts.ndjson` alongside `llms.txt`. Each JSON line carries one type or member declaration with its canonical HTML link, signature, summary, and documented parameter, return, exception, and deprecation fields. For example, to inspect every overload of a method locally, run `jq -c 'select(.name == "prepare") | {href, signature, returns, throws}' contracts.ndjson`. The link distinguishes overloads and leads to the full documentation. `--no-llms` disables this index along with the other agent outputs.
+API modules also publish `contracts.ndjson` alongside `llms.txt`. Each JSON line carries one type or member declaration with its canonical HTML link, signature, summary, and documented parameter, return, exception, and deprecation fields. For example, to inspect every overload of a method locally, run `jq -c 'select(.name == "prepare") | {href, signature, returns, throws}' contracts.ndjson`. The link distinguishes overloads and leads to the full documentation. When supplementary prose exceeds the compact record’s limit, `detailsOmitted: true` signals that the reader should open the exact member section. Its Markdown twin carries the same anchor. `--no-llms` disables this index along with the other agent outputs.
+
+From this checkout, use the same links to look up a declaration from a generated site. The reader reports a matching answer with its supporting clause when available, plus the selected declaration and excerpt.
+
+```sh
+python3 scripts/query_docs.py https://elide-dev.github.io/doclet/graalvm/ 'What compiler arguments does BuildPlan.defaults use?'
+python3 scripts/query_docs.py build/docs 'What does Client.connect return?' --html-entry
+```
+
+A local HTML file also works. Use `--site-root` for an entry below the documentation root. The generated-site reader expects Markdown or a declaration contract index. To query standard Javadoc, pass `--format html`.
 
 Every page holds only its own path through the navigation tree: its package, that package’s types, and the current type’s nested types. The whole tree is loaded once from `assets/nav.js`, which works from `file://` too, so a page’s size follows its own content rather than the size of the library.
 

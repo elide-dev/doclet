@@ -2,6 +2,14 @@
 
 Routine hosted comparisons use GPT-6 Luna at low effort. Keep GPT-6.2 Astra at ultra effort for a separate, explicitly selected full verification round. Each report records the model used.
 
+## HTML-start experiments with Luna
+
+The reference and each control start at the module’s `index.html` on a loopback HTTP server. Each question starts cold. The ledger charges every document fetched, discovery included, and counts excerpt tokens separately from provider-reported tokens. Hosted turns use the local account and one isolated Luna low CLI call per fallback. All layouts share the excerpt budget, prompt, and extraction policy within a comparison. Wall time includes discovery, local extraction, CLI startup, and the hosted response. Source token-count instrumentation is excluded.
+
+The first CommonMark trial used 13 untouched questions, a 600-character budget, and three routes fixed at `e933eb6`. Every route found all 13 exact member anchors. Both Javadoc controls answered 13/13. The generated compact route answered 12/13. Its excerpt omitted the unlimited nesting sentinel and Luna guessed zero. The updated generator marks dropped supplementary prose with `detailsOmitted`, and a scoped reader can open the referenced Markdown section directly. The frozen CommonMark result stands. [Blind CommonMark results](runs/020-commonmark-blind.json)
+
+For the next blind comparison, freeze the updated readers before opening the Commons Codec results. Use 600 characters for each arm, the same cited-answer rules, and the ten frozen questions with exact member grading. Compare fully indexed Javadoc and a targeted reader using the native Javadoc type index. Rotate arm order by question. Repeat the two scoped readers with reversed order to check run-to-run variation. [Codec questions and provenance](../../samples/evals/codec/README.md)
+
 ## 2026-11-27 · Separating index discovery from Markdown layout
 
 Run 017 crossed two independent changes. For discovery, each type entry in `llms.txt` retained either its published member cues or just its description. For reading, each Markdown page retained or omitted its opening member bullets. The same lexical ranker selected one type. The reader got the first 600 characters, including frontmatter. Results below count questions with matching evidence on the expected type. No model was called.

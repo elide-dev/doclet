@@ -7,7 +7,8 @@ import re
 from urllib.parse import quote, unquote, urldefrag, urljoin, urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, build_opener
 
-from eval_discovery import Member, Tree, choose_contract, enrich_jdk_members, load_members, member_passage
+from eval_discovery import (Member, Tree, _jdk_details, choose_contract, enrich_jdk_members,
+                            load_members, member_passage)
 from eval_evidence import (extract_adaptive_answer, markdown_detail, markdown_member_passage,
                            markdown_members, needs_detail, select_evidence)
 from eval_extract import extract_contract_answer
@@ -15,7 +16,7 @@ from eval_rank import rank, rank_contract
 from query_docs import contract_passage
 
 
-ROUTES = ("javadoc", "inline", "contracts", "direct", "javadoc-adaptive", "javadoc-lazy", "adaptive")
+ROUTES = ("javadoc", "inline", "contracts", "direct", "javadoc-adaptive", "javadoc-lazy", "javadoc-scoped", "adaptive", "scoped")
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -24,17 +25,22 @@ class _NoRedirect(HTTPRedirectHandler):
 
 
 class _Sources:
-    def __init__(self, entry, encode):
+    def __init__(self, entry, encode, *, allow_https=False, file_root=None):
         self.entry = urldefrag(str(entry))[0]
         self.origin = urlsplit(self.entry)
         if self.origin.scheme == "file" and not self.origin.netloc:
-            self.root = Path(unquote(self.origin.path)).resolve().parent
-        elif (self.origin.scheme == "http" and not self.origin.username
-              and self.origin.hostname and (
-                  self.origin.hostname == "localhost" or _is_loopback(self.origin.hostname))):
+            self.root = (Path(file_root).resolve() if file_root is not None
+                         else Path(unquote(self.origin.path)).resolve().parent)
+        elif self.origin.hostname and self.origin.username is None and (
+            (allow_https and self.origin.scheme == "https")
+            or (self.origin.scheme == "http" and (
+                self.origin.hostname == "localhost" or _is_loopback(self.origin.hostname)))
+        ):
             self.root = None
         else:
-            raise ValueError("Use an HTML file URL or a loopback HTTP URL")
+            protocols = "an HTML file URL, loopback HTTP URL, or HTTPS URL" if allow_https else (
+                "an HTML file URL or loopback HTTP URL")
+            raise ValueError(f"Use {protocols}")
         self.encode = encode
         self.requests = []
         self.cache = {}
@@ -183,11 +189,175 @@ def _inline(sources, llms_url, llms, question):
     return member, excerpt
 
 
-def route(entry_url, question, variant, *, chars=600, encode=None):
+def _named_type(question, paths):
+    """Resolve one explicit owner, using its full name where supplied."""
+    matches = []
+    for path in paths:
+        owner = PurePosixPath(path).name
+        qualified = path.replace("/", ".")
+        for name in dict.fromkeys((qualified, owner)):
+            for match in re.finditer(r"(?<![\w$])" + re.escape(name) + r"(?![\w$])", question):
+                explicit_member = bool(re.match(r"[.#][A-Za-z_$][\w$]*\b", question[match.end():]))
+                matches.append((path, match.start(), match.end(), explicit_member))
+    # Within the same textual mention prefer the most specific nested/qualified owner.
+    matches = [m for m in matches if not any(
+        other[1] <= m[1] and other[2] >= m[2]
+        and (other[1], other[2]) != (m[1], m[2]) for other in matches)]
+    qualified = {m[0] for m in matches if m[3]}
+    owners = qualified or {m[0] for m in matches}
+    return next(iter(owners)) if len(owners) == 1 else None
+
+
+def _javadoc_native_types(sources, entry, root, base):
+    """Read the index advertised by the JDK's loader without executing the script."""
+    scripts = [tag.get("src", "") for tag in root.iter("script")]
+    src = next((script for script in scripts if PurePosixPath(urlsplit(script).path).name == "script.js"), "")
+    if not src:
+        return {}
+    loader = sources.read(urljoin(entry, src))
+    hint = re.search(r"""["'](type-search-index\.js)["']""", loader)
+    if not hint:
+        return {}
+    source = sources.read(urljoin(base, hint[1]))
+    assignment = re.match(r"\s*typeSearchIndex\s*=\s*", source)
+    if not assignment:
+        return {}
+    records, _ = json.JSONDecoder().raw_decode(source, assignment.end())
+    paths = {}
+    for record in records:
+        # Module paths require the module's navigation context. The member index
+        # already carries those paths, so delegate when the index is modular.
+        if record.get("m"):
+            return {}
+        if "p" in record and not record.get("u") and re.fullmatch(r"[\w$.]+", record.get("l", "")):
+            package = record["p"].replace(".", "/") if record["p"] != "<Unnamed>" else ""
+            path = "/".join(filter(None, (package, record["l"])))
+            paths[path] = urljoin(base, quote(path + ".html", safe="/"))
+    return paths
+
+
+def _javadoc_local_types(entry, root, base):
+    pages = {}
+    for cell in root.iter("div"):
+        if not {"class-summary", "col-first"}.issubset(cell.get("class", "").split()):
+            continue
+        link = cell.find("a")
+        if link is None:
+            continue
+        target = urljoin(entry, link.get("href", ""))
+        if target.startswith(base) and target.endswith(".html"):
+            pages[unquote(target[len(base):]).removesuffix(".html")] = target
+    if any("class-declaration-page" in tag.get("class", "").split() for tag in root.iter("body")):
+        if entry.startswith(base) and entry.endswith(".html"):
+            pages[unquote(entry[len(base):]).removesuffix(".html")] = entry
+    return pages
+
+
+def _javadoc_scoped(sources, entry, root, question):
+    """Try an exact owner on standard Javadoc's native links and type search index."""
+    if not _link(root, "index-all.html"):
+        canonical = _link(root, relation="canonical")
+        if canonical:
+            entry = urljoin(entry, canonical)
+            root = Tree(sources.read(entry)).root
+    index = _link(root, "index-all.html")
+    if not index:
+        return _javadoc(sources, entry, root, question, adaptive=True, lazy=True)
+
+    base = urljoin(urljoin(entry, index), ".")
+    pages = _javadoc_local_types(entry, root, base)
+    owner = _named_type(question, pages)
+    # Without a Java-style type mention, the type-only index cannot help.
+    possible_names = set(re.findall(r"(?<![\w$])[A-Z][\w$]*", question))
+    ordinary_openers = {"Can", "Does", "How", "Is", "On", "Should", "What", "When", "Where", "Which", "Why"}
+    if not owner and (possible_names - ordinary_openers):
+        pages = _javadoc_native_types(sources, entry, root, base)
+        owner = _named_type(question, pages)
+    if owner:
+        page = Tree(sources.read(pages[owner], "content")).root
+        details = _jdk_details(page)
+        name = PurePosixPath(owner).name
+        members = [Member(owner, anchor, anchor.replace("<init>", name.rsplit(".", 1)[-1], 1)
+                          if anchor else name, "", passage)
+                   for anchor, passage in details.items()]
+        member = _choose(question, members, adaptive=True)
+        if member:
+            return member, member.search_text
+    return _javadoc(sources, entry, root, question, adaptive=True, lazy=True)
+
+
+def _scoped(sources, entry, root, question, chars):
+    root_hint = next((tag.get("data-root") for tag in root.iter("html") if tag.get("data-root")), "./")
+    base = urljoin(entry, root_hint)
+    pages = {}
+    for tag in root.iter("a"):
+        if not {"nav-type", "decl"}.intersection(tag.get("class", "").split()):
+            continue
+        target = urljoin(entry, tag.get("href", ""))
+        if target.startswith(base) and target.endswith(".html"):
+            path = unquote(target[len(base):]).removesuffix(".html")
+            pages[path] = target.removesuffix(".html") + ".md"
+    owner = _named_type(question, pages)
+    if not owner and not _link(root, "contracts.ndjson", relation="describedby"):
+        href = _link(root, "index-all.md", relation="index")
+        if href:
+            index = urljoin(entry, href)
+            site = _Index(sources, index, index)
+            pages = {m.path: urljoin(index, quote(m.path + ".md", safe="/"))
+                     for m in load_members(site, "markdown") if not m.anchor}
+            owner = _named_type(question, pages)
+    if not owner:
+        return None
+    body = sources.read(pages[owner], "content")
+    type_record = Member(owner, "", PurePosixPath(owner).name, "")
+    type_text = member_passage(body, "markdown", type_record)
+    members = [Member(owner, "", type_record.label, "", type_text)]
+    for title, anchor, block in markdown_members(body):
+        if not anchor:
+            return None  # Older pages need the published index to distinguish overloads.
+        label = title.replace("\\", "")
+        passage = markdown_member_passage(label, block, normalize_contracts=True)
+        members.append(Member(owner, anchor, label, "", passage))
+    member = _choose(question, members, adaptive=True)
+    # The complete type page can settle a scoped question without a second index.
+    if member and member.search_text:
+        return member, member.search_text
+    return None
+
+
+def _legacy_contracts_url(sources, entry, root):
+    llms_url = urljoin(entry, _require(_link(root, "llms.txt"), "HTML llms.txt"))
+    llms = sources.read(llms_url)
+    href = next((href for _, href, _ in _markdown_links(llms)
+                 if PurePosixPath(urlsplit(href).path).name == "contracts.ndjson"), None)
+    return urljoin(llms_url, _require(href, "llms.txt contracts"))
+
+
+def _contracts(sources, entry, root, question, chars, adaptive, *, scoped=False, has_markdown=True,
+               allow_legacy=False):
+    href = _link(root, "contracts.ndjson", relation="describedby")
+    cards_url = (_legacy_contracts_url(sources, entry, root) if not href and allow_legacy
+                 else urljoin(entry, _require(href, "HTML contracts")))
+    cards = dict(_cards(sources.read(cards_url)))
+    member = _choose(question, list(cards), adaptive)
+    passage = member.search_text if member else ""
+    if adaptive and member and has_markdown:
+        packet = select_evidence(question, member, passage, chars)
+        if (scoped and cards[member].get("detailsOmitted")) or needs_detail(question, member, packet):
+            target = urljoin(cards_url, quote(member.path + ".md", safe="/"))
+            detail = markdown_detail(sources.read(target, "content"), member, cards[member],
+                                     normalize_contracts=scoped)
+            if detail:
+                passage = detail
+    return member, passage
+
+
+def route(entry_url, question, variant, *, chars=600, encode=None, allow_https=False, file_root=None,
+          allow_legacy=False):
     """Follow a documented route from a local HTML page under a shared excerpt limit."""
     if variant not in ROUTES or chars <= 0:
         raise ValueError("Choose a known route and a positive excerpt length")
-    sources = _Sources(entry_url, encode)
+    sources = _Sources(entry_url, encode, allow_https=allow_https, file_root=file_root)
     entry = sources.entry
     root = Tree(sources.read(entry)).root
     # Older HTML also marks the LLM indexes as Markdown alternates.
@@ -197,34 +367,29 @@ def route(entry_url, question, variant, *, chars=600, encode=None):
                            and tag.get("href")
                            and urlsplit(tag.get("href")).path.endswith(".md")]
     twin = markdown_alternates[0] if len(markdown_alternates) == 1 else None
-    adaptive = variant in {"javadoc-adaptive", "javadoc-lazy", "adaptive"}
+    adaptive = variant in {"javadoc-adaptive", "javadoc-lazy", "javadoc-scoped", "adaptive", "scoped"}
     if variant in {"javadoc", "javadoc-adaptive", "javadoc-lazy"}:
         member, passage = _javadoc(sources, entry, root, question, adaptive, lazy=variant == "javadoc-lazy")
-    elif variant in {"direct", "adaptive"}:
-        href = _require(_link(root, "contracts.ndjson", relation="describedby"), "HTML contracts")
-        cards_url = urljoin(entry, href)
-        cards = dict(_cards(sources.read(cards_url)))
-        member = _choose(question, list(cards), adaptive)
-        passage = member.search_text if member else ""
-        if adaptive and member:
-            packet = select_evidence(question, member, passage, chars)
-            if needs_detail(question, member, packet):
-                target = urljoin(cards_url, quote(member.path + ".md", safe="/"))
-                detail = markdown_detail(sources.read(target, "content"), member, cards[member])
-                if detail:
-                    passage = detail
+    elif variant == "javadoc-scoped":
+        member, passage = _javadoc_scoped(sources, entry, root, question)
+    elif variant in {"direct", "adaptive", "scoped"}:
+        scoped = _scoped(sources, entry, root, question, chars) if variant == "scoped" and twin else None
+        member, passage = scoped or _contracts(sources, entry, root, question, chars, adaptive,
+                                               scoped=variant == "scoped", has_markdown=bool(twin),
+                                               allow_legacy=allow_legacy)
     else:
         llms_url = urljoin(entry, _require(_link(root, "llms.txt"), "HTML llms.txt"))
         llms = sources.read(llms_url)
         if variant == "inline":
             member, passage = _inline(sources, llms_url, llms, question)
         else:
-            href = next((href for _, href, _ in _markdown_links(llms)
-                         if PurePosixPath(urlsplit(href).path).name == "contracts.ndjson"), None)
             cards = [member for member, _ in _cards(sources.read(
-                urljoin(llms_url, _require(href, "llms.txt contracts"))))]
+                _legacy_contracts_url(sources, entry, root)))]
             member = choose_contract(question, cards, rank_contract)
             passage = member.search_text
+    if variant in {"scoped", "javadoc-scoped"} and member:
+        # The evidence selector supplies the title once for both native type readers.
+        passage = passage.removeprefix(member.label + ": ").lstrip()
     excerpt = select_evidence(question, member, passage, chars) if adaptive and member else passage[:chars]
     extract = extract_adaptive_answer if adaptive else extract_contract_answer
     answer = extract(question, excerpt, member.owner) if member and (adaptive or len(passage) <= chars) else None
