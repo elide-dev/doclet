@@ -83,13 +83,15 @@ def main():
     parser.add_argument("--site-root", type=Path,
                         help="Local documentation root when starting at a nested HTML file")
     parser.add_argument("--chars", type=int, default=600, help="Maximum excerpt characters")
+    parser.add_argument("--candidates", type=int, choices=(1, 2, 3), default=1,
+                        help="Use the HTML entry to retrieve alternative declarations within the same budget")
     args = parser.parse_args()
     if args.chars <= 0:
         parser.error("--chars must be positive")
     location = urlsplit(args.site)
     site = Path(args.site)
     url = location.scheme in {"file", "http", "https"} or "://" in args.site
-    if args.html_entry or url or site.suffix.lower() == ".html" or args.site_root:
+    if args.html_entry or url or site.suffix.lower() == ".html" or args.site_root or args.candidates > 1:
         from eval_cited import extract_cited_answer
         from eval_routes import route
         if url:
@@ -105,8 +107,8 @@ def main():
         chosen = "javadoc-scoped" if args.format == "html" else "scoped"
         try:
             result = route(entry, args.question, chosen, chars=args.chars, allow_https=True,
-                           file_root=args.site_root, allow_legacy=True)
-            if result["page"] and not result["extraction"]:
+                           file_root=args.site_root, allow_legacy=True, alternatives=args.candidates)
+            if result["page"] and not result["extraction"] and len(result.get("candidates", [])) < 2:
                 cited = extract_cited_answer(args.question, result["excerpt"], result["page"])
                 if cited:
                     result["extraction"] = asdict(cited)

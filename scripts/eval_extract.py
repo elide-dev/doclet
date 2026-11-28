@@ -24,7 +24,7 @@ def terms(text):
 
 
 def _answer(value, citation, rule):
-    if len(value) > 200 or value.endswith(("…", "...")):
+    if len(value) > 200 or value.endswith(("…", "...")) or value.strip().rstrip(".").casefold() == "no description":
         return None
     return Extraction(value, citation, rule)
 

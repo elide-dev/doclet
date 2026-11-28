@@ -1,0 +1,353 @@
+{
+  "revision": "11f5829bd79b6b193a774e17a850afb818c36583",
+  "offline": true,
+  "tokenizer": "o200k_base",
+  "entry": "index.html",
+  "cited": true,
+  "runs": [
+    {
+      "corpus": "commonmark",
+      "fixture": "6611630a2a869f990b2abc697d80dcf86ff234ff14bf45cb8fe7f96c3c417f42",
+      "chars": 240,
+      "routes": {
+        "scoped": {
+          "questions": 13,
+          "evidence_hits": 10,
+          "excerpt_tokens": 495,
+          "local_answers": 1,
+          "fetches": 26,
+          "bytes": 871410,
+          "misses": [
+            "Does HtmlRenderer.Builder.percentEncodeUrls(boolean) double-encode URL components that already use percent escapes?",
+            "When multiple HtmlRenderer.Builder.nodeRendererFactory registrations render the same node type, which factory takes precedence?",
+            "What is the replacement for TextContentRenderer.Builder.stripNewlines(boolean) when all newlines must be stripped?"
+          ]
+        },
+        "javadoc-scoped": {
+          "questions": 13,
+          "evidence_hits": 8,
+          "excerpt_tokens": 508,
+          "local_answers": 1,
+          "fetches": 52,
+          "bytes": 746950,
+          "misses": [
+            "Can the same Parser.parse(String) method be called concurrently on one Parser instance?",
+            "What integer removes the parser's limit on nested inline nodes in Parser.Builder.maxInlineNesting(int)?",
+            "Does HtmlRenderer.Builder.percentEncodeUrls(boolean) double-encode URL components that already use percent escapes?",
+            "When multiple HtmlRenderer.Builder.nodeRendererFactory registrations render the same node type, which factory takes precedence?",
+            "What is the replacement for TextContentRenderer.Builder.stripNewlines(boolean) when all newlines must be stripped?"
+          ]
+        },
+        "javadoc-adaptive": {
+          "questions": 13,
+          "evidence_hits": 8,
+          "excerpt_tokens": 518,
+          "local_answers": 1,
+          "fetches": 1274,
+          "bytes": 21660171,
+          "misses": [
+            "Can the same Parser.parse(String) method be called concurrently on one Parser instance?",
+            "What integer removes the parser's limit on nested inline nodes in Parser.Builder.maxInlineNesting(int)?",
+            "Does HtmlRenderer.Builder.percentEncodeUrls(boolean) double-encode URL components that already use percent escapes?",
+            "When multiple HtmlRenderer.Builder.nodeRendererFactory registrations render the same node type, which factory takes precedence?",
+            "What is the replacement for TextContentRenderer.Builder.stripNewlines(boolean) when all newlines must be stripped?"
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "commonmark",
+      "fixture": "6611630a2a869f990b2abc697d80dcf86ff234ff14bf45cb8fe7f96c3c417f42",
+      "chars": 400,
+      "routes": {
+        "scoped": {
+          "questions": 13,
+          "evidence_hits": 12,
+          "excerpt_tokens": 700,
+          "local_answers": 1,
+          "fetches": 26,
+          "bytes": 871410,
+          "misses": [
+            "Does HtmlRenderer.Builder.percentEncodeUrls(boolean) double-encode URL components that already use percent escapes?"
+          ]
+        },
+        "javadoc-scoped": {
+          "questions": 13,
+          "evidence_hits": 11,
+          "excerpt_tokens": 781,
+          "local_answers": 1,
+          "fetches": 52,
+          "bytes": 746950,
+          "misses": [
+            "Does HtmlRenderer.Builder.percentEncodeUrls(boolean) double-encode URL components that already use percent escapes?",
+            "When multiple HtmlRenderer.Builder.nodeRendererFactory registrations render the same node type, which factory takes precedence?"
+          ]
+        },
+        "javadoc-adaptive": {
+          "questions": 13,
+          "evidence_hits": 11,
+          "excerpt_tokens": 783,
+          "local_answers": 1,
+          "fetches": 1274,
+          "bytes": 21660171,
+          "misses": [
+            "Does HtmlRenderer.Builder.percentEncodeUrls(boolean) double-encode URL components that already use percent escapes?",
+            "When multiple HtmlRenderer.Builder.nodeRendererFactory registrations render the same node type, which factory takes precedence?"
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "commonmark",
+      "fixture": "6611630a2a869f990b2abc697d80dcf86ff234ff14bf45cb8fe7f96c3c417f42",
+      "chars": 600,
+      "routes": {
+        "scoped": {
+          "questions": 13,
+          "evidence_hits": 13,
+          "excerpt_tokens": 868,
+          "local_answers": 1,
+          "fetches": 26,
+          "bytes": 871410,
+          "misses": []
+        },
+        "javadoc-scoped": {
+          "questions": 13,
+          "evidence_hits": 13,
+          "excerpt_tokens": 976,
+          "local_answers": 1,
+          "fetches": 52,
+          "bytes": 746950,
+          "misses": []
+        },
+        "javadoc-adaptive": {
+          "questions": 13,
+          "evidence_hits": 13,
+          "excerpt_tokens": 968,
+          "local_answers": 1,
+          "fetches": 1274,
+          "bytes": 21660171,
+          "misses": []
+        }
+      }
+    },
+    {
+      "corpus": "gson",
+      "fixture": "3a3050c98ee090e571ddd0e07242a1cdc380583c80c970a506ddd53138c41b9f",
+      "chars": 240,
+      "routes": {
+        "scoped": {
+          "questions": 15,
+          "evidence_hits": 15,
+          "excerpt_tokens": 571,
+          "local_answers": 2,
+          "fetches": 32,
+          "bytes": 1138542,
+          "misses": []
+        },
+        "javadoc-scoped": {
+          "questions": 15,
+          "evidence_hits": 13,
+          "excerpt_tokens": 641,
+          "local_answers": 0,
+          "fetches": 53,
+          "bytes": 1072690,
+          "misses": [
+            "Which naming policy turns a camel-case field into lowercase words separated by underscores?",
+            "Which builder method enables serialization of fields whose values are null?"
+          ]
+        },
+        "javadoc-adaptive": {
+          "questions": 15,
+          "evidence_hits": 14,
+          "excerpt_tokens": 637,
+          "local_answers": 1,
+          "fetches": 435,
+          "bytes": 10331460,
+          "misses": [
+            "Which naming policy turns a camel-case field into lowercase words separated by underscores?"
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "gson",
+      "fixture": "3a3050c98ee090e571ddd0e07242a1cdc380583c80c970a506ddd53138c41b9f",
+      "chars": 400,
+      "routes": {
+        "scoped": {
+          "questions": 15,
+          "evidence_hits": 14,
+          "excerpt_tokens": 783,
+          "local_answers": 2,
+          "fetches": 32,
+          "bytes": 1138542,
+          "misses": [
+            "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?"
+          ]
+        },
+        "javadoc-scoped": {
+          "questions": 15,
+          "evidence_hits": 14,
+          "excerpt_tokens": 839,
+          "local_answers": 1,
+          "fetches": 53,
+          "bytes": 1072690,
+          "misses": [
+            "Which builder method enables serialization of fields whose values are null?"
+          ]
+        },
+        "javadoc-adaptive": {
+          "questions": 15,
+          "evidence_hits": 15,
+          "excerpt_tokens": 840,
+          "local_answers": 2,
+          "fetches": 435,
+          "bytes": 10331460,
+          "misses": []
+        }
+      }
+    },
+    {
+      "corpus": "gson",
+      "fixture": "3a3050c98ee090e571ddd0e07242a1cdc380583c80c970a506ddd53138c41b9f",
+      "chars": 600,
+      "routes": {
+        "scoped": {
+          "questions": 15,
+          "evidence_hits": 15,
+          "excerpt_tokens": 884,
+          "local_answers": 2,
+          "fetches": 32,
+          "bytes": 1138542,
+          "misses": []
+        },
+        "javadoc-scoped": {
+          "questions": 15,
+          "evidence_hits": 13,
+          "excerpt_tokens": 1008,
+          "local_answers": 1,
+          "fetches": 53,
+          "bytes": 1072690,
+          "misses": [
+            "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?",
+            "Which builder method enables serialization of fields whose values are null?"
+          ]
+        },
+        "javadoc-adaptive": {
+          "questions": 15,
+          "evidence_hits": 14,
+          "excerpt_tokens": 1009,
+          "local_answers": 2,
+          "fetches": 435,
+          "bytes": 10331460,
+          "misses": [
+            "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?"
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "runtime",
+      "fixture": "4a6da0d2e7251d49ce77c60592f61a4774c41ddda36c2b31c50f7a1bc42b461d",
+      "chars": 240,
+      "routes": {
+        "scoped": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 237,
+          "local_answers": 9,
+          "fetches": 21,
+          "bytes": 259928,
+          "misses": []
+        },
+        "javadoc-scoped": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 283,
+          "local_answers": 9,
+          "fetches": 36,
+          "bytes": 374433,
+          "misses": []
+        },
+        "javadoc-adaptive": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 288,
+          "local_answers": 9,
+          "fetches": 120,
+          "bytes": 1684300,
+          "misses": []
+        }
+      }
+    },
+    {
+      "corpus": "runtime",
+      "fixture": "4a6da0d2e7251d49ce77c60592f61a4774c41ddda36c2b31c50f7a1bc42b461d",
+      "chars": 400,
+      "routes": {
+        "scoped": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 237,
+          "local_answers": 9,
+          "fetches": 21,
+          "bytes": 259928,
+          "misses": []
+        },
+        "javadoc-scoped": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 338,
+          "local_answers": 9,
+          "fetches": 36,
+          "bytes": 374433,
+          "misses": []
+        },
+        "javadoc-adaptive": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 332,
+          "local_answers": 9,
+          "fetches": 120,
+          "bytes": 1684300,
+          "misses": []
+        }
+      }
+    },
+    {
+      "corpus": "runtime",
+      "fixture": "4a6da0d2e7251d49ce77c60592f61a4774c41ddda36c2b31c50f7a1bc42b461d",
+      "chars": 600,
+      "routes": {
+        "scoped": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 237,
+          "local_answers": 9,
+          "fetches": 21,
+          "bytes": 259928,
+          "misses": []
+        },
+        "javadoc-scoped": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 338,
+          "local_answers": 9,
+          "fetches": 36,
+          "bytes": 374433,
+          "misses": []
+        },
+        "javadoc-adaptive": {
+          "questions": 10,
+          "evidence_hits": 10,
+          "excerpt_tokens": 332,
+          "local_answers": 9,
+          "fetches": 120,
+          "bytes": 1684300,
+          "misses": []
+        }
+      }
+    }
+  ]
+}

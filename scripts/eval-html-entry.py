@@ -85,6 +85,8 @@ def main():
                    default=["javadoc", "inline", "contracts", "compact", "direct"])
     p.add_argument("--offset", type=int, default=0, help="Rotate the starting arm across repeated paired runs")
     p.add_argument("--chars", type=int, default=600, help="Same maximum excerpt characters for every arm")
+    p.add_argument("--alternatives", type=int, choices=(1, 2, 3), default=1,
+                   help="Allow the reader to choose a cited declaration within the same evidence budget")
     p.add_argument("--cited", action="store_true", help="Try additional verbatim documented facts before Luna in every arm")
     p.add_argument("--offline", action="store_true")
     args = p.parse_args()
@@ -95,7 +97,10 @@ def main():
         p.error("--chars must be positive")
     if args.cited:
         from eval_cited import extract_cited_answer
+    if args.alternatives > 1:
+        from eval_packet import packet_prompt, parse_packet_reply
     report = dict(model="gpt-6-luna", effort="low", offline=args.offline, cited=args.cited,
+                  alternatives=args.alternatives,
                   revision=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
                   fixtures=sha256(args.questions.read_bytes()).hexdigest(), excerpt_chars=args.chars,
                   entry="index.html", tokenizer="o200k_base", routes=arms, order_offset=args.offset,
@@ -124,8 +129,11 @@ def main():
                 folder = "jdk" if arm.startswith("javadoc") else ("compact" if arm == "compact" else "api")
                 start = perf_counter()
                 outcome = route(base + folder + "/index.html", case["question"],
-                                "contracts" if arm == "compact" else arm, chars=args.chars, encode=encode)
-                if args.cited and outcome["page"] and not outcome["extraction"]:
+                                "contracts" if arm == "compact" else arm, chars=args.chars, encode=encode,
+                                **({"alternatives": args.alternatives} if args.alternatives > 1 else {}))
+                candidates = outcome.get("candidates", [])
+                multiple = len(candidates) > 1
+                if args.cited and not multiple and outcome["page"] and not outcome["extraction"]:
                     hit = extract_cited_answer(case["question"], outcome["excerpt"], outcome["page"])
                     if hit:
                         outcome["extraction"] = asdict(hit)
@@ -147,17 +155,30 @@ def main():
                 elif not row["excerpt"].strip():
                     row["answer"] = "unknown"
                 elif not args.offline:
-                    prompt = ("Answer with the shortest correct identifier or phrase. No explanation. "
+                    prompt = (packet_prompt(case["question"], candidates) if multiple else
+                              "Answer with the shortest correct identifier or phrase. No explanation. "
                               f"If unknown: unknown.\n{case['question']}\n{row['excerpt']}")
                     start = perf_counter()
                     row.update(read_answer("codex", "gpt-6-luna", prompt, "low"), model_called=True)
                     model_ms = (perf_counter() - start) * 1000
+                if multiple:
+                    row["packet"] = row["excerpt"]
+                    row["raw_answer"] = row["answer"]
+                    selected = None
+                    if row["answer"] is not None:
+                        selected, row["answer"] = parse_packet_reply(row["answer"], candidates)
+                    for key in ("page", "path", "anchor", "excerpt"):
+                        row[key] = selected[key] if selected else ("" if key == "excerpt" else None)
                 row["wall_ms"] = round(lookup_ms + model_ms, 3)
                 row["page_hit"] = row["page"] == case["page"]
                 anchors = case.get("anchors") or ([case["anchor"]] if case.get("anchor") else [])
                 row["anchor_hit"] = (row["page_hit"] and row["anchor"] in anchors) if anchors else None
                 row["page_evidence_hit"] = bool(row["page_hit"] and re.search(case["evidence"], row["excerpt"], re.I | re.S))
                 row["evidence_hit"] = row["page_evidence_hit"] and row["anchor_hit"] is not False
+                if candidates:
+                    row["candidate_evidence_hit"] = any(
+                        c["page"] == case["page"] and (not anchors or c["anchor"] in anchors)
+                        and re.search(case["evidence"], c["excerpt"], re.I | re.S) for c in candidates)
                 required = [case["answer"], *case.get("answer_all", [])]
                 row["correct"] = (bool(row["evidence_hit"] and all(re.search(pattern, row["answer"], re.I)
                                       for pattern in required)) if row["answer"] is not None else None)

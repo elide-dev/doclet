@@ -27,7 +27,7 @@ python3 scripts/query_docs.py https://elide-dev.github.io/doclet/graalvm/ 'What 
 python3 scripts/query_docs.py build/docs 'What does Client.connect return?' --html-entry
 ```
 
-A local HTML file also works. Use `--site-root` for an entry below the documentation root. The generated-site reader expects Markdown or a declaration contract index. To query standard Javadoc, pass `--format html`.
+A local HTML file also works. Use `--site-root` for an entry below the documentation root. The generated-site reader expects Markdown or a declaration contract index. To query standard Javadoc, pass `--format html`. For an ambiguous lookup, `--candidates 3` returns up to three citable declarations sharing the same excerpt budget.
 
 Every page holds only its own path through the navigation tree: its package, that package’s types, and the current type’s nested types. The whole tree is loaded once from `assets/nav.js`, which works from `file://` too, so a page’s size follows its own content rather than the size of the library.
 

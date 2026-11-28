@@ -7,12 +7,15 @@ import re
 from urllib.parse import quote, unquote, urldefrag, urljoin, urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, build_opener
 
-from eval_discovery import (Member, Tree, _jdk_details, choose_contract, enrich_jdk_members,
+from declaration_guard import contradicts_description, description_overlap
+from eval_discovery import (Member, Tree, _CALL, _KIND_QUESTION, _jdk_details, _matches_kind,
+                            _overloads, _scope, choose_contract, enrich_jdk_members,
                             load_members, member_passage)
-from eval_evidence import (extract_adaptive_answer, markdown_detail, markdown_member_passage,
+from eval_evidence import (_preferences, extract_adaptive_answer, markdown_detail, markdown_member_passage,
                            markdown_members, needs_detail, select_evidence)
 from eval_extract import extract_contract_answer
 from eval_rank import rank, rank_contract
+from eval_return_type import prefer_return_type, requested_return_type
 from query_docs import contract_passage
 
 
@@ -44,6 +47,7 @@ class _Sources:
         self.encode = encode
         self.requests = []
         self.cache = {}
+        self.declarations = {}
         self.opener = build_opener(ProxyHandler({}), _NoRedirect())
 
     def read(self, url, stage="discovery"):
@@ -134,7 +138,9 @@ def _cards(index):
         label = item["name"]
         if "(" in anchor:
             label += "(" + anchor.split("(", 1)[1]
-        yield Member(path, anchor, label, item.get("summary", ""), contract_passage(label, item)), item
+        returns = item.get("returns") or {}
+        yield Member(path, anchor, label, item.get("summary", ""), contract_passage(label, item),
+                     returns.get("type", "")), item
 
 
 def _choose(question, members, adaptive):
@@ -144,7 +150,7 @@ def _choose(question, members, adaptive):
     return choose_contract(question, members, rank_contract)
 
 
-def _javadoc(sources, entry, root, question, adaptive=False, lazy=False):
+def _javadoc_index(sources, entry, root):
     href = _link(root, "index-all.html")
     if not href:
         canonical = _link(root, relation="canonical")
@@ -153,18 +159,30 @@ def _javadoc(sources, entry, root, question, adaptive=False, lazy=False):
             root = Tree(sources.read(entry)).root
             href = _link(root, "index-all.html")
     index = urljoin(entry, _require(href, "Javadoc alphabetical index"))
-    site = _Index(sources, index, index)
-    members = load_members(site, "html")
+    return index, _Index(sources, index, index)
+
+
+def _javadoc(sources, entry, root, question, adaptive=False, lazy=False, return_types=False):
+    index, site = _javadoc_index(sources, entry, root)
     if lazy:
+        members = load_members(site, "html")
         member = _choose(question, members, adaptive)
         if member is None:
             return None, ""
         page = sources.read(urljoin(index, quote(member.path + ".html", safe="/")), "content")
         return member, member_passage(page, "html", member)
-    members = enrich_jdk_members(site, members)
+    members = _javadoc_members(sources, index, site, return_types)
     member = _choose(question, members, adaptive)
     excerpt = (member.search_text or (member.label + ": " + member.summary)) if member else ""
     return member, excerpt
+
+
+def _javadoc_members(sources, index, site, return_types=False):
+    key = (index, return_types)
+    if key not in sources.declarations:
+        sources.declarations[key] = enrich_jdk_members(
+            site, load_members(site, "html"), include_return_types=return_types)
+    return sources.declarations[key]
 
 
 def _inline(sources, llms_url, llms, question):
@@ -333,16 +351,27 @@ def _legacy_contracts_url(sources, entry, root):
     return urljoin(llms_url, _require(href, "llms.txt contracts"))
 
 
-def _contracts(sources, entry, root, question, chars, adaptive, *, scoped=False, has_markdown=True,
-               allow_legacy=False):
+def _contracts_url(sources, entry, root, allow_legacy):
     href = _link(root, "contracts.ndjson", relation="describedby")
-    cards_url = (_legacy_contracts_url(sources, entry, root) if not href and allow_legacy
-                 else urljoin(entry, _require(href, "HTML contracts")))
-    cards = dict(_cards(sources.read(cards_url)))
+    if not href and allow_legacy:
+        return _legacy_contracts_url(sources, entry, root)
+    return urljoin(entry, _require(href, "HTML contracts"))
+
+
+def _contract_records(sources, cards_url):
+    if cards_url not in sources.declarations:
+        sources.declarations[cards_url] = dict(_cards(sources.read(cards_url)))
+    return sources.declarations[cards_url]
+
+
+def _contracts(sources, entry, root, question, chars, adaptive, *, scoped=False, has_markdown=True,
+               allow_legacy=False, linked=False):
+    cards_url = _contracts_url(sources, entry, root, allow_legacy)
+    cards = _contract_records(sources, cards_url)
     member = _choose(question, list(cards), adaptive)
     passage = member.search_text if member else ""
     if adaptive and member and has_markdown:
-        packet = select_evidence(question, member, passage, chars)
+        packet = select_evidence(question, member, passage, chars, linked=linked)
         if (scoped and cards[member].get("detailsOmitted")) or needs_detail(question, member, packet):
             target = urljoin(cards_url, quote(member.path + ".md", safe="/"))
             detail = markdown_detail(sources.read(target, "content"), member, cards[member],
@@ -352,11 +381,109 @@ def _contracts(sources, entry, root, question, chars, adaptive, *, scoped=False,
     return member, passage
 
 
+def _candidate(member, excerpt):
+    return dict(page=member.owner, path=member.path, anchor=member.anchor, excerpt=excerpt)
+
+
+def _ranked_candidates(question, members):
+    calls = list(_CALL.finditer(question))
+    labels = {m.label.partition("(")[0] for m in members if "(" in m.anchor}
+    if any(call["owner"] or call["name"] in labels for call in calls):
+        matches = _overloads(question, members)
+    else:
+        matches = _scope(question, members)
+        intent = _KIND_QUESTION.search(question)
+        if intent:
+            matches = [m for m in matches if _matches_kind(m, intent[1].lower())]
+        names = [m for m in matches if m.anchor and re.search(
+            r"(?<![\w$])" + re.escape(m.label.partition("(")[0]) + r"(?![\w$])", question)]
+        if names:
+            matches = names
+    pool = {(m.path, m.anchor): m for m in prefer_return_type(question, matches)}
+    texts = {key: f"{m.owner} {m.label} {m.summary} {m.search_text}" for key, m in pool.items()}
+    return [pool[key] for key in rank_contract(question, texts)] if texts else []
+
+
+def _candidate_evidence(sources, entry, root, question, variant, chars, count, member, passage,
+                        excerpt, answer, allow_legacy):
+    singleton = [_candidate(member, excerpt)] if member and excerpt else []
+    requested = requested_return_type(question)
+    if not requested and member and (
+            _overloads(question, [member]) or (answer and _named_type(question, [member.path]))):
+        return singleton
+    if variant.startswith("javadoc"):
+        index, site = _javadoc_index(sources, entry, root)
+        records = _javadoc_members(sources, index, site, bool(requested))
+    else:
+        cards_url = _contracts_url(sources, entry, root, allow_legacy)
+        records = _contract_records(sources, cards_url)
+    ranked = _ranked_candidates(question, records)
+    entries = []
+    reverse = bool(re.match(r"^(?:which|what)\b", question, re.I))
+    if reverse and member and contradicts_description(question, passage):
+        # A reverse lookup found the owner but the description denies the
+        # requested behavior. Check other declarations on that owner first.
+        singleton = []
+        owner_records = [m for m in records if m.path == member.path and m.anchor
+                         and ("(" in m.anchor) == ("(" in member.anchor)
+                         and description_overlap(question, m.search_text or m.summary) >= 2
+                         and not contradicts_description(question, m.search_text or m.summary)]
+        if owner_records:
+            ranked = _ranked_candidates(question, owner_records)
+        else:
+            return []
+    primary = next((m for m in ranked if member and (m.path, m.anchor) == (member.path, member.anchor)), None)
+    if singleton and requested and not primary:
+        singleton = []
+    if singleton:
+        entries.append((primary or member, passage))
+    keys = {(m.path, m.anchor) for m, _ in entries}
+    for candidate in ranked:
+        if len(entries) >= count:
+            break
+        key = (candidate.path, candidate.anchor)
+        if reverse and contradicts_description(question, candidate.search_text or candidate.summary):
+            continue
+        if key not in keys:
+            entries.append((candidate, candidate.search_text or candidate.summary))
+            keys.add(key)
+    if len(entries) < 2 and singleton:
+        return singleton
+    evidence = []
+    remaining = chars
+    for index, (candidate, raw) in enumerate(entries):
+        body = raw.removeprefix(candidate.label + ": ").lstrip()
+        owner = candidate.owner
+        if any(other.owner == owner and other.path != candidate.path for other, _ in entries):
+            owner = candidate.path.replace("/", ".")
+        prefix = owner + " · "
+        if requested and candidate.return_type:
+            prefix += candidate.return_type + " · "
+        # Give the highest-ranked declarations more context and reuse any unspent space.
+        count_left = len(entries) - index
+        available = remaining * (count_left + 1) // sum(range(2, count_left + 2))
+        size = available - len(prefix) - 5
+        selected = select_evidence(question, candidate, body, size, linked=True)
+        is_primary = member and (candidate.path, candidate.anchor) == (member.path, member.anchor)
+        if singleton and is_primary and any(
+                tag + ":" in excerpt and tag + ":" not in selected for tag in _preferences(question)):
+            return singleton
+        if selected and selected != candidate.label + ":":
+            evidence.append(_candidate(candidate, prefix + selected))
+            remaining -= len(prefix) + len(selected) + 5
+        elif singleton and is_primary:
+            return singleton
+    return evidence if len(evidence) > 1 or not singleton else singleton
+
+
 def route(entry_url, question, variant, *, chars=600, encode=None, allow_https=False, file_root=None,
-          allow_legacy=False):
+          allow_legacy=False, alternatives=1):
     """Follow a documented route from a local HTML page under a shared excerpt limit."""
     if variant not in ROUTES or chars <= 0:
         raise ValueError("Choose a known route and a positive excerpt length")
+    if not 1 <= alternatives <= 3 or (alternatives > 1 and variant not in {
+            "scoped", "javadoc-adaptive", "javadoc-scoped"}):
+        raise ValueError("Alternative evidence requires a scoped or full Javadoc reader and 1–3 candidates")
     sources = _Sources(entry_url, encode, allow_https=allow_https, file_root=file_root)
     entry = sources.entry
     root = Tree(sources.read(entry)).root
@@ -369,14 +496,15 @@ def route(entry_url, question, variant, *, chars=600, encode=None, allow_https=F
     twin = markdown_alternates[0] if len(markdown_alternates) == 1 else None
     adaptive = variant in {"javadoc-adaptive", "javadoc-lazy", "javadoc-scoped", "adaptive", "scoped"}
     if variant in {"javadoc", "javadoc-adaptive", "javadoc-lazy"}:
-        member, passage = _javadoc(sources, entry, root, question, adaptive, lazy=variant == "javadoc-lazy")
+        member, passage = _javadoc(sources, entry, root, question, adaptive, lazy=variant == "javadoc-lazy",
+                                    return_types=alternatives > 1 and bool(requested_return_type(question)))
     elif variant == "javadoc-scoped":
         member, passage = _javadoc_scoped(sources, entry, root, question)
     elif variant in {"direct", "adaptive", "scoped"}:
         scoped = _scoped(sources, entry, root, question, chars) if variant == "scoped" and twin else None
         member, passage = scoped or _contracts(sources, entry, root, question, chars, adaptive,
                                                scoped=variant == "scoped", has_markdown=bool(twin),
-                                               allow_legacy=allow_legacy)
+                                               allow_legacy=allow_legacy, linked=alternatives > 1)
     else:
         llms_url = urljoin(entry, _require(_link(root, "llms.txt"), "HTML llms.txt"))
         llms = sources.read(llms_url)
@@ -390,9 +518,30 @@ def route(entry_url, question, variant, *, chars=600, encode=None, allow_https=F
     if variant in {"scoped", "javadoc-scoped"} and member:
         # The evidence selector supplies the title once for both native type readers.
         passage = passage.removeprefix(member.label + ": ").lstrip()
-    excerpt = select_evidence(question, member, passage, chars) if adaptive and member else passage[:chars]
+    excerpt = (select_evidence(question, member, passage, chars, linked=alternatives > 1)
+               if adaptive and member else passage[:chars])
     extract = extract_adaptive_answer if adaptive else extract_contract_answer
     answer = extract(question, excerpt, member.owner) if member and (adaptive or len(passage) <= chars) else None
+    if answer and answer.rule == "member-description" and contradicts_description(question, passage):
+        answer = None
+    additional = {}
+    if alternatives > 1:
+        from eval_packet import pack_candidates
+        candidates = _candidate_evidence(sources, entry, root, question, variant, chars, alternatives,
+                                         member, passage, excerpt, answer, allow_legacy)
+        if len(candidates) > 1:
+            candidates = pack_candidates(candidates, max_chars=chars)
+        primary = candidates[0] if candidates else None
+        changed_primary = primary and (not member or (primary["path"], primary["anchor"]) !=
+                                       (member.path, member.anchor))
+        if len(candidates) > 1 or changed_primary:
+            member = Member(primary["path"], primary["anchor"], primary["page"], "")
+            excerpt = ("\n".join(f"[{item['id']}] {item['excerpt']}" for item in candidates)
+                       if len(candidates) > 1 else primary["excerpt"])
+            answer = None
+        elif not candidates:
+            member, excerpt, answer = None, "", None
+        additional["candidates"] = candidates
     requests = sources.requests
     return dict(page=member.owner if member else None, path=member.path if member else None,
                 anchor=member.anchor if member else None, excerpt=excerpt,
@@ -401,4 +550,4 @@ def route(entry_url, question, variant, *, chars=600, encode=None, allow_https=F
                 discovery_tokens=sum(r["tokens"] for r in requests if r["stage"] == "discovery") if encode else None,
                 source_tokens=sum(r["tokens"] for r in requests) if encode else None,
                 excerpt_tokens=len(encode(excerpt)) if encode else None,
-                markdown_url=urljoin(entry, twin) if twin else None)
+                markdown_url=urljoin(entry, twin) if twin else None, **additional)

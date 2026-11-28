@@ -16,6 +16,9 @@ SENTENCE = re.compile(r"(?<=[.!?])\s+(?=[A-Z`])")
 MARKDOWN_LINK = re.compile(r"\[([^]\n]+)\]\([^\n)]*\)")
 CALLABLE = re.compile(r"\((.*)\)$")
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$", re.M)
+DEPENDENT = re.compile(r"^(?:Otherwise|In (?:that|this) case|This (?:means|is|does|will|prevents|allows))\b", re.I)
+CONDITION = re.compile(r"\b(?:if|when|unless|otherwise|instead|versus|rather than|only)\b", re.I)
+FILLER = {"when", "does", "did", "happen", "method", "use", "rather", "than", "instead", "under"}
 
 
 def markdown_members(body):
@@ -70,9 +73,14 @@ def markdown_member_passage(label, body, *, normalize_contracts=False):
     block = MARKDOWN_LINK.sub(r"\1", block).replace("`", "")
     block = re.sub(r"^\*\*[^*\n]*\bReturns\*\* [^:\n]*:\s*", "Returns: ", block, flags=re.M)
     if normalize_contracts:
+        # The renderer places its standalone version line before the description.
+        # Keep prose in the head by moving that metadata after the documentation.
+        version = re.search(r"(?m)^Since ([^\n]+)\.$", block)
+        if version:
+            block = block[:version.start()] + block[version.end():] + "\nSince: " + version[1]
         block = re.sub(r"^\*\*[^*\n]*\bThrows\*\*\n+((?:- [^\n]+\n?)+)", _markdown_throws,
                        block, flags=re.M)
-        block = re.sub(r"^(Overrides|Since|See also)\s+", r"\1: ", block, flags=re.M)
+        block = re.sub(r"^(Overrides|See also)\s+", r"\1: ", block, flags=re.M)
     block = re.sub(r"^\*\*([^*\n]+)\*\*\s*$", r"\1:", block, flags=re.M)
     return label + ": " + " ".join(block.split())
 
@@ -130,11 +138,41 @@ def _preferences(question):
     return ()
 
 
-def select_evidence(question, member, passage, chars):
+def _sentence_groups(sentences):
+    groups = []
+    for sentence in sentences:
+        if groups and DEPENDENT.match(sentence):
+            groups[-1] += " " + sentence
+        else:
+            groups.append(sentence)
+    return groups
+
+
+def _evidence_priority(question, member, excerpt, preferred):
+    names = set(terms(member.owner + " " + member.label))
+    query = set(terms(question)) - names - FILLER
+    overlap = len(query & set(terms(excerpt)))
+    field = FIELD.match(excerpt)
+    # Prefer the clause that states the condition when several sentences share
+    # an argument name. A dependent group takes priority as a whole.
+    conditional = CONDITION.search(question) and overlap and (
+        len(_sentence_groups(SENTENCE.split(excerpt))) < len(SENTENCE.split(excerpt))
+        or CONDITION.search(excerpt)
+    )
+    return (
+        bool(field and field[1] in preferred),
+        bool(conditional),
+        overlap,
+    )
+
+
+def select_evidence(question, member, passage, chars, *, linked=False):
     """Choose complete facts, never a truncated return or exception contract."""
     passage = " ".join(passage.split())
     head, facts = _fields(passage)
     sentences = [s for s in SENTENCE.split(head) if s]
+    if linked:
+        sentences = _sentence_groups(sentences)
     groups = {}
     for label, fact in facts:
         groups.setdefault(label, []).append(fact)
@@ -144,8 +182,12 @@ def select_evidence(question, member, passage, chars):
     selected = []
     preferred = set(_preferences(question))
     order = rank_contract(question, choices) if choices else []
-    order.sort(key=lambda key: FIELD.match(choices[key])[1] not in preferred
-               if FIELD.match(choices[key]) else True)
+    if linked:
+        order.sort(key=lambda key: _evidence_priority(question, member, choices[key], preferred),
+                   reverse=True)
+    else:
+        order.sort(key=lambda key: FIELD.match(choices[key])[1] not in preferred
+                   if FIELD.match(choices[key]) else True)
     for key in order:
         text = choices[key]
         if len(text) + 1 <= left:

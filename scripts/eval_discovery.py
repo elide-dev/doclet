@@ -15,6 +15,7 @@ class Member:
     label: str
     summary: str
     search_text: str = ""
+    return_type: str = ""
 
     @property
     def owner(self):
@@ -311,6 +312,29 @@ def choose_declaration(question, members, rank):
     return selected
 
 
+def _jdk_return_types(root):
+    result = {}
+    for section in root.iter("section"):
+        anchor = section.get("id")
+        if not anchor or "detail" not in section.get("class", "").split():
+            continue
+        for signature in section.iter("div"):
+            if "member-signature" not in signature.get("class", "").split():
+                continue
+            return_type = next((span for span in signature.iter("span")
+                                if "return-type" in span.get("class", "").split()), None)
+            if return_type is not None:
+                node = return_type.find("a")
+                title = node.get("title", "") if node is not None else ""
+                value = text(return_type)
+                package = re.search(r"\bin ([\w.]+)$", title)
+                if package and not value.startswith(package[1] + "."):
+                    value = package[1] + "." + value
+                result[anchor] = value
+            break
+    return result
+
+
 def _jdk_details(root):
     """Map declaration anchors to complete local evidence with linked record component notes."""
     components = {}
@@ -331,7 +355,7 @@ def _jdk_details(root):
     return details
 
 
-def enrich_jdk_members(site, members):
+def enrich_jdk_members(site, members, *, include_return_types=False):
     """Index each public type page once. Preserve published index descriptions and ordering."""
     by_path = defaultdict(list)
     for i, member in enumerate(members):
@@ -339,9 +363,12 @@ def enrich_jdk_members(site, members):
     result = list(members)
     for path, grouped in by_path.items():
         source = (site / (path + ".html")).read_text()
-        details = _jdk_details(Tree(source).root)
+        root = Tree(source).root
+        details = _jdk_details(root)
+        returns = _jdk_return_types(root) if include_return_types else {}
         for i, member in grouped:
-            result[i] = replace(member, search_text=details.get(member.anchor, ""))
+            result[i] = replace(member, search_text=details.get(member.anchor, ""),
+                                return_type=returns.get(member.anchor, ""))
     return result
 
 

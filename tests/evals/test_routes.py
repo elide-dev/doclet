@@ -111,6 +111,102 @@ class Routes(unittest.TestCase):
         self.assertEqual([r["path"] for r in result["requests"]],
                          ["index.html", "index-all.html", "p/Value.html"])
 
+
+    def test_alternative_packets_keep_the_primary_and_charge_actual_source_reads(self):
+        self.write("index.html", '<link rel="describedby" href="contracts.ndjson"><a href="index-all.html">Index</a>')
+        self.write("contracts.ndjson", """{"href":"p/Cache.html#read()","name":"read","summary":"Reads a cached value.","returns":{"doc":"the value from cache."}}
+{"href":"p/Store.html#peek()","name":"peek","summary":"Reads a stored value.","returns":{"doc":"the value on disk."}}
+{"href":"p/Stream.html#next()","name":"next","summary":"Reads a queued value.","returns":{"doc":"the value in queue."}}
+""")
+        self.write("index-all.html", """
+<dl class="index">
+<dt><a class="member-name-link" href="p/Cache.html#read()">read()</a></dt><dd>Reads a cached value.</dd>
+<dt><a class="member-name-link" href="p/Store.html#peek()">peek()</a></dt><dd>Reads a stored value.</dd>
+<dt><a class="member-name-link" href="p/Stream.html#next()">next()</a></dt><dd>Reads a queued value.</dd>
+</dl>""")
+        for path, member, description, value in [
+            ("Cache", "read", "cached", "the value from cache."),
+            ("Store", "peek", "stored", "the value on disk."),
+            ("Stream", "next", "queued", "the value in queue."),
+        ]:
+            self.write(f"p/{path}.html",
+                       f'<section class="detail" id="{member}()">{member}() Reads a {description} value. Returns: {value}</section>')
+        for variant, fetches in [("scoped", 2), ("javadoc-adaptive", 5)]:
+            with self.subTest(variant=variant):
+                question = "Which method reads a value from a buffer?"
+                original = route(self.entry, question, variant, chars=260)
+                packet = route(self.entry, question, variant, chars=260, alternatives=3)
+                self.assertNotIn("candidates", original)
+                self.assertEqual(packet["path"], original["path"])
+                self.assertEqual(packet["anchor"], original["anchor"])
+                self.assertEqual(packet["candidates"][0]["anchor"], original["anchor"])
+                self.assertEqual(len(packet["candidates"]), 3)
+                self.assertEqual(len({(item["path"], item["anchor"]) for item in packet["candidates"]}), 3)
+                self.assertTrue(all(item["excerpt"].endswith(".") for item in packet["candidates"]))
+                self.assertLessEqual(len(packet["excerpt"]), 260)
+                self.assertEqual(packet["fetches"], fetches)
+                self.assertIsNone(packet["extraction"])
+
+
+
+    def test_alternatives_apply_explicit_return_type_to_both_formats(self):
+        self.write("index.html", '<link rel="describedby" href="contracts.ndjson"><a href="index-all.html">Index</a>')
+        self.write("contracts.ndjson", """
+{"href":"p/Buffer.html#describe()","name":"describe","summary":"Returns a formatted description of input bytes.","returns":{"type":"String","doc":"formatted description."}}
+{"href":"p/Buffer.html#encode()","name":"encode","summary":"Formats the input.","returns":{"type":"byte[]","doc":"encoded payload."}}
+""".strip())
+        self.write("index-all.html", """
+<dl class="index">
+<dt><a class="member-name-link" href="p/Buffer.html#describe()">describe()</a></dt><dd>Returns a formatted description of input bytes.</dd>
+<dt><a class="member-name-link" href="p/Buffer.html#encode()">encode()</a></dt><dd>Formats the input.</dd>
+</dl>""")
+        self.write("p/Buffer.html", """
+<section class="detail" id="describe()"><h3>describe</h3><div class="member-signature">
+<span class="return-type">String</span> describe()</div>Returns: a formatted description of input bytes.</section>
+<section class="detail" id="encode()"><h3>encode</h3><div class="member-signature">
+<span class="return-type">byte[]</span> encode()</div>Returns: encoded payload.</section>
+""")
+        for variant in ("scoped", "javadoc-adaptive"):
+            with self.subTest(variant=variant):
+                result = route(self.entry, "Which method on Buffer returns bytes for the formatted input?",
+                               variant, alternatives=3)
+                self.assertEqual(result["anchor"], "encode()")
+                self.assertEqual([item["anchor"] for item in result["candidates"]], ["encode()"])
+                self.assertIn("encoded payload.", result["excerpt"])
+
+    def test_alternatives_preserve_complete_primary_when_partition_cannot_fit_it(self):
+        self.write("index.html", '<link rel="describedby" href="contracts.ndjson">')
+        self.write("contracts.ndjson", """{"href":"p/Temperature.html#max()","name":"max","summary":"Reports the maximum temperature in degrees Celsius measured by the probe during sampling."}
+{"href":"p/Cache.html#peek()","name":"peek","summary":"Reads a cached value."}
+{"href":"p/Stream.html#next()","name":"next","summary":"Reads a queued value."}
+""")
+        question = "Which method reports the maximum temperature in degrees Celsius?"
+        original = route(self.entry, question, "scoped", chars=120)
+        result = route(self.entry, question, "scoped", chars=120, alternatives=3)
+        self.assertEqual(len(result["candidates"]), 1)
+        self.assertEqual(result["anchor"], original["anchor"])
+        self.assertEqual(result["excerpt"], original["excerpt"])
+        self.assertIn("during sampling.", result["excerpt"])
+
+    def test_exact_call_keeps_singleton_without_extra_fetches(self):
+        self.write("index.html", '<link rel="describedby" href="contracts.ndjson">')
+        self.write("contracts.ndjson", """
+{"href":"p/Stream.html#read(a.Value)","name":"read","returns":{"doc":"an A value."}}
+{"href":"p/Stream.html#read(b.Value)","name":"read","returns":{"doc":"a B value."}}
+""".strip())
+        for question, anchors in [
+            ("What does Stream.read(b.Value) return?", ["read(b.Value)"]),
+            ("What does Stream.read(Value) return?", ["read(a.Value)", "read(b.Value)"]),
+        ]:
+            with self.subTest(question=question):
+                result = route(self.entry, question, "scoped", alternatives=3)
+                self.assertEqual([item["anchor"] for item in result["candidates"]], anchors)
+                self.assertEqual(result["fetches"], 2)
+                if len(anchors) == 1:
+                    self.assertTrue(result["extraction"])
+                else:
+                    self.assertIsNone(result["extraction"])
+
     def test_ignores_links_to_external_documents(self):
         self.write("index.html", '<link rel="help" href="https://example.test/llms.txt">')
         with self.assertRaisesRegex(ValueError, "escaped local origin"):

@@ -7,6 +7,10 @@ from eval_extract import extract_contract_answer
 
 
 class CompleteFields(unittest.TestCase):
+    def test_placeholder_is_not_a_return_contract(self):
+        self.assertIsNone(extract_contract_answer(
+            "What does Reader.value return?", "value(): Returns: No description.", "Reader"))
+
     def test_return_includes_all_alternatives(self):
         value = "the left side; the right side on even iterations. Null for an empty stream."
         for prefix in ["pair public String pair () Returns whichever side is active.",
