@@ -37,6 +37,26 @@ class CompleteFields(unittest.TestCase):
             self.assertIsNone(extract_contract_answer("Which exception does Store.reserve throw when limit exceeds count?",
                                                       row, "Store"))
 
+    def test_implicit_return_question_requires_the_complete_field(self):
+        question = "What queue capacity does Settings.defaults use?"
+        base = "- defaults(): Builds the queue. Returns: a capacity of eight slots"
+        hit = extract_contract_answer(question, base + ".", "Settings")
+        self.assertEqual(hit.answer, "a capacity of eight slots.")
+        self.assertIsNone(extract_contract_answer(question, base + "; zero for an offline queue.", "Settings"))
+        self.assertIsNone(extract_contract_answer("What disk capacity does Settings.defaults use?",
+                                                  base + ".", "Settings"))
+
+    def test_failure_condition_requires_the_whole_clause(self):
+        question = "When does Sink.flush fail?"
+        base = "- flush(): Throws: IOException - when the queue is full"
+        hit = extract_contract_answer(question, base + ".", "Sink")
+        self.assertEqual(hit.answer, "when the queue is full.")
+        self.assertIn(hit.answer, hit.citation)
+        for suffix in ("; alternatively when paused.", ". It may also fail when shut down.",
+                       ". Throws: OtherError - if blocked."):
+            self.assertIsNone(extract_contract_answer(question, base + suffix, "Sink"))
+        self.assertIsNone(extract_contract_answer("When does Network.flush fail?", base, "Sink"))
+
     def test_abstention(self):
         cases = [
             ("What does T.fetch return?", "- fetch(): Returns: row count; otherwise …"),

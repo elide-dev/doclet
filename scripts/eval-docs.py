@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 from time import perf_counter
 from dataclasses import asdict
-from eval_extract import extract_answer
+from eval_extract import extract_contract_answer
 from eval_accounts import read_answer
 from eval_passages import passage
 from eval_rank import rank
@@ -97,7 +97,8 @@ def evaluate(args, standard):
                 prompt = f"Answer briefly using only this document. If unknown, say unknown.\nQuestion: {case['question']}\nDocument:\n{context}"
                 if args.terse:
                     prompt = f"Answer with the shortest correct identifier or phrase. No explanation. If unknown: unknown.\n{case['question']}\n{context}"
-                hit = extract_answer(case["question"], context, chosen) if args.extract_first else None
+                hit = (extract_contract_answer(case["question"], context, chosen)
+                       if args.extract_first and len(body) <= args.chars else None)
                 if hit:
                     answer = hit.answer
                     row.update(extraction=asdict(hit), model_called=False, input_tokens=0,

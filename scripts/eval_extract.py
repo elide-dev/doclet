@@ -159,9 +159,20 @@ def extract_contract_answer(question, excerpt, page):
     is_return = bool(re.search(r"^what\b.*\breturn(?:s)?\s*$", stem, re.I))
     is_exception = bool(re.search(r"^(?:what|which)\b.*\b(?:exception|error)\b", stem, re.I)
                         and re.search(r"\bthrow(?:s|n)?\b", stem, re.I))
+    legacy = None
     if not is_return and not is_exception:
         legacy = extract_answer(question, row, page)
-        return legacy if legacy and legacy.rule in ("member-description", "deprecation-replacement") else None
+        if not legacy or legacy.rule in ("member-description", "deprecation-replacement"):
+            return legacy
+        if legacy.rule == "return-description":
+            # v1 looks for a shared noun. Require the rest of the requested
+            # quantity too (e.g., disk capacity and queue capacity differ).
+            subject = q.lower().partition(" does ")[0]
+            if qualifier or set(terms(subject)).difference(terms(row)):
+                return None
+            is_return = True
+        elif legacy.rule != "throws-condition":
+            return None
 
     if not _scoped_member(stem, member, page):
         return None
@@ -182,6 +193,8 @@ def extract_contract_answer(question, excerpt, page):
             # Multiple alternatives may document different results. The entire
             # contract is returned only for an unconditional return query.
             return None
+        if legacy and legacy.answer != value.removesuffix("."):
+            return None
         return _answer(value, citation, "contract-return")
 
     candidates = []
@@ -200,8 +213,11 @@ def extract_contract_answer(question, excerpt, page):
                     continue
                 if _condition_words(qualifier[0]) != _condition_words(detail):
                     continue
-            candidates.append((entry[1], value[entry.start():end].rstrip()))
+            if legacy and legacy.answer != detail.removesuffix("."):
+                return None
+            answer = detail if legacy else entry[1]
+            candidates.append((answer, value[entry.start():end].rstrip()))
     if len(candidates) == 1:
         answer, citation = candidates[0]
-        return _answer(answer, citation, "contract-throws")
+        return _answer(answer, citation, "contract-condition" if legacy else "contract-throws")
     return None

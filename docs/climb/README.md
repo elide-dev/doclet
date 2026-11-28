@@ -1,5 +1,45 @@
 # Agent documentation experiment ledger
 
+## 2026-11-27 · Local lookups and complete contract fields
+
+**Outcome.** On the ten development questions, the two-stage reader (select a type, then select a member) achieved **8.36× the grounded answers per total model token** with GPT-6.2 Astra at ultra effort as fallback. The stronger control that pre-indexes every Javadoc member closed the gap. On the external Gson corpus, the initial blind result was a tie. Use the control name and corpus when quoting a multiplier.
+
+The local reader can return a quoted answer and citation directly from the selected documentation. Both arms apply the same rules and use the same fallback model. Local extraction consumes zero hosted tokens. The report charges cached input at its full token count. Complete `Returns:` and `Throws:` fields let the reader distinguish contractual answers from prose, and abstain when an excerpt cuts off a condition. This matters for return values that have exceptions or alternatives separated by a semicolon.
+
+| Corpus and control | Fallback | Javadoc correct | Generated correct | Model calls (JDK / generated) | Total model tokens (JDK / generated) | Efficiency ratio |
+|---|---|---:|---:|---:|---:|---:|
+| [Development, two-stage lookup](runs/015-astra-final.json) | Astra ultra | 6/10 | 10/10 | 5 / 1 | 60,289 / 12,020 | **8.36×** |
+| [Development, full member indexes](runs/016-astra-full-index.json) | Astra ultra | 10/10 | 10/10 | 1 / 1 | 12,030 / 12,024 | **1.00×** |
+| [Blind Gson, alphabetical member indexes](runs/007-gson.json) | Luna low | 9/15 | 9/15 | 13 / 13 | 152,807 / 154,019 | **0.99×** |
+| [Gson follow-up, full indexes and overload matching](runs/012-gson-overloads.json) | Luna low | 13/15 | 14/15 | 14 / 14 | 166,018 / 163,086 | **1.10×** |
+
+In the first row the ten lookups took 19.95 s for Javadoc and 3.83 s for Markdown, summed across independent tasks. The full-index development control took 3.05 s and 3.02 s. These are individual runs. The difference in fallback count dominates latency. Nine generated answers in each development run were local extractions, so the figures measure the combined reader and documentation format.
+
+**Holdout audit.** We froze the 15 questions and evidence patterns before first retrieval against Gson 2.8.9. In run 007 both readers correctly identified `shouldSkipClass(Class)` from class-level prose that the member-wording regex rejected. Manual review found 10/15 grounded answers in each arm. In run 012 Javadoc again supplied that supported answer and the generated arm abstained, bringing manual scores to 14/15 each. Run 012 followed inspection of Gson results and uses the original frozen grader. Its remaining shared difficulty was choosing between a type description and a member description. [Fixture and attribution](../../samples/evals/holdout/README.md)
+
+**Indexing cost.** The generated `contracts.ndjson` publishes directly addressable type and member records. The stronger Javadoc reader gathers full member text by parsing each type page. With 250 indexed declarations per arm, median local index construction took **2.57 ms versus 37.79 ms (14.72× faster)**. This measures rebuilding an in-memory index on a warm filesystem. It excludes documentation generation and hosted inference. We discarded one warm-up and alternated order for 20 measured trials. [Raw timings](runs/013-final-index-timing.json)
+
+**Experiment history.** The first hybrid two-stage reader reached [4.18×](runs/005-hybrid-bullets.json); discovery via both alphabetical indexes gave [8/10 per arm](runs/006-member-index.json). Labeling returns reached [8.35× with Luna](runs/008-labeled-returns.json) and [8.36× with Astra](runs/011-astra-ultra.json). The stricter full-field reader initially reduced that to [4.18×](runs/014-astra-complete-fields.json). Explicit exception labels and condition delimiters restored the direct lookup in run 015. The earlier full-text Gson follow-up scored [11/15 JDK and 10/15 generated](runs/009-gson-full-index.json); its [index timings](runs/010-gson-index-timing.json) preceded adding type records and exact overload lookup.
+
+### Reproduce locally
+
+Use JDK 25, build the shared sample, and use a locally signed-in CLI. The original ten-question runs use the same per-question 600-character maximum, one selected member, and local lexical retrieval on both sides. To run the stronger control, compile the sample with `javadoc -public` and pass the resulting directory to `scripts/eval-lookup.py`. For the external library, the holdout builder produces both directories from one verified source archive.
+
+```sh
+uv run --no-project --with tiktoken==0.12.0 python scripts/eval-docs.py \
+  --account codex --model gpt-6.2-astra --effort ultra --terse --extract-first \
+  --layout bullets --chars 600 --count-tokens --output .dev/astra-development.json
+
+scripts/build-eval-holdout
+python3 scripts/eval-lookup.py --full-index --questions samples/evals/holdout/questions.json \
+  --javadoc .dev/eval-holdout/javadoc --markdown .dev/eval-holdout/markdown \
+  --output .dev/gson-lookup.json
+python3 scripts/eval-index.py .dev/eval-holdout/javadoc .dev/eval-holdout/markdown \
+  --output .dev/gson-index-time.json
+```
+
+Runs 005–007 used the first contract implementation at `98297b4`. Revision `84d1f66` preserves the first full-text control and `3b6e9aa` the overload-aware control. Keep future library-level claims paired with a fully indexed Javadoc baseline and a fresh holdout.
+
 ## 2026-11-27 · Short API answers
 
 **Target.** Deliver at least five times as many grounded answers per 1,000 total model tokens as standard Javadoc on the same tasks and call policy. Also track absolute accuracy, excerpt tokens, output tokens, cache reads, and wall time. Total model tokens here means provider-reported input plus output, including cached input. This metric measures token efficiency; billing and account limits can weight cached input differently.

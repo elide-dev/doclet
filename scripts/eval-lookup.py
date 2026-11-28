@@ -18,6 +18,7 @@ def main():
     p.add_argument("--markdown", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--model")
+    p.add_argument("--effort", choices=["low", "medium", "high", "xhigh", "max", "ultra"], default="low")
     p.add_argument("--full-index", action="store_true", help="Search full member facts and require complete fields")
     p.add_argument("--account", choices=["codex", "claude"], default="codex")
     p.add_argument("--model-only", action="store_true", help="Call the reader on every excerpt")
@@ -32,7 +33,7 @@ def main():
         sites[fmt] = Reference(directory, fmt, args.full_index)
         setup_ms[fmt] = round((perf_counter() - start) * 1000, 3)
     rows = []
-    report = dict(model=args.model, full_index=args.full_index, index_build_ms=setup_ms, policy="model-only" if args.model_only else "local-first",
+    report = dict(model=args.model, reasoning_effort=args.effort if args.account == "codex" else None, full_index=args.full_index, index_build_ms=setup_ms, policy="model-only" if args.model_only else "local-first",
                   offline=args.offline, fixture_sha256=sha256(args.questions.read_bytes()).hexdigest(),
                   character_budget=600, results=rows)
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -49,7 +50,7 @@ def main():
             elif not args.offline:
                 prompt = ("Answer with the shortest correct identifier or phrase. No explanation. "
                           f"If unknown: unknown.\n{question}\n{row['excerpt']}")
-                row.update(read_answer(args.account, args.model, prompt), model_called=True)
+                row.update(read_answer(args.account, args.model, prompt, args.effort), model_called=True)
             row["wall_ms"] = round((perf_counter() - start) * 1000, 3)
             row["evidence_hit"] = bool(row["page"] == case["page"] and
                                        re.search(case["evidence"], row["excerpt"], re.I | re.S))

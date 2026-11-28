@@ -50,7 +50,7 @@ index 0000000..e6af17d
 +  return lines.length ? lines.join("\n") + "\n" : "";
 +}
 diff --git a/packages/apidocs/src/markdown.ts b/packages/apidocs/src/markdown.ts
-index 91730b8..e122cf2 100644
+index 91730b8..812b356 100644
 --- a/packages/apidocs/src/markdown.ts
 +++ b/packages/apidocs/src/markdown.ts
 @@ -10,7 +10,7 @@ import { type GuideEntry, guideCrumbs, guideNav, INDEX, isThrowable, overviewGui
@@ -79,7 +79,7 @@ index 91730b8..e122cf2 100644
 +      m.deprecated && ("Deprecated. " + blockText(m.deprecated.doc)),
 +      summary,
 +      returns && returns !== summary && ("Returns: " + returns),
-+      ...(m.throws ?? []).map(t => "Throws " + tokenText(t.type) + " " + blockText(t.doc)),
++      ...(m.throws ?? []).map(t => "Throws: " + tokenText(t.type) + (t.doc?.length ? " - " + blockText(t.doc) : "")),
 +    ].filter(Boolean);
 +    if (facts.length) rows.push(memberTitle(m) + ": " + facts.join(" "));
 +  }
