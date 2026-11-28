@@ -1,0 +1,137 @@
+--- a/packages/apidocs/src/contracts.ts
++++ b/packages/apidocs/src/contracts.ts
+@@ -2,22 +2,34 @@
+ import type { Member, Type } from "./model";
+ import { INDEX, resolve, type Site, tokenText } from "./site";
+ import { blockText, qualifiedMemberTitle, summaryText } from "./structure";
++
++export function contractText(m: Member | Type) {
++  const summary = summaryText(m.doc);
++  // Include short supplementary prose when the summary omits a condition or guarantee.
++  const prose = blockText(m.doc?.body).replace(/\s+/g, " ").trim();
++  const details = prose.startsWith(summary) ? prose.slice(summary.length).trim() : prose;
++  return {
++    summary: summary || undefined, details: details && details.length <= 512 ? details : undefined,
++    detailsOmitted: details.length > 512 || undefined,
++    deprecated: m.deprecated && { since: m.deprecated.since, doc: blockText(m.deprecated.doc) || undefined },
++  };
++}
++
++export function contractResult(m: Member) {
++  return {
++    returns: m.returns && { type: tokenText(m.returns.type), doc: blockText(m.returns.doc) || undefined },
++    throws: m.throws?.length ? m.throws.map(t => ({
++      type: tokenText(t.type), doc: blockText(t.doc) || undefined,
++    })) : undefined,
++  };
++}
+ 
+ export function declarationContracts(site: Site): string {
+   const lines: string[] = [];
+   function declaration(m: Member | Type, symbol: string) {
+     const href = resolve(site, INDEX, ".html", m.id);
+     if (!href) return;
+-    const summary = summaryText(m.doc);
+-    // Include short supplementary prose when the summary omits a condition or guarantee.
+-    const prose = blockText(m.doc?.body).replace(/\s+/g, " ").trim();
+-    const details = prose.startsWith(summary) ? prose.slice(summary.length).trim() : prose;
+-    return {
+-      symbol, href, name: m.name, kind: m.kind, signature: tokenText(m.signature),
+-      summary: summary || undefined, details: details && details.length <= 512 ? details : undefined,
+-      detailsOmitted: details.length > 512 || undefined,
+-      deprecated: m.deprecated && { since: m.deprecated.since, doc: blockText(m.deprecated.doc) || undefined },
+-    };
++    return { symbol, href, name: m.name, kind: m.kind, signature: tokenText(m.signature), ...contractText(m) };
+   }
+   function add(m: Member, owner: string) {
+     const header = declaration(m, qualifiedMemberTitle(m, owner));
+@@ -27,10 +39,7 @@
+       params: m.params?.length ? m.params.map(p => ({
+         name: p.name, type: tokenText(p.type), doc: blockText(p.doc) || undefined,
+       })) : undefined,
+-      returns: m.returns && { type: tokenText(m.returns.type), doc: blockText(m.returns.doc) || undefined },
+-      throws: m.throws?.length ? m.throws.map(t => ({
+-        type: tokenText(t.type), doc: blockText(t.doc) || undefined,
+-      })) : undefined,
++      ...contractResult(m),
+       value: m.constant, defaultValue: m.defaultValue,
+     }));
+   }
+--- a/packages/apidocs/src/index-data.ts
++++ b/packages/apidocs/src/index-data.ts
+@@ -26,6 +26,7 @@
+   page?: string;
+   summary?: Inline[];
+   type?: Type;
++  member?: Member;
+   deprecation?: Deprecation;
+ }
+ 
+@@ -67,7 +68,7 @@
+ function memberEntry(member: Member, owner: string): IndexEntry {
+   const kind = MEMBER_WORD[member.kind];
+   return { name: memberTitle(member), where: `${kind} in ${owner}`, lookup: { name: qualifiedMemberTitle(member, owner), kind },
+-    id: member.id, summary: member.doc?.summary, deprecation: member.deprecated };
++    id: member.id, member, summary: member.doc?.summary, deprecation: member.deprecated };
+ }
+ 
+ function aliasEntry(alias: TypeAlias, pkg: Package): IndexEntry {
+--- a/packages/apidocs/src/markdown.ts
++++ b/packages/apidocs/src/markdown.ts
+@@ -11,6 +11,8 @@
+ import { NOTE_LABEL, sortedNotes } from "./components/declaration";
+ import { markdownDestination, safeUrl } from "./url";
+ import { ADMONITION_LABEL, blockText, inlineText, memberGroups, memberTitle, summaryText, typeGroups, typeKindWord } from "./structure";
++
++import { contractText, contractResult } from "./contracts";
+ 
+ interface Md {
+   site: Site;
+@@ -379,6 +381,37 @@
+   return { site, page, language: site.language, symbols, dest };
+ }
+ 
++// Keep each documented field complete. Long or omitted details remain at the row's declaration link.
++function indexContract(member: Member): string {
++  const text = contractText(member);
++  const result = contractResult(member);
++  const fields: string[] = [];
++  const prose = (value: string) => esc(value.trim().replace(/\s+/g, " "));
++  const code = (value: string) => value.includes("`") ? prose(value) : codeSpan(value);
++  if (text.deprecated?.doc) fields.push("Deprecated: " + prose(text.deprecated.doc));
++  for (const error of result.throws ?? []) {
++    if (error.type) fields.push("Throws " + code(error.type) + (error.doc ? ": " + prose(error.doc) : ""));
++  }
++  if (result.returns?.type) fields.push("Returns " + code(result.returns.type) + (result.returns.doc ? ": " + prose(result.returns.doc) : ""));
++  if (text.details) fields.push(prose(text.details));
++
++  const separator = " · ";
++  const more = "Full details in the linked declaration.";
++  const limit = 320;
++  const cost = (field: string) => Array.from(separator + field).length;
++  const omitted = text.detailsOmitted || fields.reduce((sum, field) => sum + cost(field), 0) > limit;
++  let remaining = limit - (omitted ? cost(more) : 0);
++  let suffix = "";
++  for (const field of fields) {
++    const length = cost(field);
++    if (length <= remaining) {
++      suffix += separator + field;
++      remaining -= length;
++    }
++  }
++  return omitted ? suffix + separator + more : suffix;
++}
++
+ function entryLine(md: Md, entry: IndexEntry, qualified = false): string {
+   const href = entry.page ? relative(md.page, entry.page, ".md") : resolve(md.site, md.page, ".md", entry.id);
+   // A declaration's name is code; a guide's title is prose, escaped like any other text.
+@@ -388,7 +421,8 @@
+   const label = href ? `[${name}](${dest(href)})` : name;
+   const removal = entry.deprecation ? (entry.deprecation.forRemoval ? " (deprecated for removal)" : " (deprecated)") : "";
+   const summary = entry.summary?.length ? `: ${inlines(md, entry.summary)}` : "";
+-  return `- ${label}, ${esc(where)}${removal}${summary}`;
++  const evidence = qualified && entry.member && href ? indexContract(entry.member) : "";
++  return `- ${label}, ${esc(where)}${removal}${summary}${evidence}`;
+ }
+ 
+ export function packagesIndexMarkdown(site: Site, symbols: SymbolMode = "utf"): string {

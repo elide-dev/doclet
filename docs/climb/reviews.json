@@ -91,5 +91,14 @@
       "reason": "The adjoining api.json excerpts E39 and E40 identify JCommander#getMainParameterValue() and explicitly state that it returns null if no main parameter is defined. The reader assigned both cited excerpts to the raw API model file.",
       "report": "036-jcommander-routing.json"
     }
+  ],
+  "d4107ef8138c93fcee888aef02b488ff12ba5bd8028d00c34cf728aeda99e725": [
+    {
+      "route": "lean",
+      "question": "When does URLCodec.decodeUrl(BitSet, byte[]) turn a plus into a space instead of preserving the plus?",
+      "correct": true,
+      "reason": "The answer explicitly requires a safe space and an unsafe plus. The cited overload documents both conditions and confirms that a safe plus is preserved.",
+      "report": "041-codec-index-evidence.json"
+    }
   ]
 }
