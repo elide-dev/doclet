@@ -89,6 +89,27 @@ def glance_rows(source, path):
             yield Member(path, anchor, label, row.partition(": ")[2]), row
 
 
+def _markdown_index_member(href, label, detail):
+    kind, _, summary = detail.partition(": ")
+    member = _member(href, label, _plain_markdown(summary), ".md")
+    if member is None:
+        return None
+    if not member.anchor:
+        # Type rows now display the full nested name. Queries retain the same short declaration label.
+        if label == member.owner:
+            return replace(member, label=label.rsplit(".", 1)[-1])
+        return member
+    if " in " in kind:
+        return member
+    # Strip exactly the published owner. A Kotlin extension can have another receiver before its name.
+    owner = member.owner
+    if owner == "index":
+        owner = ".".join(PurePosixPath(member.path).parts[:-1])
+    if kind == "constructor" and label.startswith(owner + "("):
+        owner = owner.rpartition(".")[0]
+    return replace(member, label=label.removeprefix(owner + ".")) if owner else member
+
+
 def load_members(site_root, fmt):
     """Read member names, descriptions and location from the format's own index."""
     members = []
@@ -108,7 +129,7 @@ def load_members(site_root, fmt):
         index = (site_root / "index-all.md").read_text()
         for match in re.finditer(r"^- \[\x60([^\x60]+)\x60\]\(([^)]+)\), ([^\n]+)", index, re.M):
             label, href, detail = match.groups()
-            members.append(_member(href, label, _plain_markdown(detail.partition(": ")[2]), ".md"))
+            members.append(_markdown_index_member(href, label, detail))
     else:
         raise ValueError(f"Unknown member index format {fmt}")
     result = [m for m in members if m is not None]
@@ -407,18 +428,19 @@ def member_passage(source, fmt, member):
         for entry, row in quick:
             if entry.anchor == member.anchor:
                 return "- " + row
-        sections = [s[0].strip() for s in re.finditer(r"^### ([^\n]+)\n(.*?)(?=^#{1,3} |\Z)", source, re.M | re.S)
-                    if _plain_markdown(s[1]) == member.label]
-        # Members outside the bounded summary can still share a heading with a listed overload.
+        # Full index signatures can be abbreviated in the type's Markdown headings.
+        matching_titles = 0
         unlinked = []
         anchored = None
-        for section in sections:
-            anchor = re.match(r'^### [^\n]+\n<a id="([^"]+)"></a>', section)
-            if anchor is None:
-                unlinked.append(section)
-            elif unescape(anchor[1]) == member.anchor:
-                anchored = section
-        if len(sections) > 1:
+        for section in re.finditer(r"^### ([^\n]+)\n(.*?)(?=^#{1,3} |\Z)", source, re.M | re.S):
+            anchor = re.match(r'<a id="([^"]+)"></a>', section[2])
+            if anchor and unescape(anchor[1]) == member.anchor:
+                anchored = section[0].strip()
+            if _plain_markdown(section[1]) == member.label:
+                matching_titles += 1
+                if not anchor:
+                    unlinked.append(section[0].strip())
+        if matching_titles > 1:
             # Distinct overloads can share the same display signature (package-local type names).
             # The URL's index description is unambiguous even if headings collide.
             if anchored:

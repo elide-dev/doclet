@@ -24,6 +24,51 @@ class MemberLookupTest(unittest.TestCase):
             for fmt in ("html", "markdown"):
                 self.assertEqual(load_members(root, fmt), expected)
 
+    def test_owner_qualified_markdown_index_preserves_member_lookup(self):
+        rows = [
+            ("Planner.Local", "Local", "pkg/Planner.Local.md", "class in pkg", "class in pkg"),
+            ("Planner.Local(String[])", "Local(String[])", "pkg/Planner.Local.md#%3Cinit%3E%28java.lang.String%5B%5D%29",
+             "constructor", "constructor in Planner.Local"),
+            ("Planner.Local.read(Item)", "read(Item)", "pkg/Planner.Local.md#read%28a.Item%29",
+             "method", "method in Planner.Local"),
+            ("Planner.Local.read(Item)", "read(Item)", "pkg/Planner.Local.md#read%28b.Item%29",
+             "method", "method in Planner.Local"),
+            ("Target.JVM", "JVM", "pkg/Target.md#JVM", "enum constant", "enum constant in Target"),
+            ("pkg.ext.String.inspect()", "String.inspect()", "pkg/ext/index.md#inspect%28kotlin.String%29",
+             "function", "function in pkg.ext"),
+            ("Name", "Name", "pkg/ext/index.md#Name", "type alias in pkg.ext", "type alias in pkg.ext"),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            results = []
+            for label_at, kind_at in [(0, 3), (1, 4)]:
+                (root / "index-all.md").write_text("".join(
+                    f"- [`{r[label_at]}`]({r[2]}), {r[kind_at]}: Visible [contract](doc.md).\n" for r in rows))
+                results.append(load_members(root, "markdown"))
+        self.assertEqual(results[0], results[1])
+        self.assertEqual([m.label for m in results[0]], [r[1] for r in rows])
+        from eval_discovery import choose_declaration
+        from eval_rank import rank_contract
+        chosen = choose_declaration("What does Planner.Local.read(b.Item) do?", results[0], rank_contract)
+        self.assertEqual(chosen.anchor, "read(b.Item)")
+        self.assertEqual(chosen.summary, "Visible contract.")
+
+    def test_full_index_signature_can_retrieve_beyond_an_abbreviated_glance(self):
+        md = """## Methods
+
+### join(A, B, …)
+<a id="join(A,B,C,D)"></a>
+First contract.
+
+### join(A, B, …)
+<a id="join(A,B,C,E)"></a>
+Second contract.
+"""
+        selected = Member("Tree", "join(A,B,C,E)", "join(A, B, C, E)", "Index.")
+        details = member_passage(md, "markdown", selected)
+        self.assertIn("Second contract.", details)
+        self.assertNotIn("First contract.", details)
+
     def test_nested_qualified_name_precedes_word_overlap(self):
         options = [Member("pkg/A", "read()", "read()", "Reads a value."),
                    Member("pkg/A.B", "open()", "open()", "Opens a value."),
