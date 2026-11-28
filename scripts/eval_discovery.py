@@ -1,5 +1,6 @@
 """Look up both arms through their published alphabetical declaration indexes."""
-from dataclasses import dataclass
+from collections import defaultdict
+from dataclasses import dataclass, replace
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
 import re
@@ -13,6 +14,7 @@ class Member:
     anchor: str
     label: str
     summary: str
+    search_text: str = ""
 
     @property
     def owner(self):
@@ -98,6 +100,11 @@ def load_members(site_root, fmt):
 
 def choose_member(question, members, rank):
     """Prefer explicit owner/member references, then rank the remaining candidates."""
+    candidates = _scope(question, members)
+    return _rank(question, candidates, rank, detailed=False)
+
+
+def _scope(question, members):
     owners = {m.owner for m in members}
     named = [owner for owner in owners
              if re.search(r"(?<![\w$])" + re.escape(owner) + r"(?![\w$])", question)]
@@ -106,29 +113,84 @@ def choose_member(question, members, rank):
     candidates = [m for m in members if m.owner in named] if named else members
     qualified = [m for m in candidates if m.anchor and re.search(
         r"(?<![\w$])" + re.escape(m.owner + "." + m.label.split("(", 1)[0]) + r"(?![\w$])", question)]
-    if qualified:
-        candidates = qualified
+    return qualified or candidates
+
+
+def _rank(question, candidates, rank, detailed):
     # Use the full path and JVM signature for ties between identically named overloads.
     entries = {m.path + "#" + m.anchor: m for m in candidates}
     descriptions = {key: f"{m.owner} {m.label} {m.summary}" for key, m in entries.items()}
+    if detailed:
+        descriptions = {key: desc + " " + entries[key].search_text for key, desc in descriptions.items()}
     return entries[rank(question, descriptions)[0]]
+
+
+def choose_contract(question, members, rank):
+    """Rank full-text declarations under the same format-independent lookup policy."""
+    candidates = _scope(question, members)
+    member_kind = re.search(
+        r"^(?:which|what)\b[^?.!]{0,90}?\b(member|method|constructor|constant|setting|"
+        r"field|property|function|component|option)\b", question, re.I)
+    scope = []
+    if member_kind:
+        kind = member_kind[1].lower()
+        for candidate in candidates:
+            if not candidate.anchor:
+                continue
+            if kind in {"method", "function"} and "(" not in candidate.anchor:
+                continue
+            if kind == "constructor" and not candidate.anchor.startswith("<init>("):
+                continue
+            if kind in {"constant", "setting", "option"} and "(" in candidate.anchor:
+                continue
+            scope.append(candidate)
+    elif (re.search(r"\b(?:exception|error)\b", question, re.I)
+          and re.search(r"\bthrow(?:n|s|ing)?\b", question, re.I)):
+        scope = [m for m in candidates if m.anchor and re.search(
+            r"\bthrows?\b", m.summary + " " + m.search_text, re.I)]
+    return _rank(question, scope or candidates, rank, detailed=True)
+
+
+def _jdk_details(root):
+    """Map declaration anchors to complete local evidence with linked record component notes."""
+    components = {}
+    for dd in root.iter("dd"):
+        for element in dd.iter():
+            anchor = element.get("id", "")
+            if anchor.startswith("param-"):
+                components[anchor] = text(dd)
+    details = {}
+    for section in root.iter("section"):
+        anchor = section.get("id")
+        if anchor == "class-description":
+            details[""] = text(section)
+        elif anchor and "detail" in section.get("class", "").split():
+            refs = dict.fromkeys(unquote(a.get("href", ""))[1:] for a in section.iter("a")
+                                 if a.get("href", "").startswith("#param-"))
+            details[anchor] = " ".join([text(section), *(components[ref] for ref in refs if ref in components)])
+    return details
+
+
+def enrich_jdk_members(site, members):
+    """Index each public type page once. Preserve published index descriptions and ordering."""
+    by_path = defaultdict(list)
+    for i, member in enumerate(members):
+        by_path[member.path].append((i, member))
+    result = list(members)
+    for path, grouped in by_path.items():
+        source = (site / (path + ".html")).read_text()
+        details = _jdk_details(Tree(source).root)
+        for i, member in grouped:
+            result[i] = replace(member, search_text=details.get(member.anchor, ""))
+    return result
 
 
 def member_passage(source, fmt, member):
     """Fetch a single declaration, falling back to its published index description."""
     if fmt == "html":
-        root = Tree(source).root
-        if not member.anchor:
-            header = root.find(".//section[@id='class-description']")
-            return f"{member.owner}: {text(header) or member.summary}"
-        section = next((el for el in root.iter("section") if el.get("id") == member.anchor), None)
-        if section is not None:
-            # The JDK links generated accessor docs to the record component's own definition.
-            refs = {unquote(a.get("href", ""))[1:] for a in section.iter("a")
-                    if a.get("href", "").startswith("#param-")}
-            component_docs = [text(dd) for dd in root.iter("dd")
-                              if any(el.get("id") in refs for el in dd.iter())]
-            return " ".join([text(section), *component_docs]).strip()
+        detail = _jdk_details(Tree(source).root).get(member.anchor)
+        if detail:
+            return detail if member.anchor else f"{member.owner}: {detail}"
     elif fmt == "markdown":
         if not member.anchor:
             # Include the type description, signature, and component contracts, ahead of its members.

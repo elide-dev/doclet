@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 
-def read_answer(provider, model, prompt):
+def read_answer(provider, model, prompt, effort="low"):
     with tempfile.TemporaryDirectory() as directory:
         env = os.environ.copy()
         for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"):
@@ -16,7 +16,7 @@ def read_answer(provider, model, prompt):
             policy = Path(directory, "reader.txt")
             policy.write_text(instruction)
             cmd = ["codex", "exec", "--ignore-user-config", "--ephemeral", "--skip-git-repo-check",
-                   "-s", "read-only", "-m", model, "-c", 'model_reasoning_effort="low"',
+                   "-s", "read-only", "-m", model, "-c", f"model_reasoning_effort={json.dumps(effort)}",
                    "-c", f"model_instructions_file={json.dumps(str(policy))}", "--json", "-"]
         else:
             cmd = ["claude", "-p", "--model", model, "--tools", "", "--strict-mcp-config",

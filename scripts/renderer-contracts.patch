@@ -1,9 +1,9 @@
 diff --git a/packages/apidocs/src/contracts.ts b/packages/apidocs/src/contracts.ts
 new file mode 100644
-index 0000000..4218a96
+index 0000000..c6eedb3
 --- /dev/null
 +++ b/packages/apidocs/src/contracts.ts
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,34 @@
 +// Streamable member lookups for clients that need only one declaration or contract.
 +import type { Member } from "./model";
 +import { INDEX, resolve, type Site, tokenText } from "./site";
@@ -14,9 +14,13 @@ index 0000000..4218a96
 +  function add(m: Member) {
 +    const href = resolve(site, INDEX, ".html", m.id);
 +    if (!href) return;
++    const summary = summaryText(m.doc);
++    // Include short supplementary prose when the summary omits a condition or guarantee.
++    const prose = blockText(m.doc?.body).replace(/\s+/g, " ").trim();
++    const details = prose.startsWith(summary) ? prose.slice(summary.length).trim() : prose;
 +    lines.push(JSON.stringify({
 +      href, name: m.name, kind: m.kind, signature: tokenText(m.signature),
-+      summary: summaryText(m.doc) || undefined,
++      summary: summary || undefined, details: details && details.length <= 512 ? details : undefined,
 +      params: m.params?.length ? m.params.map(p => ({
 +        name: p.name, type: tokenText(p.type), doc: blockText(p.doc) || undefined,
 +      })) : undefined,
@@ -35,7 +39,7 @@ index 0000000..4218a96
 +  return lines.length ? lines.join("\n") + "\n" : "";
 +}
 diff --git a/packages/apidocs/src/markdown.ts b/packages/apidocs/src/markdown.ts
-index 91730b8..3066249 100644
+index 91730b8..e122cf2 100644
 --- a/packages/apidocs/src/markdown.ts
 +++ b/packages/apidocs/src/markdown.ts
 @@ -10,7 +10,7 @@ import { type GuideEntry, guideCrumbs, guideNav, INDEX, isThrowable, overviewGui
@@ -63,7 +67,7 @@ index 91730b8..3066249 100644
 +    const facts = [
 +      m.deprecated && ("Deprecated. " + blockText(m.deprecated.doc)),
 +      summary,
-+      returns && returns !== summary && ("Returns " + returns),
++      returns && returns !== summary && ("Returns: " + returns),
 +      ...(m.throws ?? []).map(t => "Throws " + tokenText(t.type) + " " + blockText(t.doc)),
 +    ].filter(Boolean);
 +    if (facts.length) rows.push(memberTitle(m) + ": " + facts.join(" "));

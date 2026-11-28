@@ -17,15 +17,22 @@ def main():
     p.add_argument("--javadoc", type=Path, required=True)
     p.add_argument("--markdown", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
-    p.add_argument("--model", default="gpt-6-luna")
+    p.add_argument("--model")
+    p.add_argument("--full-index", action="store_true", help="Search full member facts and require complete fields")
     p.add_argument("--account", choices=["codex", "claude"], default="codex")
     p.add_argument("--model-only", action="store_true", help="Call the reader on every excerpt")
     p.add_argument("--offline", action="store_true", help="Record abstentions without model calls")
     args = p.parse_args()
     fixtures = json.loads(args.questions.read_text())
-    sites = dict(html=Reference(args.javadoc, "html"), markdown=Reference(args.markdown, "markdown"))
+    args.model = args.model or ("sonnet" if args.account == "claude" else "gpt-6-luna")
+    sites = {}
+    setup_ms = {}
+    for fmt, directory in [("html", args.javadoc), ("markdown", args.markdown)]:
+        start = perf_counter()
+        sites[fmt] = Reference(directory, fmt, args.full_index)
+        setup_ms[fmt] = round((perf_counter() - start) * 1000, 3)
     rows = []
-    report = dict(model=args.model, policy="model-only" if args.model_only else "local-first",
+    report = dict(model=args.model, full_index=args.full_index, index_build_ms=setup_ms, policy="model-only" if args.model_only else "local-first",
                   offline=args.offline, fixture_sha256=sha256(args.questions.read_bytes()).hexdigest(),
                   character_budget=600, results=rows)
     args.output.parent.mkdir(parents=True, exist_ok=True)

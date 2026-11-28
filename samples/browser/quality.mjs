@@ -51,6 +51,20 @@ try {
   const page = await browser.newPage();
   for (const resource of [guide, java, kotlin]) {
     await page.goto(base + resource);
+    if (resource !== guide) {
+      const module = new URL(resource.split("/").slice(0, 2).join("/") + "/", base);
+      const response = await fetch(new URL("contracts.ndjson", module));
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("content-type"), /ndjson/);
+      const records = (await response.text()).trim().split("\n").map(JSON.parse);
+      const anchors = await page.locator("[id]").evaluateAll(nodes => nodes.map(node => node.id));
+      const members = records.filter(record => new URL(record.href, module).pathname === new URL(page.url()).pathname);
+      assert.ok(members.length);
+      for (const member of members) {
+        assert.ok(member.name && member.signature && member.kind);
+        assert.ok(anchors.includes(decodeURIComponent(new URL(member.href, module).hash.slice(1))), member.href);
+      }
+    }
     const twin = await page
       .locator('link[rel=alternate][type="text/markdown"]')
       .first()

@@ -67,6 +67,7 @@ def evaluate(args, standard):
         encoding = tiktoken.get_encoding("o200k_base")
     report = dict(extract_first=args.extract_first, layout=args.layout, passages=args.passages, terse=args.terse,
                   encoding=encoding.name if encoding else None, character_budget=args.chars, reader=args.model or args.reader_label,
+                  reasoning_effort=args.effort if args.account == "codex" else None,
                   cli_version=subprocess.check_output(
                       [args.account, "--version"], text=True).strip() if args.account else None,
                   results=rows)
@@ -103,7 +104,7 @@ def evaluate(args, standard):
                                output_tokens=0, cached_input_tokens=0, cache_write_tokens=0)
                 elif args.account:
                     row["model_called"] = True
-                    row.update(read_answer(args.account, args.model, prompt))
+                    row.update(read_answer(args.account, args.model, prompt, args.effort))
                     answer = row["answer"]
                 else:
                     answer = subprocess.run(shlex.split(args.reader), input=prompt, text=True,
@@ -138,6 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--terse", action="store_true")
     parser.add_argument("--count-tokens", action="store_true", help="Count excerpt tokens using tiktoken o200k_base")
     parser.add_argument("--account", choices=["codex", "claude"])
+    parser.add_argument("--effort", choices=["low", "medium", "high", "xhigh", "max", "ultra"], default="low")
     parser.add_argument("--model", help="Provider model ID or Claude alias")
     variants = parser.add_mutually_exclusive_group()
     variants.add_argument("--paired", action="store_true", help="Compare the two delivery stacks")

@@ -69,3 +69,22 @@ Writes package B.
         passage = member_passage(md, "markdown", member)
         self.assertIn("package B", passage)
         self.assertNotIn("package A", passage)
+
+    def test_contract_ranking_can_use_details_while_index_control_stays_frozen(self):
+        from eval_discovery import choose_contract, enrich_jdk_members
+        options = [Member("Calendar", "", "Calendar", "Maps timestamps."),
+                   Member("Calendar", "epoch()", "epoch()", "Computes a date."),
+                   Member("Calendar", "tick()", "tick()", "Computes a duration.")]
+        html = """<section id="class-description">Calendar</section>
+        <section class="detail" id="epoch()">epoch() has zero-based months.</section>
+        <section class="detail" id="tick()">tick() includes leap seconds.</section>"""
+        with tempfile.TemporaryDirectory() as directory:
+            site = Path(directory)
+            (site / "Calendar.html").write_text(html)
+            enriched = enrich_jdk_members(site, options)
+        self.assertEqual(options[2].summary, enriched[2].summary)
+        self.assertEqual(options[2].search_text, "")
+        self.assertIn("leap seconds", enriched[2].search_text)
+        rank = lambda q, docs: sorted(docs, key=lambda key: "leap seconds" not in docs[key])
+        self.assertEqual(choose_contract("Which method includes leap seconds?", enriched, rank), enriched[2])
+        self.assertEqual(choose_member("Which method includes leap seconds?", enriched, rank), enriched[0])

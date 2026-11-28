@@ -16,6 +16,8 @@ The name and version are optional. A named Java module supplies the default titl
 
 Besides the HTML pages, a site has a Markdown twin of every page, `llms.txt` and `llms-full.txt` for AI agents, and `api.json`, the model. Leave any of them out with `--no-markdown`, `--no-llms`, or `--no-model`; the pages then link only to the files the site has. In Gradle, add them to the Javadoc task with `options.addBooleanOption("-no-markdown", true)`.
 
+Modules with public members also publish `contracts.ndjson` alongside `llms.txt`. Each JSON line carries one declaration with its canonical HTML member link, signature, summary, and documented parameter, return, exception, and deprecation fields. For example, to inspect every overload of a method locally, run `jq -c 'select(.name == "prepare") | {href, signature, returns, throws}' contracts.ndjson`. The link distinguishes overloads and leads to the full documentation. `--no-llms` disables this index along with the other agent outputs.
+
 Every page holds only its own path through the navigation tree: its package, that package’s types, and the current type’s nested types. The whole tree is loaded once from `assets/nav.js`, which works from `file://` too, so a page’s size follows its own content rather than the size of the library.
 
 For a standalone model export, use `--model-only`. It writes `api.json` into the output directory and skips the JavaScript runtime. Use an empty directory for a model-only build.

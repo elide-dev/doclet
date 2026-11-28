@@ -113,3 +113,95 @@ def extract_answer(question, excerpt, page):
         if match.size >= 3 or (match.size == 2 and match.size >= len(query_terms) / 3):
             return _answer(member, row, "member-description")
     return None
+
+
+# Version 2 consumes complete tagged fields. Sentence boundaries and semicolons
+# occur inside contracts (e.g., alternative return values), so only a new field
+# heading terminates the previous one.
+_TAG = re.compile(
+    r"(?<!\S)(Returns|Throws|Parameters|Type Parameters|Since|See Also|Overrides|"
+    r"Specified by|Deprecated|API Note|Implementation Requirements|Implementation Note):\s*"
+)
+
+
+def _scoped_member(question, member, page):
+    """Check exact owner/member references; a bare member must match a whole word."""
+    refs = re.findall(rf"\b((?:{NAME}\.)*[A-Z][\w$]*)\.([a-z_$][\w$]*)\b", question)
+    if refs:
+        return all((owner == page or owner.endswith("." + page)) and name == member
+                   for owner, name in refs)
+    return bool(re.search(rf"(?<![\w.]){re.escape(member)}(?!\w)", question))
+
+
+def _condition_words(text):
+    # Keep order, polarity and numbers. Ignore only common articles, conditional
+    # conjunctions, and copulas; "min is above max" is distinct from its reverse.
+    text = re.sub(r"^(?:if|when)\s+", "", text.lower().strip())
+    return [word for word in re.findall(r"[\w]+|[<>=!]+", text) if word not in ("a", "an", "the", "is", "are")]
+
+
+def extract_contract_answer(question, excerpt, page):
+    """Read a complete single-member excerpt. Callers must abstain on clipped input.
+
+    Verbatim return values may include several clauses. Exception queries accept a
+    unique matching condition. Other lookup shapes use v1's identifier rules.
+    """
+    row = excerpt.strip()
+    if not row or "\n" in row or "…" in row or "..." in row:
+        return None
+    label = re.match(rf"(?:- )?(?P<name>{NAME})(?=[\s:(])", row)
+    if not label:
+        return None
+    member = label["name"]
+    q = question.rstrip().rstrip("?")
+    qualifier = re.search(r"\s+(?:when|if|unless)\s+(.+)$", q, re.I)
+    stem = q[:qualifier.start()] if qualifier else q
+    is_return = bool(re.search(r"^what\b.*\breturn(?:s)?\s*$", stem, re.I))
+    is_exception = bool(re.search(r"^(?:what|which)\b.*\b(?:exception|error)\b", stem, re.I)
+                        and re.search(r"\bthrow(?:s|n)?\b", stem, re.I))
+    if not is_return and not is_exception:
+        legacy = extract_answer(question, row, page)
+        return legacy if legacy and legacy.rule in ("member-description", "deprecation-replacement") else None
+
+    if not _scoped_member(stem, member, page):
+        return None
+    if re.search(r"\b(why|compare|versus|rather than|instead of)\b", q, re.I):
+        return None
+    headings = list(_TAG.finditer(row))
+    wanted = "Returns" if is_return else "Throws"
+    fields = []
+    for i, heading in enumerate(headings):
+        if heading[1] == wanted:
+            end = headings[i + 1].start() if i + 1 < len(headings) else len(row)
+            fields.append((row[heading.end():end].strip(), row[heading.start():end].rstrip()))
+    if is_return:
+        if len(fields) != 1 or not fields[0][0]:
+            return None
+        value, citation = fields[0]
+        if qualifier:
+            # Multiple alternatives may document different results. The entire
+            # contract is returned only for an unconditional return query.
+            return None
+        return _answer(value, citation, "contract-return")
+
+    candidates = []
+    for value, citation in fields:
+        # Standard Javadoc flattens several dt/dd pairs under one Throws heading.
+        entries = list(re.finditer(rf"(?<!\S)((?:{NAME}\.)*[A-Z][\w$]*)\s+-\s+", value))
+        if not entries or entries[0].start() != 0:
+            return None
+        for i, entry in enumerate(entries):
+            end = entries[i + 1].start() if i + 1 < len(entries) else len(value)
+            detail = value[entry.end():end].strip()
+            if not detail:
+                return None
+            if qualifier:
+                if qualifier[0].lstrip().lower().startswith("unless ") != detail.lower().startswith("unless "):
+                    continue
+                if _condition_words(qualifier[0]) != _condition_words(detail):
+                    continue
+            candidates.append((entry[1], value[entry.start():end].rstrip()))
+    if len(candidates) == 1:
+        answer, citation = candidates[0]
+        return _answer(answer, citation, "contract-throws")
+    return None
