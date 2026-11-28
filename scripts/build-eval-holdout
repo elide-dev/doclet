@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Build both sides of the frozen Gson holdout from a locally cached sources JAR.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+coordinate=com/google/code/gson/gson/2.8.9/gson-2.8.9-sources.jar
+archive=${1:-"${HOME}/.m2/repository/$coordinate"}
+target="$PWD/.dev/eval-holdout"
+mkdir -p "$target"
+work=$(mktemp -d "$target/.build.XXXXXXXX")
+trap 'rm -rf "$work"' EXIT
+
+python3 - "$archive" "$work/source" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+import zipfile
+
+path, destination = map(Path, sys.argv[1:])
+if not path.is_file():
+    sys.exit(f"Missing {path}. Pass the local Maven Central Gson 2.8.9 sources JAR as argument.")
+digest = hashlib.sha256(path.read_bytes()).hexdigest()
+if digest != "ba5bddb1a89eb721fcca39f3b34294532060f851e2407a82d82134a41eec4719":
+    sys.exit(f"Unexpected Gson source archive SHA-256: {digest}")
+with zipfile.ZipFile(path) as archive:
+    for name in archive.namelist():
+        if name.startswith("com/google/gson/") and name.endswith(".java"):
+            archive.extract(name, destination)
+PY
+
+elide build elide-doclet
+doclet="$PWD/doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar"
+javadoc="${JAVA_HOME:+$JAVA_HOME/bin/}javadoc"
+common=(-quiet -public -encoding UTF-8 -sourcepath "$work/source")
+"$javadoc" "${common[@]}" -Xdoclint:none -notimestamp --no-platform-links \
+  -d "$work/javadoc" com.google.gson
+"$javadoc" "${common[@]}" -doclet dev.elide.doclet.ElideDoclet -docletpath "$doclet" \
+  --module-name gson --module-version 2.8.9 -d "$work/markdown" com.google.gson
+for format in javadoc markdown; do
+  mkdir -p "$target/$format"
+  rsync -a --delete "$work/$format/" "$target/$format/"
+done

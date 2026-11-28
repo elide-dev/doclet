@@ -1,9 +1,7 @@
 """Paired retrieval and optional answer evaluation on the public Java sample."""
 import argparse
-from collections import Counter
 from html.parser import HTMLParser
 import json
-import math
 from pathlib import Path
 import re
 import shlex
@@ -11,8 +9,11 @@ import statistics
 import subprocess
 import tempfile
 from time import perf_counter
+from dataclasses import asdict
+from eval_extract import extract_answer
 from eval_accounts import read_answer
 from eval_passages import passage
+from eval_rank import rank
 
 
 class VisibleText(HTMLParser):
@@ -42,20 +43,6 @@ def visible(source, main_only=False):
     return " ".join(" ".join(parser.parts).split())
 
 
-def words(text):
-    return re.findall(r"[a-z0-9]+", text.lower())
-
-
-def rank(question, index):
-    query = set(words(question))
-    docs = {name: Counter(words(entry)) for name, entry in index.items()}
-    freq = Counter(term for doc in docs.values() for term in doc)
-    def score(name):
-        return sum(math.log1p(len(docs) / freq[t]) * (1 + math.log(docs[name][t]))
-                   for t in sorted(query.intersection(docs[name])))
-    return sorted(docs, key=lambda name: (-score(name), name))
-
-
 def evaluate(args, standard):
     module = Path(".dev/pages/catalog/latest/api/java")
     jdk = {}
@@ -78,7 +65,7 @@ def evaluate(args, standard):
     if args.count_tokens:
         import tiktoken
         encoding = tiktoken.get_encoding("o200k_base")
-    report = dict(layout=args.layout, passages=args.passages, terse=args.terse,
+    report = dict(extract_first=args.extract_first, layout=args.layout, passages=args.passages, terse=args.terse,
                   encoding=encoding.name if encoding else None, character_budget=args.chars, reader=args.model or args.reader_label,
                   cli_version=subprocess.check_output(
                       [args.account, "--version"], text=True).strip() if args.account else None,
@@ -109,7 +96,13 @@ def evaluate(args, standard):
                 prompt = f"Answer briefly using only this document. If unknown, say unknown.\nQuestion: {case['question']}\nDocument:\n{context}"
                 if args.terse:
                     prompt = f"Answer with the shortest correct identifier or phrase. No explanation. If unknown: unknown.\n{case['question']}\n{context}"
-                if args.account:
+                hit = extract_answer(case["question"], context, chosen) if args.extract_first else None
+                if hit:
+                    answer = hit.answer
+                    row.update(extraction=asdict(hit), model_called=False, input_tokens=0,
+                               output_tokens=0, cached_input_tokens=0, cache_write_tokens=0)
+                elif args.account:
+                    row["model_called"] = True
                     row.update(read_answer(args.account, args.model, prompt))
                     answer = row["answer"]
                 else:
@@ -141,6 +134,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--layout", choices=["prefix", "bullets", "table", "symbols"], default="prefix")
     parser.add_argument("--passages", type=int, choices=range(1, 9), default=1)
+    parser.add_argument("--extract-first", action="store_true", help="Use a cited local answer when available")
     parser.add_argument("--terse", action="store_true")
     parser.add_argument("--count-tokens", action="store_true", help="Count excerpt tokens using tiktoken o200k_base")
     parser.add_argument("--account", choices=["codex", "claude"])
@@ -153,6 +147,8 @@ if __name__ == "__main__":
     parser.add_argument("--reader-label", help="Model/version and settings to record")
     parser.add_argument("--output", type=Path, default=Path(".dev/quality/doc-evals.json"))
     args = parser.parse_args()
+    if args.extract_first and not (args.account or args.reader):
+        parser.error("--extract-first requires a fallback reader")
     if args.account:
         if args.reader:
             parser.error("Choose either an account or an external reader")

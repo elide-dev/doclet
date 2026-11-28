@@ -1,0 +1,92 @@
+[
+  {
+    "question": "What value does JsonObject.get return for a member name that does not exist?",
+    "page": "JsonObject",
+    "answer": "\\bnull\\b",
+    "evidence": "null.{0,20}if no such member"
+  },
+  {
+    "question": "In what order does JsonObject.entrySet iterate over members?",
+    "page": "JsonObject",
+    "answer": "insertion|add(?:ed|ition)|inserted",
+    "evidence": "order.{0,60}added"
+  },
+  {
+    "question": "Which exception does the indexed JsonArray.remove overload specify for an invalid position?",
+    "page": "JsonArray",
+    "answer": "\\bIndexOutOfBoundsException\\b",
+    "evidence": "IndexOutOfBoundsException.{0,100}index.{0,40}outside"
+  },
+  {
+    "question": "What should replace a new JsonNull() call?",
+    "page": "JsonNull",
+    "answer": "\\bINSTANCE\\b",
+    "evidence": "use.{0,30}INSTANCE.{0,100}instead"
+  },
+  {
+    "question": "Does JsonNull.deepCopy allocate a fresh value or share an instance?",
+    "page": "JsonNull",
+    "answer": "same instance|shar(?:e|es|ed)|singleton|\\bINSTANCE\\b",
+    "evidence": "same instance"
+  },
+  {
+    "question": "Which naming policy turns a camel-case field into lowercase words separated by underscores?",
+    "page": "FieldNamingPolicy",
+    "answer": "\\bLOWER_CASE_WITH_UNDERSCORES\\b",
+    "evidence": "separated by an underscore"
+  },
+  {
+    "question": "Which number policy decodes arbitrary-length JSON numbers using BigDecimal?",
+    "page": "ToNumberPolicy",
+    "answer": "\\bBIG_DECIMAL\\b",
+    "evidence": "arbitrary length"
+  },
+  {
+    "question": "Which exception signals exhaustion when JsonStreamParser.next() has no JSON element left?",
+    "page": "JsonStreamParser",
+    "answer": "\\bNoSuchElementException\\b",
+    "evidence": "NoSuchElementException.{0,120}(no|unavailable).{0,100}available"
+  },
+  {
+    "question": "Which parsing mode does the streaming parser for multiple concatenated JSON elements use?",
+    "page": "JsonStreamParser",
+    "answer": "\\blenient\\b",
+    "evidence": "parsed in lenient mode"
+  },
+  {
+    "question": "Which builder method enables serialization of fields whose values are null?",
+    "page": "GsonBuilder",
+    "answer": "\\bserializeNulls\\b",
+    "evidence": "serialize null fields"
+  },
+  {
+    "question": "What does TypeAdapterFactory.create return when the factory cannot handle the requested type?",
+    "page": "TypeAdapterFactory",
+    "answer": "\\bnull\\b",
+    "evidence": "(?:return null|\\bnull\\b.{0,50}if this factory)"
+  },
+  {
+    "question": "For FieldAttributes backed by an unannotated field, what does getAnnotation return?",
+    "page": "FieldAttributes",
+    "answer": "\\bnull\\b",
+    "evidence": "otherwise.{0,100}null"
+  },
+  {
+    "question": "How does Gson.fromJson(String, Class) represent an empty input string in its result?",
+    "page": "Gson",
+    "answer": "\\bnull\\b",
+    "evidence": "Returns.{0,100}null.{0,180}empty"
+  },
+  {
+    "question": "Which JsonPrimitive predicate checks whether the wrapped value is a number?",
+    "page": "JsonPrimitive",
+    "answer": "\\bisNumber\\b",
+    "evidence": "primitive contains a Number"
+  },
+  {
+    "question": "On ExclusionStrategy, which method determines whether an entire class should be ignored?",
+    "page": "ExclusionStrategy",
+    "answer": "\\bshouldSkipClass\\b",
+    "evidence": "true if the class should be ignored"
+  }
+]

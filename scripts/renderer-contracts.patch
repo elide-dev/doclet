@@ -1,3 +1,39 @@
+diff --git a/packages/apidocs/src/contracts.ts b/packages/apidocs/src/contracts.ts
+new file mode 100644
+index 0000000..4218a96
+--- /dev/null
++++ b/packages/apidocs/src/contracts.ts
+@@ -0,0 +1,30 @@
++// Streamable member lookups for clients that need only one declaration or contract.
++import type { Member } from "./model";
++import { INDEX, resolve, type Site, tokenText } from "./site";
++import { blockText, summaryText } from "./structure";
++
++export function memberContracts(site: Site): string {
++  const lines: string[] = [];
++  function add(m: Member) {
++    const href = resolve(site, INDEX, ".html", m.id);
++    if (!href) return;
++    lines.push(JSON.stringify({
++      href, name: m.name, kind: m.kind, signature: tokenText(m.signature),
++      summary: summaryText(m.doc) || undefined,
++      params: m.params?.length ? m.params.map(p => ({
++        name: p.name, type: tokenText(p.type), doc: blockText(p.doc) || undefined,
++      })) : undefined,
++      returns: m.returns && { type: tokenText(m.returns.type), doc: blockText(m.returns.doc) || undefined },
++      throws: m.throws?.length ? m.throws.map(t => ({
++        type: tokenText(t.type), doc: blockText(t.doc) || undefined,
++      })) : undefined,
++      deprecated: m.deprecated && { since: m.deprecated.since, doc: blockText(m.deprecated.doc) || undefined },
++      value: m.constant, defaultValue: m.defaultValue,
++    }));
++  }
++  for (const pkg of site.packages) {
++    for (const m of [...pkg.functions ?? [], ...pkg.properties ?? []]) add(m);
++    for (const type of pkg.types ?? []) for (const m of type.members ?? []) add(m);
++  }
++  return lines.length ? lines.join("\n") + "\n" : "";
++}
 diff --git a/packages/apidocs/src/markdown.ts b/packages/apidocs/src/markdown.ts
 index 91730b8..3066249 100644
 --- a/packages/apidocs/src/markdown.ts
@@ -48,10 +84,15 @@ index 91730b8..3066249 100644
      parts.push("Inheritance: " + [...type.ancestors].reverse().map(ref => link(md, ref)).join(" > ") + ` > ${codeSpan(type.name.split(".").pop()!)}`);
    }
 diff --git a/packages/apidocs/src/render.tsx b/packages/apidocs/src/render.tsx
-index ba0a8eb..2632eb3 100644
+index ba0a8eb..7d4ca2d 100644
 --- a/packages/apidocs/src/render.tsx
 +++ b/packages/apidocs/src/render.tsx
-@@ -9,7 +9,7 @@ import { renderToString } from "preact-render-to-string";
+@@ -5,11 +5,12 @@
+  * script) are references to the renderer's assets directory, which the caller
+  * copies: { asset: "apidocs.css" } means <assets>/apidocs.css.
+  */
++import { memberContracts } from "./contracts";
+ import { renderToString } from "preact-render-to-string";
  import { DeprecatedPage, IndexAllPage, PackagesIndexPage, TypesIndexPage } from "./indexes";
  import { Ctx, type Outputs, outputsOf, type PageContext } from "./context";
  import { NAV_SCRIPT, NavTree, navScript } from "./components/chrome";
@@ -60,7 +101,7 @@ index ba0a8eb..2632eb3 100644
  import type { Model } from "./model";
  import { GuidePage } from "./narrative";
  import { IndexPage, NotFoundPage, PackagePage, TypePage } from "./pages";
-@@ -79,7 +79,7 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
+@@ -79,7 +80,7 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
        const tpage = typePage(pkg, type);
        html(tpage, type.language, <TypePage type={type} />);
        md[tpage] = frontmatter(site, typeTwin(type), canonical(tpage)) + typeMarkdown(site, type, symbols);
@@ -69,3 +110,31 @@ index ba0a8eb..2632eb3 100644
      }
    }
  
+@@ -103,7 +104,9 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
+ 
+   if (outputs.markdown) for (const [page, text] of Object.entries(md)) out[`${page}.md`] = text;
+   if (outputs.llms) {
+-    out["llms.txt"] = llms(site, pages, guides, symbols, indexes, theme.whenToUse, outputs);
++    const contracts = memberContracts(site);
++    if (contracts) out["contracts.ndjson"] = contracts;
++    out["llms.txt"] = llms(site, pages, guides, symbols, indexes, theme.whenToUse, outputs, !!contracts);
+     // The twins without their frontmatter: in one file, each starts at the comment that names it.
+     out["llms-full.txt"] = [pages[0]!, ...guides, ...pages.slice(1)].map(p => `<!-- ${p.page}.md -->\n${stripFrontmatter(md[p.page]!)}`).join("\n");
+   }
+@@ -164,7 +167,7 @@ function safeSocialImage(image: Theme["socialImage"]): Theme["socialImage"] | un
+ 
+ /** llms.txt (llmstxt.org): what the module is, the guides, then every reference page, each with its summary. */
+ function llms(site: Site, pages: ListedPage[], guides: ListedPage[], symbols: SymbolMode, indexes: ListedPage[] = [], whenToUse?: string,
+-  outputs: Required<Outputs> = { markdown: true, llms: true, model: true }): string {
++  outputs: Required<Outputs> = { markdown: true, llms: true, model: true }, hasContracts = false): string {
+   // Without Markdown twins, the entries are the HTML pages.
+   const ext = outputs.markdown ? ".md" : ".html";
+   const m = site.model.module;
+@@ -187,6 +190,7 @@ function llms(site: Site, pages: ListedPage[], guides: ListedPage[], symbols: Sy
+     "## Overview", "",
+     `- [${withSym(symbols, "module", md(m.name))}](index${ext}): ${guidesOnly ? "the overview" : "packages and types"}`,
+     "- [llms-full.txt](llms-full.txt): every page in one file",
++    ...(hasContracts ? ["- [Member contracts](contracts.ndjson): filter JSON lines by name or href for a declaration, its parameters, return value, exceptions, or replacement."] : []),
+     ...(outputs.model ? ["- [api.json](api.json): the apidocs/1 model"] : []),
+     "",
+   );
