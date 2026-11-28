@@ -72,8 +72,14 @@ try {
         assert.ok(records.some(record => record.symbol === symbol &&
           decodeURIComponent(record.href) === target), symbol);
       }
-      assert.match(await page.locator('link[type="application/x-ndjson"]').getAttribute("title"), /Type\.member/);
-      assert.match(await (await fetch(new URL("llms.txt", module))).text(), /Type\.member/);
+      const advertised = await page.locator('head link:is([rel=alternate], [rel=help], [rel=describedby], [rel=index])')
+        .evaluateAll(links => links.map(link => new URL(link.href).pathname.split("/").pop()));
+      assert.deepEqual(advertised, [resource.split("/").pop().replace(/\.html$/, ".md"),
+        "llms.txt", "llms-full.txt", "contracts.ndjson", "api.json", "index-all.md"]);
+      assert.match(await page.locator('link[type="application/x-ndjson"]').getAttribute("title"), /exact Type\.member/);
+      const llms = await (await fetch(new URL("llms.txt", module))).text();
+      assert.match(llms, /\[Alphabetical index\]\(index-all\.md\).*behavior.*declaring type and signature/);
+      assert.match(llms, /\[Declaration contracts\]\(contracts\.ndjson\).*known `Type\.member`/);
       const anchors = await page.locator("[id]").evaluateAll(nodes => nodes.map(node => node.id));
       const members = records.filter(record => new URL(record.href, module).pathname === new URL(page.url()).pathname);
       assert.ok(members.some(record => !new URL(record.href, module).hash));

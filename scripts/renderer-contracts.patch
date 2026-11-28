@@ -1,5 +1,5 @@
 diff --git a/packages/apidocs/src/components/chrome.tsx b/packages/apidocs/src/components/chrome.tsx
-index 3196bcb..9597c5d 100644
+index 3196bcb..4cbfbcf 100644
 --- a/packages/apidocs/src/components/chrome.tsx
 +++ b/packages/apidocs/src/components/chrome.tsx
 @@ -11,7 +11,7 @@ import { createContext, Fragment, type ComponentChildren } from "preact";
@@ -41,11 +41,8 @@ index 3196bcb..9597c5d 100644
                ...(formats.model ? [{ "@type": "Dataset", name: "api.json", description: "The apidocs/1 model of the module.", encodingFormat: "application/json", url: formats.model }] : []),
              ],
            }]
-@@ -298,14 +301,18 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
-   // The same content for programs and AI agents: this page as Markdown, the index, the whole reference, the model.
-   const links: HeadData["links"] = [
+@@ -300,12 +303,16 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
      ...(has.markdown ? [{ rel: "alternate", type: "text/markdown", href: `${name}.md`, title: "This page as Markdown" }] : []),
-+    ...(formats.contracts ? [{ rel: "describedby", type: "application/x-ndjson", href: `${root}contracts.ndjson`, title: "Find API contracts by Type.member or keyword. Each line links to its exact declaration." }] : []),
      ...(has.llms
        ? [
 -          { rel: "alternate", type: "text/markdown", href: `${root}llms.txt`, title: "llms.txt: index of every page, as Markdown links" },
@@ -56,6 +53,7 @@ index 3196bcb..9597c5d 100644
        : []),
 -    ...(has.model ? [{ rel: "alternate", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
 -    { rel: "index", href: `${root}index.html`, title: `${product} API reference` },
++    ...(formats.contracts ? [{ rel: "describedby", type: "application/x-ndjson", href: `${root}contracts.ndjson`, title: "Declaration contracts for exact Type.member lookups" }] : []),
 +    ...(has.model ? [{ rel: "describedby", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
 +    ...(indexPages(site).some(entry => entry.page === INDEX_ALL_PAGE)
 +      ? [{ rel: "index", type: has.markdown ? "text/markdown" : "text/html",
@@ -226,7 +224,7 @@ index 91730b8..77b2227 100644
      facts.join(" "),
      deprecation(md, member.deprecated),
 diff --git a/packages/apidocs/src/render.tsx b/packages/apidocs/src/render.tsx
-index ba0a8eb..59b0ed4 100644
+index ba0a8eb..84d5245 100644
 --- a/packages/apidocs/src/render.tsx
 +++ b/packages/apidocs/src/render.tsx
 @@ -5,11 +5,12 @@
@@ -286,14 +284,17 @@ index ba0a8eb..59b0ed4 100644
    // Without Markdown twins, the entries are the HTML pages.
    const ext = outputs.markdown ? ".md" : ".html";
    const m = site.model.module;
-@@ -185,6 +188,7 @@ function llms(site: Site, pages: ListedPage[], guides: ListedPage[], symbols: Sy
-   lines.push("## When to use this", "", whenToUse?.trim() || `Use this ${what} when you write, read or review code that uses ${md(m.name)}${m.version ? ` ${md(m.version)}` : ""}.${summary ? ` ${md(summary)}` : ""}`, "");
+@@ -186,6 +189,10 @@ function llms(site: Site, pages: ListedPage[], guides: ListedPage[], symbols: Sy
    lines.push(
      "## Overview", "",
-+    ...(hasContracts ? ["- [API lookup](contracts.ndjson): find `Type.member` or a keyword. Each line has a qualified symbol, documented contract fields, and the declaration’s exact href. Compare signatures for overloads."] : []),
      `- [${withSym(symbols, "module", md(m.name))}](index${ext}): ${guidesOnly ? "the overview" : "packages and types"}`,
++    ...(hasContracts && indexes.some(p => p.page === INDEX_ALL_PAGE)
++      ? [`- [Alphabetical index](${INDEX_ALL_PAGE}${ext}): search names and descriptions by behavior. Compare the declaring type and signature, then follow the matching declaration.`]
++      : []),
++    ...(hasContracts ? ["- [Declaration contracts](contracts.ndjson): look up a known `Type.member`. Match the qualified symbol and signature for the exact overload."] : []),
      "- [llms-full.txt](llms-full.txt): every page in one file",
      ...(outputs.model ? ["- [api.json](api.json): the apidocs/1 model"] : []),
+     "",
 diff --git a/packages/apidocs/src/structure.ts b/packages/apidocs/src/structure.ts
 index 97eb4db..29fc65c 100644
 --- a/packages/apidocs/src/structure.ts
