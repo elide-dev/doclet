@@ -1,0 +1,122 @@
+[
+  {
+    "question": "Can the same Parser.parse(String) method be called concurrently on one Parser instance?",
+    "page": "Parser",
+    "answer": "\\byes\\b|thread.safe|can (?:be )?(?:called|used).*concurrent",
+    "evidence": "thread.safe.{0,70}new parser state",
+    "anchors": [
+      "parse(java.lang.String)"
+    ]
+  },
+  {
+    "question": "Which checked exception can Parser.parseReader(Reader) propagate when reading fails?",
+    "page": "Parser",
+    "answer": "\\bIOException\\b",
+    "evidence": "IOException.{0,65}when reading throws",
+    "anchors": [
+      "parseReader(java.io.Reader)"
+    ]
+  },
+  {
+    "question": "Which IncludeSourceSpans constant collects spans for both block and inline nodes?",
+    "page": "IncludeSourceSpans",
+    "answer": "\\bBLOCKS_AND_INLINES\\b",
+    "evidence": "source spans on block nodes and inline nodes",
+    "anchors": [
+      "BLOCKS_AND_INLINES"
+    ]
+  },
+  {
+    "question": "What integer removes the parser's limit on nested inline nodes in Parser.Builder.maxInlineNesting(int)?",
+    "page": "Parser.Builder",
+    "answer": "Integer\\s*\\.\\s*MAX_VALUE|2147483647|2,147,483,647",
+    "evidence": "Integer\\s*\\.\\s*MAX_VALUE.{0,60}no limit",
+    "anchors": [
+      "maxInlineNesting(int)"
+    ]
+  },
+  {
+    "question": "Which HtmlRenderer.Builder method can drop the paragraph tag from a single-paragraph document?",
+    "page": "HtmlRenderer.Builder",
+    "answer": "\\bomitSingleParagraphP\\b",
+    "evidence": "only contain a single paragraph.{0,100}without",
+    "anchors": [
+      "omitSingleParagraphP(boolean)"
+    ]
+  },
+  {
+    "question": "Does HtmlRenderer.Builder.percentEncodeUrls(boolean) double-encode URL components that already use percent escapes?",
+    "page": "HtmlRenderer.Builder",
+    "answer": "\\bno\\b|preserv|(?:remain|left|kept).{0,20}(?:as.?is|unchanged)|does not.*(?:double|re-)",
+    "evidence": "existing percent.encoded parts are preserved",
+    "anchors": [
+      "percentEncodeUrls(boolean)"
+    ]
+  },
+  {
+    "question": "When multiple HtmlRenderer.Builder.nodeRendererFactory registrations render the same node type, which factory takes precedence?",
+    "page": "HtmlRenderer.Builder",
+    "answer": "\\bfirst\\b|earliest",
+    "evidence": "factory.{0,45}added first",
+    "anchors": [
+      "nodeRendererFactory(org.commonmark.renderer.html.HtmlNodeRendererFactory)"
+    ]
+  },
+  {
+    "question": "What is the replacement for TextContentRenderer.Builder.stripNewlines(boolean) when all newlines must be stripped?",
+    "page": "TextContentRenderer.Builder",
+    "answer": "\\blineBreakRendering\\b",
+    "evidence": "lineBreakRendering.{0,200}STRIP.{0,65}instead",
+    "anchors": [
+      "stripNewlines(boolean)"
+    ],
+    "answer_all": [
+      "\\bSTRIP\\b"
+    ]
+  },
+  {
+    "question": "Which LineBreakRendering mode places a blank line between blocks and respects loose lists?",
+    "page": "LineBreakRendering",
+    "answer": "\\bSEPARATE_BLOCKS\\b",
+    "evidence": "separate blocks by a blank line",
+    "anchors": [
+      "SEPARATE_BLOCKS"
+    ]
+  },
+  {
+    "question": "In SourceSpan.getInputIndex(), does the returned offset count from the start of the line or from the start of the whole input?",
+    "page": "SourceSpan",
+    "answer": "whole input|entire (?:input|source)|start of (?:the )?(?:input|source)",
+    "evidence": "0.based index in whole input",
+    "anchors": [
+      "getInputIndex()"
+    ]
+  },
+  {
+    "question": "What does Scanner.find(char) return if the character does not occur after the current position?",
+    "page": "Scanner",
+    "answer": "[\u2212-]\\s*1",
+    "evidence": "[\u2212-]1.{0,65}(?:not found|is returned)",
+    "anchors": [
+      "find(char)"
+    ]
+  },
+  {
+    "question": "Can Scanner.next(String) match text that crosses a newline?",
+    "page": "Scanner",
+    "answer": "\\bno\\b|single line|one line|exclud.*newline|can(?:not|'t).*newlin",
+    "evidence": "single line.{0,60}excluding newline",
+    "anchors": [
+      "next(java.lang.String)"
+    ]
+  },
+  {
+    "question": "What newline does MarkdownRenderer.Builder.lineSeparator(String) use by default on all operating systems?",
+    "page": "MarkdownRenderer.Builder",
+    "answer": "\\\\n|\\bLF\\b|(?:a |the )?newline",
+    "evidence": "default is a.{0,25}newline.{0,70}all systems",
+    "anchors": [
+      "lineSeparator(java.lang.String)"
+    ]
+  }
+]

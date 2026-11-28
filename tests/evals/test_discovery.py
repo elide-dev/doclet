@@ -111,3 +111,30 @@ Writes package B.
                    Member("other/Stack", "purge()", "purge()", "")]
         rank = lambda _, docs: sorted(docs)
         self.assertEqual(choose_contract("When does purge on Queue return?", methods, rank), methods[1])
+
+
+    def test_declaration_intent_after_owner_and_camel_case_signal(self):
+        from eval_discovery import choose_declaration
+        from eval_rank import rank_contract
+        members = [Member("Mode", "", "Mode", "States whether input is valid."),
+                   Member("Mode", "<init>(boolean)", "Mode(boolean)", "States whether input is valid."),
+                   Member("Mode", "isEmpty()", "isEmpty()", ""),
+                   Member("Mode", "isValid()", "isValid()", "")]
+        self.assertEqual(choose_declaration("On Mode, which predicate checks whether input is valid?",
+                                           members, rank_contract), members[3])
+
+    def test_declaration_abstains_on_unsupported_or_ambiguous_signatures(self):
+        from eval_discovery import choose_declaration
+        from eval_rank import rank_contract
+        members = [Member("Stream", "read(a.Item)", "read(Item)", "Reads an item from disk."),
+                   Member("Stream", "read(b.Item)", "read(Item)", "Reads an item from memory.")]
+        for question in ["What does Stream.read(Item) return?",
+                         "What does Stream.read(int) return?",
+                         "What does Stream.missing return?",
+                         "What does Stream.read return?"]:
+            with self.subTest(question=question):
+                self.assertIsNone(choose_declaration(question, members, rank_contract))
+        self.assertEqual(choose_declaration("What does Stream.read(b.Item) return?", members,
+                                           rank_contract), members[1])
+        self.assertEqual(choose_declaration("What does Stream.read return from memory?", members,
+                                           rank_contract), members[1])

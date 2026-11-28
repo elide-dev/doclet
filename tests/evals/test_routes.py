@@ -1,0 +1,139 @@
+"""Exercise local discovery using only advertised links."""
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+from eval_routes import route
+from eval_discovery import Member
+from eval_evidence import markdown_detail, select_evidence
+
+
+class Routes(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.directory = Path(self.directory.name)
+        self.entry = (self.directory / "index.html").as_uri()
+
+    def write(self, path, body):
+        target = self.directory / path
+        target.parent.mkdir(exist_ok=True, parents=True)
+        target.write_text(body)
+
+    def test_direct_route_selects_exact_overload_and_counts_only_actual_reads(self):
+        self.write("index.html", """
+            <link rel="alternate" type="text/markdown" href="llms.txt">
+            <link rel="alternate" type="text/markdown" href="index.md">
+            <link rel="describedby" type="application/x-ndjson" href="m/contracts.ndjson">""")
+        self.write("m/contracts.ndjson", """
+{"href":"p/Value.html#read(java.lang.String)","name":"read","returns":{"doc":"a string"}}
+{"href":"p/Value.html#read(java.lang.Class)","name":"read","returns":{"doc":"a class"}}
+""".strip())
+        result = route(self.entry, "What does Value.read(Class) return?", "direct", encode=lambda s: s.split())
+        self.assertEqual(result["anchor"], "read(java.lang.Class)")
+        self.assertEqual(result["extraction"]["answer"], "a class")
+        self.assertTrue(result["markdown_url"].endswith("/index.md"))
+        self.assertEqual([r["path"] for r in result["requests"]], ["index.html", "m/contracts.ndjson"])
+        self.assertEqual(result["fetches"], 2)
+        self.assertEqual(result["discovery_tokens"], result["source_tokens"])
+
+    def test_inline_honors_distinct_content_and_discovery_bytes(self):
+        self.write("index.html", '<link rel="help" type="text/plain" href="llms.txt">')
+        self.write("llms.txt", "- [Value (class in p)](p/Value.md): reads values\n")
+        self.write("p/Value.md", "# Value\n\n## Methods\n\n### read(String)\n\nReturns: a string.\n")
+        result = route(self.entry, "What does Value.read(String) return?", "inline", encode=lambda s: s.split())
+        self.assertEqual(result["anchor"], "read(String)")
+        self.assertEqual(result["fetches"], 3)
+        self.assertLess(result["discovery_tokens"], result["source_tokens"])
+
+    def test_fully_indexed_javadoc_follows_redirect_and_reads_every_type(self):
+        self.write("index.html", '<link rel="canonical" href="p/package-summary.html">')
+        self.write("p/package-summary.html", '<a href="../index-all.html">Index</a>')
+        self.write("index-all.html", """
+<dl class="index">
+<dt><a class="member-name-link" href="p/Value.html#read(java.lang.Class)">read(Class)</a></dt><dd>Read value.</dd>
+<dt><a class="type-name-link" href="p/Other.html">Other</a></dt><dd>Other type.</dd>
+</dl>""")
+        self.write("p/Value.html", '<section id="read(java.lang.Class)" class="detail"><h3>read</h3> Returns: a class</section>')
+        self.write("p/Other.html", '<section id="class-description">Other type.</section>')
+        result = route(self.entry, "What does Value.read(Class) return?", "javadoc")
+        self.assertEqual(result["anchor"], "read(java.lang.Class)")
+        self.assertEqual(result["fetches"], 5)
+        self.assertIn("p/Other.html", [r["path"] for r in result["requests"]])
+        lazy = route(self.entry, "What does Value.read(Class) return?", "javadoc-lazy")
+        self.assertEqual(lazy["anchor"], result["anchor"])
+        self.assertEqual(lazy["fetches"], 4)
+        self.assertNotIn("p/Other.html", [r["path"] for r in lazy["requests"]])
+
+    def test_ignores_links_to_external_documents(self):
+        self.write("index.html", '<link rel="help" href="https://example.test/llms.txt">')
+        with self.assertRaisesRegex(ValueError, "escaped local origin"):
+            route(self.entry, "What does this library do?", "inline")
+
+    def test_adaptive_uses_exact_markdown_anchor_after_sparse_contract(self):
+        self.write("index.html", '<link rel="describedby" href="contracts.ndjson">')
+        self.write("contracts.ndjson", """
+{"href":"p/Value.html#read(a.Class)","name":"read","signature":"String read(Class type)","summary":"Read a value."}
+{"href":"p/Value.html#read(b.Class)","name":"read","signature":"String read(Class type)","summary":"Read a value."}
+""".strip())
+        self.write("p/Value.md", """
+# Value
+
+### read(Class)
+<a id="read(a.Class)"></a>
+
+A result for type a.
+
+### read(Class)
+<a id="read(b.Class)"></a>
+
+B result for type b.
+""")
+        result = route(self.entry, "What does Value.read(b.Class) return?", "adaptive")
+        self.assertEqual(result["anchor"], "read(b.Class)")
+        self.assertEqual(result["fetches"], 3)
+        self.assertIn("B result", result["excerpt"])
+        self.assertNotIn("A result", result["excerpt"])
+
+    def test_budget_preserves_whole_return_and_skips_unrelated_long_prose(self):
+        member = Member("Value", "read()", "read()", "")
+        body = "Read a value. " + "word " * 100 + (
+            " Returns: null if absent; otherwise the complete string. Throws: IOException - if read fails."
+        )
+        evidence = select_evidence("What does Value.read() return?", member, body, 70)
+        self.assertIn("Returns: null if absent; otherwise the complete string.", evidence)
+        self.assertNotIn("word ", evidence)
+        self.assertLessEqual(len(evidence), 70)
+
+    def test_unanchored_duplicate_display_title_abstains(self):
+        member = Member("Value", "read(b.Class)", "read(b.Class)", "")
+        ambiguous = "### read(Class)\n\nFirst value.\n\n### read(Class)\n\nSecond value.\n"
+        self.assertEqual(markdown_detail(ambiguous, member, {"signature": "read(b.Class)"}), "")
+
+    def test_markdown_does_not_treat_an_example_as_a_second_anchor(self):
+        member = Member("Value", "read()", "read()", "")
+        body = """### read()
+<a id="read()"></a>
+
+Returns the answer.
+
+````markdown
+### read()
+<a id="read()"></a>
+Misleading example.
+````
+
+### write()
+<a id="write()"></a>
+Writes a value.
+"""
+        detail = markdown_detail(body, member, {"signature": "read()"})
+        self.assertIn("Returns the answer.", detail)
+        self.assertNotIn("Writes a value", detail)
+        self.assertNotIn("Misleading example", detail)
+
+
+if __name__ == "__main__":
+    unittest.main()

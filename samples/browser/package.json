@@ -1,1 +1,1 @@
-{"name":"doclet-gallery-check","private":true,"type":"module","dependencies":{"afdocs":"0.23.0","chrome-launcher":"1.2.3","lighthouse":"13.6.0","playwright-core":"1.65.0","stylelint":"18.1.0"}}
+{"name":"doclet-gallery-check","private":true,"type":"module","dependencies":{"afdocs":"0.23.0","chrome-launcher":"1.2.3","lighthouse":"13.6.0","node-html-parser":"7.1.0","playwright-core":"1.65.0","stylelint":"18.1.0"}}

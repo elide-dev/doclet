@@ -213,6 +213,104 @@ def choose_contract(question, members, rank):
     return _rank(question, scope or candidates, rank, detailed=True)
 
 
+_KIND_QUESTION = re.compile(
+    r"\b(?:which|what)\b[^?.!]{0,72}?\b(member|method|constructor|constant|setting|"
+    r"field|property|function|component|option|predicate)\b", re.I)
+_DECLARATION_WORDS = {"a", "an", "can", "does", "for", "how", "in", "is", "on", "the",
+                      "to", "what", "when", "which", "with"}
+
+
+def _identifier_words(value):
+    value = re.sub(r"([A-Z])([A-Z][a-z])", r"\1 \2", value)
+    value = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", value)
+    return set(re.findall(r"[a-z0-9]+", value.lower())).difference(_DECLARATION_WORDS)
+
+
+def _narrow_overloads(question, members):
+    """Use terms that distinguish candidates, or leave an overloaded lookup unresolved."""
+    evidence = [_identifier_words(m.anchor + " " + m.summary + " " + m.search_text)
+                for m in members]
+    shared = set.intersection(*evidence)
+    query = _identifier_words(question)
+    scores = [len(query.intersection(terms - shared)) for terms in evidence]
+    best = max(scores)
+    if best and scores.count(best) == 1:
+        return members[scores.index(best)]
+    return None
+
+
+def _matches_kind(member, kind):
+    if not member.anchor:
+        return False
+    constructor = member.anchor.startswith("<init>(")
+    if kind == "constructor":
+        return constructor
+    if kind in {"method", "function", "predicate"}:
+        return "(" in member.anchor and not constructor
+    if kind in {"constant", "setting", "field", "option"}:
+        return "(" not in member.anchor
+    return True
+
+
+def choose_declaration(question, members, rank):
+    """Resolve declaration intent and require evidence before selecting an overload."""
+    if not members:
+        return None
+    # Written method signatures constrain selection. Unsupported or ambiguous
+    # signatures cannot safely fall back to an unrelated overload.
+    declared_names = {m.label.partition("(")[0] for m in members if "(" in m.anchor}
+    calls = [call for call in _CALL.finditer(question)
+             if call["owner"] or call["name"] in declared_names]
+    if calls:
+        matches = list(dict.fromkeys(_overloads(question, members)))
+        return matches[0] if len(matches) == 1 else None
+
+    candidates = _scope(question, members)
+    owners = {m.owner for m in candidates}
+    qualified = {owner: re.findall(r"(?<![\w$])" + re.escape(owner) +
+                                   rf"[.#]({_IDENTIFIER})(?![\w$.])", question)
+                 for owner in owners}
+    if any(qualified.values()):
+        candidates = [m for m in candidates if m.anchor and
+                      m.label.partition("(")[0] in qualified[m.owner]]
+        if not candidates:
+            return None
+
+    named = [m for m in candidates if m.anchor and not m.anchor.startswith("<init>(")
+             and re.search(r"(?<![\w$])" + re.escape(m.label.partition("(")[0])
+                           + r"(?![\w$])", question)]
+    if named and any(re.search(r"(?<![\w$])" + re.escape(m.owner) + r"(?![\w$])", question)
+                     for m in named):
+        candidates = named
+    else:
+        intent = _KIND_QUESTION.search(question)
+        if intent:
+            kind = intent[1].lower()
+            matching = [m for m in candidates if _matches_kind(m, kind)]
+            if matching:
+                candidates = matching
+        elif re.search(r"\b(?:exception|error)\b", question, re.I) and re.search(
+                r"\bthrow(?:n|s|ing)?\b", question, re.I):
+            throwing = [m for m in candidates if m.anchor and re.search(
+                r"\bthrows?\b", m.summary + " " + m.search_text, re.I)]
+            if throwing:
+                candidates = throwing
+
+    # API names can carry signal absent from the prose (for example, isEmpty).
+    # Compare distinctive index terms alongside the published descriptions.
+    entries = {m.path + "#" + m.anchor: m for m in candidates}
+    descriptions = {key: f"{m.owner} {m.label} {m.summary} {m.search_text} "
+                    + " ".join(sorted(_identifier_words(m.label.partition("(")[0])))
+                    for key, m in entries.items()}
+    selected = entries[rank(question, descriptions)[0]]
+    if "(" in selected.anchor:
+        family = [m for m in candidates if m.path == selected.path and "(" in m.anchor
+                  and m.label.partition("(")[0] == selected.label.partition("(")[0]]
+        if len(family) > 1:
+            return _narrow_overloads(question, family)
+    return selected
+
+
 def _jdk_details(root):
     """Map declaration anchors to complete local evidence with linked record component notes."""
     components = {}

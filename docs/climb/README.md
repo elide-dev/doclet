@@ -1,5 +1,7 @@
 # Agent documentation experiment ledger
 
+Routine hosted comparisons use GPT-6 Luna at low effort. Keep GPT-6.2 Astra at ultra effort for a separate, explicitly selected full verification round. Each report records the model used.
+
 ## 2026-11-27 · Separating index discovery from Markdown layout
 
 Run 017 crossed two independent changes. For discovery, each type entry in `llms.txt` retained either its published member cues or just its description. For reading, each Markdown page retained or omitted its opening member bullets. The same lexical ranker selected one type. The reader got the first 600 characters, including frontmatter. Results below count questions with matching evidence on the expected type. No model was called.
@@ -42,8 +44,8 @@ Use JDK 25, build the shared sample, and use a locally signed-in CLI. The origin
 
 ```sh
 uv run --no-project --with tiktoken==0.12.0 python scripts/eval-docs.py \
-  --account codex --model gpt-6.2-astra --effort ultra --terse --extract-first \
-  --layout bullets --chars 600 --count-tokens --output .dev/astra-development.json
+  --account codex --model gpt-6-luna --effort low --terse --extract-first \
+  --layout bullets --chars 600 --count-tokens --output .dev/luna-development.json
 
 scripts/build-eval-holdout
 python3 scripts/eval-lookup.py --full-index --questions samples/evals/holdout/questions.json \
@@ -97,7 +99,8 @@ for layout in prefix bullets table symbols; do
 done
 
 uv run --no-project --with tiktoken==0.12.0 python scripts/eval-docs.py \
-  --account codex --chars 600 --layout bullets --terse --count-tokens --output .dev/luna-members.json
+  --account codex --model gpt-6-luna --effort low --chars 600 --layout bullets \
+  --terse --count-tokens --output .dev/luna-members.json
 
 python3 scripts/eval-batch.py .dev/bullets.json --output .dev/luna-batch.json
 ```

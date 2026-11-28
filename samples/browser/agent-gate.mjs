@@ -1,5 +1,6 @@
 // Validate each module independently so one successful scan cannot mask a skipped module.
 import assert from "node:assert/strict";
+import { parse } from "node-html-parser";
 import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
@@ -16,6 +17,36 @@ for (const [module, page] of [
   const root = new URL(module + "/", base);
   const index = new URL("llms.txt", root);
   const target = new URL(page, root);
+  const html = await fetch(target);
+  assert.equal(html.status, 200);
+  const head = parse(await html.text()).querySelector("head");
+  assert.ok(head, target.href);
+  const markdown = head.querySelectorAll('link[rel="alternate"][type="text/markdown"]');
+  assert.equal(markdown.length, 1, target.href);
+  const twin = new URL(markdown[0].getAttribute("href"), target);
+  assert.equal(twin.href, target.href.replace(/\.html$/, ".md"));
+  const direct = await fetch(twin);
+  assert.equal(direct.status, 200);
+  assert.match(direct.headers.get("content-type"), /^text\/markdown\b/i);
+  await direct.body.cancel();
+  const guide = module.startsWith("guides/");
+  const targets = [
+    ['link[rel="help"][type="text/plain"]', "llms.txt"],
+    ['link[rel="describedby"][type="text/plain"]', "llms-full.txt"],
+    ['link[rel="index"]', guide ? "index.html" : "index-all.md"],
+  ];
+  const contract = 'link[rel="describedby"][type="application/x-ndjson"]';
+  if (guide) assert.equal(head.querySelector(contract), null, target.href);
+  else targets.push([contract, "contracts.ndjson"]);
+  for (const [selector, filename] of targets) {
+    const href = head.querySelector(selector)?.getAttribute("href");
+    assert.ok(href, `${target.href} is missing ${filename}`);
+    const discovered = new URL(href, target);
+    assert.equal(discovered.href, new URL(filename, root).href);
+    const entry = await fetch(discovered);
+    assert.equal(entry.status, 200, discovered.href);
+    await entry.body.cancel();
+  }
   const checks = ["llms-txt-exists", "llms-txt-valid", "markdown-url-support", "markdown-content-parity"];
   if (mode === "candidate") checks.push("content-negotiation");
   const cli = fileURLToPath(new URL("./node_modules/.bin/afdocs", import.meta.url));

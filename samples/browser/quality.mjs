@@ -51,6 +51,7 @@ try {
   const page = await browser.newPage();
   for (const resource of [guide, java, kotlin]) {
     await page.goto(base + resource);
+    const memberAnchors = [];
     if (resource !== guide) {
       const module = new URL(resource.split("/").slice(0, 2).join("/") + "/", base);
       const response = await fetch(new URL("contracts.ndjson", module));
@@ -64,7 +65,11 @@ try {
       for (const member of members) {
         assert.ok(member.name && member.signature && member.kind);
         const fragment = new URL(member.href, module).hash;
-        if (fragment) assert.ok(anchors.includes(decodeURIComponent(fragment.slice(1))), member.href);
+        if (fragment) {
+          const anchor = decodeURIComponent(fragment.slice(1));
+          assert.ok(anchors.includes(anchor), member.href);
+          memberAnchors.push(anchor);
+        }
       }
     }
     const twin = await page
@@ -78,7 +83,15 @@ try {
     assert.match(response.headers.get("content-type"), /text\/markdown/);
     assert.match(response.headers.get("vary"), /Accept/i);
     const direct = await fetch(new URL(twin, page.url()));
-    assert.equal(await direct.text(), await response.text());
+    const markdown = await direct.text();
+    assert.equal(markdown, await response.text());
+    if (memberAnchors.length) {
+      const markdownAnchors = await page.evaluate(source =>
+        [...source.matchAll(/^### [^\n]+\n(<a id="[^"\n]+"><\/a>)$/gm)].map(match =>
+          new DOMParser().parseFromString(match[1], "text/html").querySelector("a").id),
+      markdown);
+      assert.deepEqual(markdownAnchors.sort(), memberAnchors.sort(), resource);
+    }
     const jsonld = await page
       .locator('script[type="application/ld+json"]')
       .first()

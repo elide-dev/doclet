@@ -16,6 +16,8 @@ The name and version are optional. A named Java module supplies the default titl
 
 Besides the HTML pages, a site has a Markdown twin of every page, `llms.txt` and `llms-full.txt` for AI agents, and `api.json`, the model. Leave any of them out with `--no-markdown`, `--no-llms`, or `--no-model`; the pages then link only to the files the site has. In Gradle, add them to the Javadoc task with `options.addBooleanOption("-no-markdown", true)`.
 
+Each HTML page advertises its Markdown twin with one `rel="alternate" type="text/markdown"` link. Clients can also discover the alphabetical index, `llms.txt`, and the declaration contracts from the HTML head without running scripts.
+
 API modules also publish `contracts.ndjson` alongside `llms.txt`. Each JSON line carries one type or member declaration with its canonical HTML link, signature, summary, and documented parameter, return, exception, and deprecation fields. For example, to inspect every overload of a method locally, run `jq -c 'select(.name == "prepare") | {href, signature, returns, throws}' contracts.ndjson`. The link distinguishes overloads and leads to the full documentation. `--no-llms` disables this index along with the other agent outputs.
 
 Every page holds only its own path through the navigation tree: its package, that package’s types, and the current type’s nested types. The whole tree is loaded once from `assets/nav.js`, which works from `file://` too, so a page’s size follows its own content rather than the size of the library.
@@ -130,11 +132,10 @@ Run the benchmark locally with JDK 25 on PATH after `scripts/build-samples` and 
 
 ```sh
 python3 scripts/eval-docs.py --chars 600
-python3 scripts/eval-docs.py --account codex --chars 600 --output .dev/luna.json
-python3 scripts/eval-docs.py --account claude --chars 600 --output .dev/sonnet.json
+python3 scripts/eval-docs.py --account codex --model gpt-6-luna --effort low --chars 600 --output .dev/luna.json
 ```
 
-The account runs use the locally signed-in CLI and hosted inference. Codex defaults to `gpt-6-luna` at low effort. Claude Code resolves `sonnet` for the account and the report records its returned model ID. Use `--model` to pin a target. Each question gets a fresh CLI process in a temporary directory with the question and one retrieved document excerpt. Paired mode alternates which format runs first across ten questions (20 calls). Use `--all-variants` for the full three-index by two-format ablation (60 calls).
+Routine comparisons use GPT-6 Luna at low effort through the locally signed-in Codex CLI. Reserve GPT-6.2 Astra at ultra effort for a separate, explicitly selected full verification round. Each question gets a fresh CLI process in a temporary directory with the question and one retrieved document excerpt. Paired mode alternates which format runs first across ten questions (20 calls). Use `--all-variants` for the full three-index by two-format ablation (60 calls).
 
 The JDK builds standard Javadoc from the same Java sources. Each variant uses the same lexical retriever and maximum reading budget. Reports include the chosen page, evidence and answer checks, and per-question elapsed time. Timing includes local retrieval, CLI startup, and the hosted turn; it excludes building the two sites. Account runs record provider input, cached input, cache writes, and output tokens. Cached counts are subsets of input; the local lexical index is read by Python and never sent to the model. Timing varies with provider load and cache state.
 

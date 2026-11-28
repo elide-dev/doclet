@@ -1,3 +1,88 @@
+diff --git a/packages/apidocs/src/components/chrome.tsx b/packages/apidocs/src/components/chrome.tsx
+index 3196bcb..44156c7 100644
+--- a/packages/apidocs/src/components/chrome.tsx
++++ b/packages/apidocs/src/components/chrome.tsx
+@@ -11,7 +11,7 @@ import { createContext, Fragment, type ComponentChildren } from "preact";
+ import { useContext } from "preact/hooks";
+ import { outputsOf, type PageContext, usePage } from "../context";
+ import type { Package, Type } from "../model";
+-import { INDEX, PACKAGES_PAGE, TYPES_PAGE, guideNav, indexPages, isAbsolute, isThrowable, packagePage, relative, rootOf, type Site, typePage } from "../site";
++import { INDEX, INDEX_ALL_PAGE, PACKAGES_PAGE, TYPES_PAGE, guideNav, indexPages, isAbsolute, isThrowable, packagePage, relative, rootOf, type Site, typePage } from "../site";
+ import { guideIcon, type Theme } from "../theme";
+ import { kotlinKind } from "../structure";
+ import { SYMBOLS, sym } from "../symbols";
+@@ -171,6 +171,7 @@ export interface Formats {
+   llms?: string;
+   full?: string;
+   model?: string;
++  contracts?: string;
+ }
+ 
+ /**
+@@ -209,6 +210,7 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
+   const formats: Formats = {
+     ...(has.markdown ? { markdown: at(`${name}.md`, false) } : {}),
+     ...(has.llms ? { llms: at("llms.txt", true), full: at("llms-full.txt", true) } : {}),
++    ...(ctx.hasContracts ? { contracts: at("contracts.ndjson", true) } : {}),
+     ...(has.model ? { model: at("api.json", true) } : {}),
+   };
+   const keywords = [...new Set([...(meta?.keywords ?? []), m.name, ...(m.languages ?? []).map(languageName), ...(site.packages.length ? ["API reference"] : [])])].filter(Boolean);
+@@ -257,10 +259,11 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
+             dataset: [
+               ...(formats.llms
+                 ? [
+-                    { "@type": "Dataset", name: "llms.txt", description: "Index of every page as Markdown links.", encodingFormat: "text/markdown", url: formats.llms },
+-                    { "@type": "Dataset", name: "llms-full.txt", description: "The whole reference in one Markdown file.", encodingFormat: "text/markdown", url: formats.full },
++                    { "@type": "Dataset", name: "llms.txt", description: "Index of every page as Markdown links.", encodingFormat: "text/plain", url: formats.llms },
++                    { "@type": "Dataset", name: "llms-full.txt", description: "The whole reference in one Markdown file.", encodingFormat: "text/plain", url: formats.full },
+                   ]
+                 : []),
++              ...(formats.contracts ? [{ "@type": "Dataset", name: "contracts.ndjson", description: "Addressable declaration contracts.", encodingFormat: "application/x-ndjson", url: formats.contracts }] : []),
+               ...(formats.model ? [{ "@type": "Dataset", name: "api.json", description: "The apidocs/1 model of the module.", encodingFormat: "application/json", url: formats.model }] : []),
+             ],
+           }]
+@@ -300,12 +303,16 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
+     ...(has.markdown ? [{ rel: "alternate", type: "text/markdown", href: `${name}.md`, title: "This page as Markdown" }] : []),
+     ...(has.llms
+       ? [
+-          { rel: "alternate", type: "text/markdown", href: `${root}llms.txt`, title: "llms.txt: index of every page, as Markdown links" },
+-          { rel: "alternate", type: "text/markdown", href: `${root}llms-full.txt`, title: "llms-full.txt: the whole reference in one Markdown file" },
++          { rel: "help", type: "text/plain", href: `${root}llms.txt`, title: "Documentation index (llms.txt)" },
++          { rel: "describedby", type: "text/plain", href: `${root}llms-full.txt`, title: "Complete documentation (llms-full.txt)" },
+         ]
+       : []),
+-    ...(has.model ? [{ rel: "alternate", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
+-    { rel: "index", href: `${root}index.html`, title: `${product} API reference` },
++    ...(formats.contracts ? [{ rel: "describedby", type: "application/x-ndjson", href: `${root}contracts.ndjson`, title: "Declaration contracts" }] : []),
++    ...(has.model ? [{ rel: "describedby", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
++    ...(indexPages(site).some(entry => entry.page === INDEX_ALL_PAGE)
++      ? [{ rel: "index", type: has.markdown ? "text/markdown" : "text/html",
++            href: `${root}${INDEX_ALL_PAGE}${has.markdown ? ".md" : ".html"}`, title: "Alphabetical declaration index" }]
++      : [{ rel: "index", type: "text/html", href: `${root}index.html`, title: `${product} reference` }]),
+   ];
+   return { title, description, keywords, product, canonical, meta: tags, links, formats, jsonLd: graph };
+ }
+@@ -399,6 +406,7 @@ export function AgentNote({ formats }: { formats: Formats }) {
+     formats.markdown && `Markdown: ${formats.markdown} .`,
+     formats.llms && `Index of every page (llms.txt): ${formats.llms} .`,
+     formats.full && `The whole reference in one Markdown file: ${formats.full} .`,
++    formats.contracts && `Declaration contracts: ${formats.contracts} .`,
+     formats.model && `The API model as JSON (apidocs/1): ${formats.model} .`,
+   ].filter(Boolean);
+   if (!parts.length) return null;
+diff --git a/packages/apidocs/src/context.ts b/packages/apidocs/src/context.ts
+index 6f89168..ab09905 100644
+--- a/packages/apidocs/src/context.ts
++++ b/packages/apidocs/src/context.ts
+@@ -18,6 +18,8 @@ export interface PageContext {
+   nav?: "full" | "split";
+   /** Which of the site's optional files exist, so pages link only to those. Each defaults to true. */
+   outputs?: Outputs;
++  /** Whether this renderer publishes an addressable declaration index. */
++  hasContracts?: boolean;
+ }
+ 
+ /** The optional files a site has besides its HTML pages. */
 diff --git a/packages/apidocs/src/contracts.ts b/packages/apidocs/src/contracts.ts
 new file mode 100644
 index 0000000..e6af17d
@@ -50,7 +135,7 @@ index 0000000..e6af17d
 +  return lines.length ? lines.join("\n") + "\n" : "";
 +}
 diff --git a/packages/apidocs/src/markdown.ts b/packages/apidocs/src/markdown.ts
-index 91730b8..812b356 100644
+index 91730b8..d360e4b 100644
 --- a/packages/apidocs/src/markdown.ts
 +++ b/packages/apidocs/src/markdown.ts
 @@ -10,7 +10,7 @@ import { type GuideEntry, guideCrumbs, guideNav, INDEX, isThrowable, overviewGui
@@ -62,7 +147,21 @@ index 91730b8..812b356 100644
  
  interface Md {
    site: Site;
-@@ -221,6 +221,26 @@ export function packageMarkdown(site: Site, pkg: Package, symbols: SymbolMode =
+@@ -26,6 +26,13 @@ function esc(text: string): string {
+   return text.replace(/([\\`*_[\]<>|])/g, "\\$1");
+ }
+ 
++function anchorTag(id: string): string {
++  const escaped = id.replaceAll("&", "&amp;").replaceAll('"', "&quot;")
++    .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
++    .replaceAll("\r", "&#13;").replaceAll("\n", "&#10;");
++  return `<a id="${escaped}"></a>`;
++}
++
+ function codeSpan(text: string): string {
+   const ticks = "`".repeat(Math.max(1, ...[...text.matchAll(/`+/g)].map(m => m[0].length + 1)));
+   const pad = text.startsWith("`") || text.endsWith("`") ? " " : "";
+@@ -221,6 +228,26 @@ export function packageMarkdown(site: Site, pkg: Package, symbols: SymbolMode =
    return join(parts);
  }
  
@@ -89,7 +188,7 @@ index 91730b8..812b356 100644
  export function typeMarkdown(site: Site, type: Type, symbols: SymbolMode = "utf"): string {
    const entry = site.types.get(type.id)!;
    const page = entry.page;
-@@ -231,6 +251,8 @@ export function typeMarkdown(site: Site, type: Type, symbols: SymbolMode = "utf"
+@@ -231,6 +258,8 @@ export function typeMarkdown(site: Site, type: Type, symbols: SymbolMode = "utf"
    if (type.enclosing) facts.push(`Nested in [${codeSpan(refLabel(site, { id: type.enclosing }))}](${resolve(site, page, ".md", type.enclosing)}).`);
    const crumbs = [{ label: site.model.module.name, page: INDEX }, { label: entry.pkg.name, page: packagePage(entry.pkg) }];
    const parts = [`# ${withSym(symbols, typeSymbolKey(type.kind, isThrowable(type)), type.name)}`, location(md, crumbs), facts.join(" "), signature(md, type.signature, type.annotations)];
@@ -98,8 +197,17 @@ index 91730b8..812b356 100644
    if (type.ancestors?.length) {
      parts.push("Inheritance: " + [...type.ancestors].reverse().map(ref => link(md, ref)).join(" > ") + ` > ${codeSpan(type.name.split(".").pop()!)}`);
    }
+@@ -261,7 +290,7 @@ function memberMarkdown(md: Md, member: Member): string {
+   if (member.since) facts.push(`Since ${esc(member.since)}.`);
+   if (member.implicit) facts.push("Declared by the compiler.");
+   const parts = [
+-    `### ${esc(title)}`,
++    `### ${esc(title)}${member.anchor ? "\n" + anchorTag(member.anchor) : ""}`,
+     signature(md, member.signature, member.annotations),
+     facts.join(" "),
+     deprecation(md, member.deprecated),
 diff --git a/packages/apidocs/src/render.tsx b/packages/apidocs/src/render.tsx
-index ba0a8eb..423c663 100644
+index ba0a8eb..f86c6b9 100644
 --- a/packages/apidocs/src/render.tsx
 +++ b/packages/apidocs/src/render.tsx
 @@ -5,11 +5,12 @@
@@ -116,7 +224,22 @@ index ba0a8eb..423c663 100644
  import type { Model } from "./model";
  import { GuidePage } from "./narrative";
  import { IndexPage, NotFoundPage, PackagePage, TypePage } from "./pages";
-@@ -79,7 +80,7 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
+@@ -49,12 +50,13 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
+   // A Markdown twin's canonical URL is its HTML page's, when the site's address is known.
+   const canonical = (page: string) => (theme.baseUrl ? `${theme.baseUrl}${page}.html` : undefined);
+   const outputs = outputsOf({ outputs: options });
++  const contracts = outputs.llms ? declarationContracts(site) : "";
+   // Markdown is always made, for llms-full.txt; the twins are written only when the site has them.
+   const md: Record<string, string> = {};
+ 
+   const html = (page: string, language: string, node: preact.VNode) => {
+     // Every page carries only its own path through the navigator; assets/nav.js has the whole tree.
+-    const ctx: PageContext = { site, theme, page, language, nav: "split", outputs };
++    const ctx: PageContext = { site, theme, page, language, nav: "split", outputs, hasContracts: !!contracts };
+     out[`${page}.html`] = "<!doctype html>\n" + renderToString(<Ctx.Provider value={ctx}>{node}</Ctx.Provider>) + "\n";
+   };
+ 
+@@ -79,7 +81,7 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
        const tpage = typePage(pkg, type);
        html(tpage, type.language, <TypePage type={type} />);
        md[tpage] = frontmatter(site, typeTwin(type), canonical(tpage)) + typeMarkdown(site, type, symbols);
@@ -125,12 +248,11 @@ index ba0a8eb..423c663 100644
      }
    }
  
-@@ -103,7 +104,9 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
+@@ -103,7 +105,8 @@ export function render(modelInput: Model | string, themeInput?: Theme | string,
  
    if (outputs.markdown) for (const [page, text] of Object.entries(md)) out[`${page}.md`] = text;
    if (outputs.llms) {
 -    out["llms.txt"] = llms(site, pages, guides, symbols, indexes, theme.whenToUse, outputs);
-+    const contracts = declarationContracts(site);
 +    if (contracts) out["contracts.ndjson"] = contracts;
 +    out["llms.txt"] = llms(site, pages, guides, symbols, indexes, theme.whenToUse, outputs, !!contracts);
      // The twins without their frontmatter: in one file, each starts at the comment that names it.
