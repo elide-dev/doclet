@@ -86,6 +86,14 @@ python3 scripts/eval-batch.py docs/climb/runs/027-codec-candidates.json \
   --questions samples/evals/codec/questions.json --output .dev/codec-batch.json
 ```
 
+To check a performance claim locally, compare compatible paired reports. The gate checks accuracy, provider input and output, fetches, bytes, wall time, and grounded answers per total model token in **each** supplied run. Reviews refer to the exact bytes of each archived report and retain the frozen grade. The following command intentionally exits with status 1 for the current JCommander pair. Omit the last two flags to print results without enforcing a threshold. [Reviewed answers](reviews.json)
+
+```sh
+python3 scripts/eval-compare.py docs/climb/runs/030-jcommander-blind.json \
+  docs/climb/runs/031-jcommander-repeat.json --baseline javadoc-adaptive --candidate scoped \
+  --reviews docs/climb/reviews.json --require-all --min-efficiency 5
+```
+
 ## 2026-11-27 · Separating index discovery from Markdown layout
 
 Run 017 crossed two independent changes. For discovery, each type entry in `llms.txt` retained either its published member cues or just its description. For reading, each Markdown page retained or omitted its opening member bullets. The same lexical ranker selected one type. The reader got the first 600 characters, including frontmatter. Results below count questions with matching evidence on the expected type. No model was called.

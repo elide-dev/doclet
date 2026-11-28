@@ -1,0 +1,38 @@
+{
+  "36ea4741105bd01ef31d8409ce43f2b1a42a783ad929e9a0c5d94c49b05954f6": [
+    {
+      "route": "javadoc-adaptive",
+      "question": "When does URLCodec.decodeUrl(BitSet, byte[]) turn a plus into a space instead of preserving the plus?",
+      "correct": true,
+      "reason": "The cited member states both conditions. The answer writes the plus sign as the symbol '+' and says it is unsafe while space is marked safe.",
+      "report": "027-codec-candidates.json"
+    }
+  ],
+  "8c6e52cd5acb810f61bfd3a4a2603707c1b77d511051e7b685f3c0fe22ca2bf7": [
+    {
+      "route": "javadoc-adaptive",
+      "question": "When does URLCodec.decodeUrl(BitSet, byte[]) turn a plus into a space instead of preserving the plus?",
+      "correct": true,
+      "reason": "The answer and citation require an unsafe plus and a safe space. A typographic apostrophe in “isn’t” failed the frozen answer regex.",
+      "report": "028-codec-identifiers.json"
+    }
+  ],
+  "980479d2b10b77e9f50e707151191fd055a1cdf41e5e908cac801bf9a49ec7dc": [
+    {
+      "route": "scoped",
+      "question": "When does URLCodec.decodeUrl(BitSet, byte[]) turn a plus into a space instead of preserving the plus?",
+      "correct": true,
+      "reason": "The two coordinated conditions in “space is marked safe and plus is not” refer to the same predicate. The selected member section states both.",
+      "report": "029-codec-batched-candidates.json"
+    }
+  ],
+  "c5dc0a082ac38d1d6e1c3ea2572e6230fc2203fcfd84e065700729ebb6747e73": [
+    {
+      "route": "javadoc-adaptive",
+      "question": "Which builder method disables treating an @file argument as a file of command-line options?",
+      "correct": true,
+      "reason": "The reply names expandAtSign and cites the Boolean overload. Its parameter explicitly controls whether to expand @file, which supports disabling expansion.",
+      "report": "031-jcommander-repeat.json"
+    }
+  ]
+}
