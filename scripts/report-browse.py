@@ -1,8 +1,10 @@
 """Summarize local model-directed discovery archives from eval-browse.py."""
 import argparse
+from hashlib import sha256
 import json
 from pathlib import Path
 from statistics import mean
+from eval_reviews import load_reviews, review_corrections
 
 
 COUNTERS = ("observation_tokens", "input_tokens", "cached_input_tokens", "output_tokens")
@@ -67,6 +69,9 @@ def trial_metrics(rows):
                   mean_reached=mean(reached) if reached else None,
                   mean_grounded=mean(grounded) if grounded else None, mean_charged=mean(charged_steps),
                   charged_visible=charged_visible, seconds=sum(r["wall_ms"] for r in rows) / 1000)
+    total = result["input_tokens"] + result["output_tokens"]
+    result["answers_per_100k"] = result["grounded"] * 100_000 / total if total else None
+    result["uncached_input_tokens"] = result["input_tokens"] - result["cached_input_tokens"]
     return result
 
 
@@ -90,10 +95,19 @@ def path_actions(row):
     return "; ".join(steps)
 
 
-def markdown(report, partial=False, traces=False):
+def markdown(report, partial=False, traces=False, corrections=None):
     paired, by_site = paired_trials(report, partial)
     stats = {site: trial_metrics(rows) for site, rows in by_site.items()}
     arms = list(stats)
+    def reviewed(row):
+        correction = (corrections or {}).get((row["site"], row["question"]))
+        return correction["correct"] if correction else row["correct"]
+
+    if corrections is not None:
+        for site, values in stats.items():
+            values["reviewed"] = sum(reviewed(row) for row in by_site[site])
+            tokens = values["input_tokens"] + values["output_tokens"]
+            values["reviewed_per_100k"] = 100_000 * values["reviewed"] / tokens if tokens else None
     lines = [f"**{len(paired)}/{len(report['cases'])} cases complete across all {len(arms)} arms.**",
              "", "| Measure | " + " | ".join(map(cell, arms)) + " |",
              "| --- | " + " | ".join("---:" for _ in arms) + " |"]
@@ -105,17 +119,36 @@ def markdown(report, partial=False, traces=False):
         ("Visible tokens to evidence, misses charged", "charged_visible"),
         ("All visible observation tokens", "observation_tokens"), ("Luna turns", "model_turns"),
         ("Provider input tokens", "input_tokens"), ("Cached input tokens", "cached_input_tokens"),
+        ("Uncached input tokens", "uncached_input_tokens"),
         ("Provider output tokens", "output_tokens"), ("Fetches", "fetches"), ("Bytes fetched", "bytes"),
-        ("Wall seconds", "seconds")]
+        ("Wall seconds", "seconds"), ("Grounded answers per 100k provider tokens", "answers_per_100k")]
+    if corrections is not None:
+        measures.insert(1, ("Grounded answers after citation review", "reviewed"))
+        measures.append(("Reviewed grounded answers per 100k provider tokens", "reviewed_per_100k"))
     for label, key in measures:
         values = [stats[site][key] for site in arms]
-        fmt = ".2f" if key.startswith("mean_") or key == "seconds" else ",d"
+        fmt = ".2f" if key.startswith("mean_") or key.endswith("_per_100k") or key == "seconds" else ",d"
         lines.append(f"| {label} | " + " | ".join("—" if value is None else format(value, fmt)
                                                   for value in values) + " |")
     lines.extend(["", "The entry page costs zero navigation actions. Misses contribute every observed "
                   "attempt before the last turn and the full session’s displayed tokens. Hits include the "
                   "screen with the first supporting evidence. Repeated screens count each time they are "
                   "shown. Cached input is included in provider input."])
+    if corrections is not None:
+        lines.extend(["", "Evidence arrival and the first grounded-answer row use the frozen grader. "
+                      "The shared-success costs below use the reviewed citations."])
+    common = [i for i in range(len(paired)) if all(reviewed(by_site[site][i]) for site in arms)]
+    if common:
+        lines.extend(["", "Costs on the cases every arm answered with a grounded citation "
+                      f"({', '.join(str(paired[i]) for i in common)}).", "",
+                      "| Arm | Turns | Visible tokens | Provider input | Provider output | Wall seconds |",
+                      "| --- | ---: | ---: | ---: | ---: | ---: |"])
+        for site in arms:
+            subset = trial_metrics([by_site[site][i] for i in common])
+            lines.append(f"| {cell(site)} | {subset['model_turns']} | {subset['observation_tokens']:,} | "
+                         f"{subset['input_tokens']:,} | {subset['output_tokens']:,} | {subset['seconds']:.2f} |")
+    else:
+        lines.extend(["", "No case received a grounded citation from every arm."])
     if traces:
         lines.extend(["", "| Case | Arm | Outcome | First evidence after | Path and action on each turn |",
                       "| ---: | --- | --- | ---: | --- |"])
@@ -124,6 +157,8 @@ def markdown(report, partial=False, traces=False):
                 row = by_site[site][index]
                 first = row["first_evidence_after_actions"]
                 outcome = "grounded" if row["correct"] else row["stop"] + ", ungrounded"
+                if reviewed(row) != row["correct"]:
+                    outcome += " (reviewed " + ("pass" if reviewed(row) else "miss") + ")"
                 lines.append(f"| {case} | {cell(site)} | {cell(outcome)} | "
                              f"{first if first is not None else 'miss'} | {cell(path_actions(row))} |")
     return "\n".join(lines)
@@ -134,9 +169,17 @@ def main():
     parser.add_argument("report", type=Path)
     parser.add_argument("--partial", action="store_true", help="Compare only fully paired cases in an unfinished archive")
     parser.add_argument("--traces", action="store_true", help="Include the chosen navigation path for each trial")
+    parser.add_argument("--reviews", type=Path, help="Include citation reviews bound to this archive's checksum")
     args = parser.parse_args()
     try:
-        print(markdown(json.loads(args.report.read_text()), args.partial, args.traces))
+        data = args.report.read_bytes()
+        report = json.loads(data)
+        corrections = None
+        if args.reviews:
+            rows = {site: {r["question"]: r for r in report["results"] if r["site"] == site}
+                    for site in report["order"]}
+            corrections = review_corrections(args.report, sha256(data).hexdigest(), load_reviews(args.reviews), rows)
+        print(markdown(report, args.partial, args.traces, corrections))
     except (KeyError, OSError, TypeError, ValueError) as error:
         parser.exit(2, f"{parser.prog}: {error}\n")
 

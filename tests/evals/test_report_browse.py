@@ -2,10 +2,12 @@
 import copy
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
 
 path = Path(__file__).resolve().parents[2] / "scripts/report-browse.py"
+sys.path.insert(0, str(path.parent))
 spec = importlib.util.spec_from_file_location("report_browse", path)
 report_browse = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(report_browse)
@@ -44,6 +46,8 @@ class ReportTests(unittest.TestCase):
         self.assertAlmostEqual(stats["mean_charged"], 2 / 3)
         self.assertEqual((stats["input_tokens"], stats["cached_input_tokens"], stats["output_tokens"]),
                          (140, 70, 14))
+        self.assertEqual(stats["uncached_input_tokens"], 70)
+        self.assertAlmostEqual(stats["answers_per_100k"], 100_000 / 154)
 
     def test_partial_uses_only_completed_pairs_and_escapes_trace_queries(self):
         a = row(1, "JDK", 1, True, [5, 7])
@@ -57,6 +61,25 @@ class ReportTests(unittest.TestCase):
         self.assertIn("| Mean actions to evidence, reached cases | 1.00 | — |", result)
         self.assertIn('find "x\\|y"', result)
         self.assertNotIn("999", result)
+        self.assertIn("No case received a grounded citation from every arm", result)
+
+    def test_paired_successes_exclude_costs_of_early_abstentions(self):
+        a = row(1, "JDK", 1, True, [5, 7])
+        b = row(1, "generated", 0, True, [8])
+        report = archive(a, b, row(2, "JDK", None, False, [3]), row(2, "generated", 0, True, [90]))
+        result = report_browse.markdown(report, partial=True)
+        self.assertIn("grounded citation (1)", result)
+        self.assertIn("| generated | 1 | 8 | 20 | 2 | 0.10 |", result)
+
+    def test_review_preserves_frozen_scores_and_matches_costs_on_reviewed_cases(self):
+        a = row(1, "JDK", None, False, [5, 7])
+        b = row(1, "generated", 0, True, [8])
+        result = report_browse.markdown(archive(a, b), partial=True, traces=True,
+                                        corrections={("JDK", a["question"]): {"correct": True}})
+        self.assertIn("| Grounded answers | 0 | 1 |", result)
+        self.assertIn("| Grounded answers after citation review | 1 | 1 |", result)
+        self.assertIn("grounded citation (1)", result)
+        self.assertIn("reviewed pass", result)
 
     def test_rejects_duplicates_mismatches_and_invalid_observation_boundaries(self):
         a = row(1, "JDK", 1, True, [5, 7])
