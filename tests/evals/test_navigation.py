@@ -113,6 +113,90 @@ class NavigationTest(unittest.TestCase):
         self.assertIn(json.dumps(entry), cite["excerpt"])
         self.assertEqual((cite["path"], cite["anchor"]), ("Foo", "read(java.lang.String)"))
 
+    def test_bundle_provenance_and_links_follow_source_page_boundaries(self):
+        self.write("index.html", self.html('<a href="llms-full.txt">Bundle</a>'))
+        self.write("llms-full.txt", """<!-- a/One.md -->
+# One
+### lookup()
+<a id="lookup()"></a>
+The first result.
+<!-- b/Two.md -->
+# Two
+### lookup()
+<a id="lookup()"></a>
+The second result. See [Local](Local.md).
+""")
+        self.write("b/Local.md", "Reachable through the second member.")
+        nav = Navigator(self.root)
+        bundle = nav.act(dict(action="open", link=self.link(nav.start(), "Bundle")))
+        visible = [nav.citation(i) for i in bundle["evidence_ids"]]
+        first = next(c for c in visible if "first result" in c["excerpt"])
+        second = next(c for c in visible if "second result" in c["excerpt"])
+        self.assertEqual((first["path"], first["anchor"]), ("a/One", "lookup()"))
+        self.assertEqual((second["path"], second["anchor"]), ("b/Two", "lookup()"))
+        local = nav.act(dict(action="open", link=self.link(bundle, "Local")))
+        self.assertEqual(local["url"], "b/Local.md")
+        self.assertEqual(len(nav.requests), 3)
+
+    def test_invalid_or_fenced_bundle_markers_do_not_establish_external_provenance(self):
+        self.write("index.html", self.html('<a href="llms-full.txt">Bundle</a>'))
+        self.write("llms-full.txt", """<!-- allowed/Thing.md -->
+# Thing
+```text
+<!-- fenced/Fake.md -->
+```
+Fenced marker was literal.
+<!-- https://external.test/Thing.md -->
+External marker was refused.
+<!-- ../../outside/Escape.md -->
+Traversal marker was refused.
+""")
+        nav = Navigator(self.root)
+        bundle = nav.act(dict(action="open", link=self.link(nav.start(), "Bundle")))
+        visible = [nav.citation(i) for i in bundle["evidence_ids"]]
+        for token, path in (("Fenced marker", "allowed/Thing"),
+                            ("External marker", "llms-full"), ("Traversal marker", "llms-full")):
+            self.assertEqual(next(c["path"] for c in visible if token in c["excerpt"]), path)
+
+    def test_matches_filters_only_open_document_and_next_preserves_source_order(self):
+        self.write("index.html", self.html('<a href="list.md">List</a>'))
+        body = ["prefix"]
+        for n in range(15):
+            body.extend([f"haystack {n}", f"NEEDLE number {n}"])
+        self.write("list.md", "\n".join(body))
+        nav = Navigator(self.root, window_chars=180)
+        first = nav.act(dict(action="open", link=self.link(nav.start(), "List"),
+                             matches=True, query="needle"))
+        visible = []
+        view = first
+        while True:
+            self.assertNotIn("haystack", view["text"])
+            self.assertLessEqual(len(view["text"]), 180)
+            visible.extend(nav.citation(i)["excerpt"] for i in view["evidence_ids"])
+            if not view["more"]:
+                break
+            view = nav.act(dict(action="next"))
+        self.assertEqual(visible, [f"NEEDLE number {n}" for n in range(15)])
+        miss = nav.act(dict(action="matches", query="N.*LE"))
+        self.assertFalse(miss["evidence_ids"])
+        self.assertFalse(miss["more"])
+        normal = nav.act(dict(action="find", query="haystack 7"))
+        self.assertIn("NEEDLE number 7", normal["text"])
+        self.assertEqual(len(nav.requests), 2)
+
+    def test_links_in_unshown_matching_rows_stay_unavailable(self):
+        self.write("index.html", self.html('<a href="list.md">List</a>'))
+        self.write("list.md", "one needle\n[Secret](secret.md)\nneedle [Public](public.md)")
+        self.write("public.md", "public")
+        nav = Navigator(self.root)
+        filtered = nav.act(dict(action="open", link=self.link(nav.start(), "List"),
+                                query="needle", matches=True))
+        self.assertNotIn("Secret", filtered["text"])
+        public = self.link(filtered, "Public")
+        with self.assertRaisesRegex(ValueError, "shown"):
+            nav.act(dict(action="open", link=public - 1))
+        self.assertEqual(nav.act(dict(action="open", link=public))["url"], "public.md")
+
     def test_find_is_literal_and_uses_only_current_resource(self):
         self.write("index.html", self.html('<p>A_b</p><p>middle</p><p>a_B</p><a href="other.md">Other</a>'))
         self.write("other.md", "a.b")

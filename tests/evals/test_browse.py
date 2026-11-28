@@ -78,6 +78,11 @@ class BrowseTests(unittest.TestCase):
         self.assertEqual(row["stop"], "budget")
         self.assertEqual(row["fetches"], 1)
 
+    def test_first_emitted_valid_command_is_consistent_across_formats(self):
+        result = {"commentary": ["Opening the index.", '{"action":"matches","query":"default"}'],
+                  "answer": '{"action":"answer","answer":"unknown","cite":[]}'}
+        self.assertEqual(browse.reader_command(result), ({"action":"matches","query":"default"}, "commentary"))
+
     def test_distinct_declarations_cannot_supply_joint_support(self):
         case = dict(self.case, anchors=["test()", "test(int)"], evidence="default is 2")
         a = dict(page="Probe", path="pkg/Probe", anchor="test()", excerpt="default")

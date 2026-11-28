@@ -2,6 +2,14 @@
 
 Routine hosted comparisons use GPT-6 Luna at low effort. Keep GPT-6.2 Astra at ultra effort for a separate, explicitly selected full verification round. Each report records the model used.
 
+## 2026-11-27 · Luna navigates the documentation
+
+Each trial starts a fresh, signed-in Luna low conversation with the question and a bounded view of the module HTML. Luna selects links and search terms itself. The static text browser can follow links that have appeared on screen, search a fetched file for a literal, or page through it. It runs neither site's JavaScript search widget. A correct answer must cite displayed evidence for the expected declaration. The local fixture grader never chooses documents or search terms.
+
+We record each browser view, the model's commands and final citations, newly visible text tokens, provider-reported input (including cache reads) and output, bytes first read from each local file, and elapsed time. Repeated views cost model input again. A browser session caches files. Native Codex resume reports cumulative usage, so the runner takes per-turn differences. Wall time includes CLI startup, resume and cleanup. Transfers are uncompressed local file reads.
+
+Run 033 uses the established eight-question JCommander fixture to compare stock Javadoc, published generated docs, and a qualified-symbol treatment. After inspecting its navigation traces, run 034 isolates a change to the type-page summary links on JCommander cases 1, 2, 3 and 6. Run 035 compares stock Javadoc, the original generated site and the linked treatment on CommonMark. Its five positions (7, 8, 9, 10 and 12) were selected before navigation by sorting the thirteen positions by SHA-256 of `doclet-discovery-v2/<position>` and taking the first five. The underlying questions were used in earlier experiments with a local ranker. Each comparison uses the same reader and action budget for all its arms. [Reproduce the generated sites](discovery.md)
+
 ## 2026-11-27 · Cold lookups from the module HTML
 
 The reference and each control start at the module’s `index.html` on a loopback HTTP server. Each question starts cold. The ledger charges every document fetched, discovery included, and counts excerpt tokens separately from provider-reported tokens. Hosted turns use the local account and one isolated Luna low CLI call per fallback. All layouts share the excerpt budget, prompt, and extraction policy within a comparison. Wall time includes discovery, local extraction, CLI startup, and the hosted response. Source token-count instrumentation is excluded.

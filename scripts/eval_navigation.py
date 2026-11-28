@@ -71,6 +71,7 @@ class Navigator:
         self._page = None
         self._next = 0
         self._last_find = None
+        self._matches = None
 
     @property
     def bytes(self):
@@ -185,8 +186,9 @@ class Navigator:
         return redirect
 
     def _text(self, page, body, emit, mark):
-        target = page
+        base = target = page
         fenced = None
+        bundle = PurePosixPath(page).name == "llms-full.txt"
         for line in body.splitlines():
             if not line.strip():
                 continue
@@ -207,12 +209,25 @@ class Navigator:
             if fenced:
                 emit(line, target)
                 continue
+            if bundle and (marker := re.fullmatch(r"<!--\s*(.*?)\s*-->", line.strip())):
+                # The renderer publishes the source path at each document boundary.
+                # Relative links retain the meaning they had in the original file.
+                source = marker[1]
+                if source.endswith(".md"):
+                    path = urlsplit(source)
+                    parts = PurePosixPath(unquote(path.path))
+                    valid = (not path.scheme and not path.netloc and not path.query and not path.fragment
+                             and not parts.is_absolute() and ".." not in parts.parts)
+                    base = (_resolve(page, source) if valid else None) or page
+                    target = base
+                emit(line, base)
+                continue
             if line.startswith("#"):
-                target = page
+                target = base
             anchor = MD_ID.search(line)
             if anchor:
                 mark(unescape(anchor[1]))
-                target = page + "#" + quote(unescape(anchor[1]))
+                target = base + "#" + quote(unescape(anchor[1]))
                 emit("#" + unescape(anchor[1]), target)
                 continue
             links = []
@@ -220,7 +235,7 @@ class Navigator:
 
             def replace(match):
                 href = match[3]
-                marker, number = self._link(page, href)
+                marker, number = self._link(base, href)
                 if number:
                     links.append(number)
                     targets.append(self._links[number])
@@ -228,7 +243,7 @@ class Navigator:
                 return match[0]
 
             shown = MD_LINK.sub(replace, line)
-            pointer = targets[0] if target == page and line.lstrip().startswith(("- [", "* [")) and targets else target
+            pointer = targets[0] if target == base and line.lstrip().startswith(("- [", "* [")) and targets else target
             emit(shown, pointer, links)
 
     def _js(self, page, body, emit):
@@ -304,7 +319,7 @@ class Navigator:
     def start(self):
         return self._open(self.entry)
 
-    def _open(self, url, query=None):
+    def _open(self, url, query=None, matches=False):
         checked = set()
         while True:
             page, anchor = urldefrag(url)
@@ -316,8 +331,11 @@ class Navigator:
                 break
             url = redirect
         self._page = page
-        self._last_find = None
+        self._last_find = self._matches = None
+        self._next = 0
         offset = self._anchors[page].get(unquote(anchor), 0) if anchor else 0
+        if matches:
+            return self._matching_rows(query)
         if query:
             return self._find(query)
         return self._window(offset)
@@ -325,11 +343,12 @@ class Navigator:
     def _window(self, offset, error=None):
         rows, _ = self._load(self._page)
         self._view += 1
+        positions = self._matches if self._matches is not None else range(len(rows))
         ids, lines = [], []
         start = offset
         used = 0
-        while offset < len(rows) and error is None:
-            row = rows[offset]
+        while offset < len(positions) and error is None:
+            row = rows[positions[offset]]
             number = len(self._evidence) + 1
             line = f"[E{number}] {row.text}"
             if used + len(line) + 1 > self.window_chars - 60:
@@ -345,8 +364,9 @@ class Navigator:
             offset += 1
         if not error:
             self._next = offset
-        more = self._next < len(rows)
-        header = f"{self._page} rows {start + 1}–{offset}/{len(rows)}" if lines else self._page
+        more = self._next < len(positions)
+        label = "matches" if self._matches is not None else "rows"
+        header = f"{self._page} {label} {start + 1}–{offset}/{len(positions)}" if lines else self._page
         body = "".join("\n" + line for line in lines)
         if error:
             body += "\n" + error
@@ -358,10 +378,25 @@ class Navigator:
         text = header + body
         return {"text": text, "url": self._page, "more": more, "view": self._view, "evidence_ids": ids}
 
-    def _find(self, query):
+    @staticmethod
+    def _literal(query):
         if not isinstance(query, str) or not query.strip():
-            raise ValueError("Find requires a nonempty literal")
-        key = query.strip().casefold()
+            raise ValueError("Search requires a nonempty literal")
+        return query.strip().casefold()
+
+    def _matching_rows(self, query):
+        key = self._literal(query)
+        rows, _ = self._load(self._page)
+        self._matches = [i for i, row in enumerate(rows) if key in row.text.casefold()]
+        self._last_find = None
+        self._next = 0
+        return self._window(0, None if self._matches else "No literal matches in this document.")
+
+    def _find(self, query):
+        key = self._literal(query)
+        if self._matches is not None:
+            self._matches = None
+            self._next = 0
         offset = self._last_find[1] + 1 if self._last_find and self._last_find[0] == key else 0
         rows, _ = self._load(self._page)
         for i in range(offset, len(rows)):
@@ -378,7 +413,9 @@ class Navigator:
             link = action.get("link")
             if type(link) is not int or link not in self._visible:
                 raise ValueError("Open requires a link ID shown in a view")
-            return self._open(self._links[link], action.get("query"))
+            return self._open(self._links[link], action.get("query"), action.get("matches", False))
+        if kind == "matches":
+            return self._matching_rows(action.get("query"))
         if kind == "find":
             return self._find(action.get("query"))
         if kind == "next":
