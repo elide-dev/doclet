@@ -2,6 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 
 path = Path(__file__).resolve().parents[2] / "scripts/eval-browse.py"
@@ -77,6 +78,29 @@ class BrowseTests(unittest.TestCase):
         row, _ = self.trial([{"action":"open","link":1}], steps=0)
         self.assertEqual(row["stop"], "budget")
         self.assertEqual(row["fetches"], 1)
+
+    def test_outside_tool_ends_the_trial_preserving_cost_and_prior_evidence(self):
+        session = MockSession([])
+        with patch.object(session, "turn", side_effect=[
+                dict(answer='{"action":"open","link":1}', input_tokens=100, cached_input_tokens=40,
+                     output_tokens=5, wall_ms=12),
+                dict(unsupported_item_types=["mcp_tool_call"], input_tokens=200, cached_input_tokens=80,
+                     output_tokens=10, wall_ms=29)]) as turn:
+            row = browse.run_question(dict(self.case, answer=".*"), MockNavigation(), lambda _: session, len, 4)
+        self.assertEqual(turn.call_count, 2)
+        self.assertEqual((row["stop"], row["correct"], row["answer_match"]), ("out_of_browser_tool", False, False))
+        self.assertEqual(row["citations"], [])
+        self.assertEqual(row["first_evidence_after_actions"], 1)
+        self.assertEqual(row["trace"][0]["command"], {"action": "open", "link": 1})
+        last = row["trace"][1]
+        self.assertEqual(last["observation"]["evidence_ids"], [1])
+        self.assertEqual(last["unsupported_item_types"], ["mcp_tool_call"])
+        self.assertEqual(last["wall_ms"], 29)
+        for field in ("command", "reply", "commentary"):
+            self.assertNotIn(field, last)
+        metrics = browse.summarize([row])
+        self.assertEqual((metrics["questions"], metrics["model_turns"], metrics["navigation_actions"]), (1, 2, 1))
+        self.assertEqual((metrics["input_tokens"], metrics["cached_input_tokens"], metrics["output_tokens"]), (300, 120, 15))
 
     def test_first_emitted_valid_command_is_consistent_across_formats(self):
         result = {"commentary": ["Opening the index.", '{"action":"matches","query":"default"}'],

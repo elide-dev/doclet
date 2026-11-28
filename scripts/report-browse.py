@@ -84,6 +84,8 @@ def path_actions(row):
     for step in row["trace"]:
         cmd = step.get("command", {})
         act = cmd.get("action", "invalid")
+        if step.get("unsupported_item_types"):
+            act = "outside browser (" + ", ".join(step["unsupported_item_types"]) + ")"
         if act == "open":
             act += " L" + str(cmd["link"])
         if "query" in cmd:

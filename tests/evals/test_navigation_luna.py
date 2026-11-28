@@ -98,13 +98,33 @@ class LunaSessionTests(unittest.TestCase):
                     with LunaSession("Use supplied evidence") as reader:
                         reader.turn("Question")
 
-    def test_rejects_tool_assistance_and_cleans_owned_thread(self):
+    def test_tool_turn_is_charged_without_recording_any_of_its_content(self):
+        events = [json.loads(line) for line in response(420, 290, 17, commentary=["private commentary"]).stdout.splitlines()]
+        call = {"type": "mcp_tool_call", "arguments": {"value": "private argument"}, "result": "private result"}
+        for phase in ("started", "updated", "completed"):
+            events.insert(2, {"type": "item." + phase, "item": call})
+        tool_turn = subprocess.CompletedProcess([], 0, "\n".join(map(json.dumps, events)), "")
         with patch("eval_navigation_luna.subprocess.run", side_effect=[
-                response(extra_items=["command_execution"]), subprocess.CompletedProcess([], 0)]) as run:
-            with self.assertRaisesRegex(RuntimeError, "unsupported item types"):
+                response(), tool_turn, subprocess.CompletedProcess([], 0)]) as run:
+            with LunaSession("Use supplied evidence") as reader:
+                reader.turn("First")
+                result = reader.turn("Question")
+        self.assertEqual(result["unsupported_item_types"], ["mcp_tool_call"])
+        self.assertEqual((result["input_tokens"], result["cached_input_tokens"], result["output_tokens"]), (220, 190, 5))
+        self.assertGreaterEqual(result["wall_ms"], 0)
+        self.assertNotIn("private", json.dumps(result))
+        for key in ("answer", "commentary", "prompt"):
+            self.assertNotIn(key, result)
+        self.assertEqual(run.call_args.args[0][-1], THREAD)
+
+    def test_tool_turn_with_missing_provider_usage_aborts(self):
+        events = [json.loads(line) for line in response(extra_items=["command_execution"]).stdout.splitlines()]
+        del events[-1]["usage"]["output_tokens"]
+        bad = subprocess.CompletedProcess([], 0, "\n".join(map(json.dumps, events)), "")
+        with patch("eval_navigation_luna.subprocess.run", side_effect=[bad, subprocess.CompletedProcess([], 0)]):
+            with self.assertRaisesRegex(RuntimeError, "output_tokens"):
                 with LunaSession("Use supplied evidence") as reader:
                     reader.turn("Question")
-        self.assertEqual(run.call_args.args[0][-1], THREAD)
 
     def test_refuses_to_follow_or_remove_another_session(self):
         with patch("eval_navigation_luna.subprocess.run", side_effect=[

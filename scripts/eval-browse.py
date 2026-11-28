@@ -95,10 +95,14 @@ def run_question(case, navigator, make_session, count_tokens, max_steps):
                        "Navigation budget reached. Answer now using displayed evidence or unknown.\n")
             prompt = prefix + observation["text"]
             result = session.turn(prompt)
-            step = dict(observation=observation, reply=result["answer"], commentary=result.get("commentary", []),
-                        observation_tokens=count_tokens(observation["text"]),
+            step = dict(observation=observation, observation_tokens=count_tokens(observation["text"]),
                         **{k: result[k] for k in ("input_tokens", "cached_input_tokens", "output_tokens", "wall_ms")})
             trace.append(step)
+            if result.get("unsupported_item_types"):
+                stop = "out_of_browser_tool"
+                step["unsupported_item_types"] = result["unsupported_item_types"]
+                break
+            step.update(reply=result["answer"], commentary=result.get("commentary", []))
             try:
                 command, step["channel"] = reader_command(result)
                 step["command"] = command
@@ -120,7 +124,8 @@ def run_question(case, navigator, make_session, count_tokens, max_steps):
     target = bool(citations) and all(matches_target(case, c) for c in citations)
     same_member = len({(c["path"], c["anchor"]) for c in citations}) == 1
     grounded = bool(target and same_member and supports(case, citations))
-    matched = all(re.search(p, answer, re.I) for p in [case["answer"], *case.get("answer_all", [])])
+    matched = stop != "out_of_browser_tool" and all(
+        re.search(p, answer, re.I) for p in [case["answer"], *case.get("answer_all", [])])
     return dict(question=case["question"], answer=answer, cite=cited_ids, citations=citations, stop=stop,
                 correct=bool(matched and grounded), answer_match=bool(matched),
                 target_cited=target and same_member, evidence_cited=grounded, first_evidence_after_actions=first_support,

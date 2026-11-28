@@ -88,41 +88,42 @@ class LunaSession:
         self._record_thread(starts[0])
         if proc.returncode:
             raise RuntimeError(f"Luna turn failed (Codex exit {proc.returncode}, events={counts})")
-        items = [event["item"] for event in events if event.get("type") in ("item.started", "item.completed")]
-        unexpected = {item["type"] for item in items} - {"agent_message", "reasoning"}
-        if unexpected:
-            raise RuntimeError(f"Excluded discovery turn with unsupported item types {sorted(unexpected)}")
-        messages = [event["item"] for event in events if event.get("type") == "item.completed"
-                    and event["item"]["type"] == "agent_message"]
         completed = [event.get("usage") for event in events if event.get("type") == "turn.completed"]
-        # The exec stream can emit several visible commentary messages before the answer.
-        # Versions which omit phase preserve chronological order in item.completed.
         if len(completed) != 1 or not isinstance(completed[0], dict):
             raise RuntimeError(f"Expected one completed Luna turn with usage (events={counts})")
-        answer = ""
-        commentary = messages
-        if messages and messages[-1].get("phase") != "commentary":
-            text = messages[-1].get("text", "")
-            answer = text if text.strip() else ""
-            commentary = messages[:-1]
         # Codex exec resume emits cumulative thread counters, including previous cached input.
         usage = completed[0]
         delta = {}
         for key in ("input_tokens", "cached_input_tokens", "output_tokens", "cache_write_input_tokens",
                     "reasoning_output_tokens"):
-            value = usage[key] if key in ("input_tokens", "output_tokens") else usage.get(key, 0)
+            value = usage.get(key) if key in ("input_tokens", "output_tokens") else usage.get(key, 0)
             if type(value) is not int or value < self.usage.get(key, 0):
                 raise RuntimeError(f"Invalid cumulative Codex usage for {key}")
             delta[key] = value - self.usage.get(key, 0)
         if delta["input_tokens"] < delta["cached_input_tokens"] or delta["input_tokens"] == 0:
             raise RuntimeError("Invalid per-turn input token counters")
         self.usage = usage
-        return dict(prompt=prompt, answer=answer, empty_reply=not answer,
-                    commentary=[message["text"] for message in commentary], model=MODEL, effort=EFFORT,
-                    input_tokens=delta["input_tokens"], cached_input_tokens=delta["cached_input_tokens"],
+        cost = dict(model=MODEL, effort=EFFORT, input_tokens=delta["input_tokens"], cached_input_tokens=delta["cached_input_tokens"],
                     output_tokens=delta["output_tokens"], cache_write_tokens=delta["cache_write_input_tokens"],
-                    reasoning_output_tokens=delta["reasoning_output_tokens"],
-                    wall_ms=wall_ms)
+                    reasoning_output_tokens=delta["reasoning_output_tokens"], wall_ms=wall_ms)
+        item_types = {event["item"]["type"] for event in events
+                      if event.get("type") in ("item.started", "item.updated", "item.completed")}
+        unexpected = item_types - {"agent_message", "reasoning"}
+        if unexpected:
+            # Wait for the CLI's completed-turn counters, but expose none of this turn's content.
+            return dict(**cost, unsupported_item_types=sorted(unexpected))
+
+        messages = [event["item"] for event in events if event.get("type") == "item.completed"
+                    and event["item"]["type"] == "agent_message"]
+        answer = ""
+        commentary = messages
+        # A CLI without phase information preserves emission order in item.completed.
+        if messages and messages[-1].get("phase") != "commentary":
+            text = messages[-1].get("text", "")
+            answer = text if text.strip() else ""
+            commentary = messages[:-1]
+        return dict(**cost, prompt=prompt, answer=answer, empty_reply=not answer,
+                    commentary=[message["text"] for message in commentary])
 
     def _record_thread(self, thread_id):
         if not isinstance(thread_id, str) or str(uuid.UUID(thread_id)) != thread_id:
