@@ -106,6 +106,8 @@ def load_run(path, pair, reviews):
         group = rows[route].values()
         applied = [corrections[(route, q)] for q in questions if (route, q) in corrections]
         totals = {key: sum(r[key] for r in group) for key in COSTS}
+        totals["wall_ms"] = round(totals["wall_ms"], 3)
+        totals["total_model_tokens"] = totals["input_tokens"] + totals["output_tokens"]
         totals.update(route=route, frozen_correct=sum(r["correct"] for r in group), reviews=applied,
                       correct=sum(corrections.get((route, r["question"]), r)["correct"] for r in group))
         report[label] = totals
@@ -126,12 +128,18 @@ def load_run(path, pair, reviews):
     return report, questions, ratio
 
 
-def compare(paths, pairs, reviews):
+def compare(paths, pairs, reviews, fixture=None):
     runs, ratios = [], []
     hashes = set()
     questions = None
+    if fixture is not None:
+        data = fixture.read_bytes()
+        fixture_hash = sha256(data).hexdigest()
+        expected_questions = [case["question"] for case in json.loads(data)]
     for path, pair in zip(paths, pairs, strict=True):
         report, current, ratio = load_run(path, pair, reviews)
+        if fixture is not None and (report["policy"]["fixtures"] != fixture_hash or current != expected_questions):
+            raise ValueError(f"{path.name}: report does not cover the exact frozen fixture")
         if report["sha256"] in hashes:
             raise ValueError("A repeated file does not count as an independent run")
         if runs and (report["policy"] != runs[0]["policy"] or current != questions):
@@ -155,6 +163,7 @@ def main():
     parser.add_argument("--pair", action="append", metavar="BASELINE:CANDIDATE",
                         help="Override route names once per report")
     parser.add_argument("--reviews", type=Path)
+    parser.add_argument("--questions", type=Path, help="Verify complete coverage against the frozen question file")
     parser.add_argument("--require-all", action="store_true", help="Require a strict win on every axis in every run")
     parser.add_argument("--min-efficiency", type=float, help="Require this grounded-answers/token ratio in every run")
     args = parser.parse_args()
@@ -165,7 +174,7 @@ def main():
     if len(pairs) != len(args.reports) or any(len(pair) != 2 or not all(pair) for pair in pairs):
         parser.error("Supply one BASELINE:CANDIDATE pair per report")
     try:
-        result, ratios = compare(args.reports, pairs, load_reviews(args.reviews))
+        result, ratios = compare(args.reports, pairs, load_reviews(args.reviews), args.questions)
     except (OSError, ValueError) as error:
         parser.error(str(error))
     print(json.dumps(result, indent=2, allow_nan=False))

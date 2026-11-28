@@ -91,7 +91,8 @@ To check a performance claim locally, compare compatible paired reports. The gat
 ```sh
 python3 scripts/eval-compare.py docs/climb/runs/030-jcommander-blind.json \
   docs/climb/runs/031-jcommander-repeat.json --baseline javadoc-adaptive --candidate scoped \
-  --reviews docs/climb/reviews.json --require-all --min-efficiency 5
+  --questions samples/evals/jcommander/questions.json --reviews docs/climb/reviews.json \
+  --require-all --min-efficiency 5
 ```
 
 ## 2026-11-27 · Separating index discovery from Markdown layout

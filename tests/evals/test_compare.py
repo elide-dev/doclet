@@ -79,3 +79,11 @@ class ComparisonTest(unittest.TestCase):
                                        capture_output=True).returncode, 0)
         self.assertEqual(subprocess.run([*cmd, "--min-efficiency", "10"],
                                        capture_output=True).returncode, 1)
+
+
+    def test_fixture_requires_complete_question_coverage(self):
+        fixture = self.folder / "questions.json"
+        fixture.write_text(json.dumps([{"question": value} for value in ("first?", "second?", "third?")]))
+        run = self.record("run.json", fixtures=sha256(fixture.read_bytes()).hexdigest())
+        with self.assertRaisesRegex(ValueError, "exact frozen fixture"):
+            COMPARE.compare([run], [("jdk", "api")], {}, fixture)
