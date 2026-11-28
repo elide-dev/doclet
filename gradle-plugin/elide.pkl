@@ -3,7 +3,7 @@ amends "elide:project.pkl"
 import "elide:Jvm.pkl" as Jvm
 
 name = "elide-doclet-gradle-plugin"
-version = "0.3.0" // x-release-please-version
+version = "0.4.0" // x-release-please-version
 local core = project("elide-doclet")
 
 jvm { java { release = 17 } }

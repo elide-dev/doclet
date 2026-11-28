@@ -3,7 +3,7 @@
   <description>Generate API documentation with the Elide doclet.</description>
   <groupId>dev.elide</groupId>
   <artifactId>elide-doclet-maven-plugin</artifactId>
-  <version>0.3.0</version><!-- x-release-please-version -->
+  <version>0.4.0</version><!-- x-release-please-version -->
   <goalPrefix>elide-doclet</goalPrefix>
   <mojos>
     <mojo>

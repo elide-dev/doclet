@@ -64,7 +64,7 @@ Apply the plugin in `build.gradle.kts` and run `./gradlew javadoc`. The plugin c
 ```kotlin
 plugins {
     java
-    id("dev.elide.doclet") version "0.3.0" // x-release-please-version
+    id("dev.elide.doclet") version "0.4.0" // x-release-please-version
 }
 ```
 
@@ -84,7 +84,7 @@ Add the repository and plugin to the consuming POM, then run `mvn elide-doclet:j
     <plugin>
       <groupId>dev.elide</groupId>
       <artifactId>elide-doclet-maven-plugin</artifactId>
-      <version>0.3.0</version><!-- x-release-please-version -->
+      <version>0.4.0</version><!-- x-release-please-version -->
     </plugin>
   </plugins>
 </build>
