@@ -136,6 +136,11 @@ class Navigator:
             return (" " + content + " ") if node.tag in BLOCK else content
 
         def destination(node):
+            # The JDK deprecated list marks the name cell instead of its link.
+            if "col-summary-item-name" in node.get("class", "").split():
+                name = node.find("a")
+                if name is not None:
+                    return _resolve(page, name.get("href"))
             link = next((a for a in node.iter("a") if "member-name-link" in a.get("class", "").split()
                          or "type-name-link" in a.get("class", "").split()), None)
             return _resolve(page, link.get("href")) if link is not None else None
@@ -192,7 +197,7 @@ class Navigator:
         return redirect
 
     def _text(self, page, body, emit, mark):
-        base = target = page
+        source_page = target = page
         fenced = None
         bundle = PurePosixPath(page).name == "llms-full.txt"
         for line in body.splitlines():
@@ -216,24 +221,23 @@ class Navigator:
                 emit(line, target)
                 continue
             if bundle and (marker := re.fullmatch(r"<!--\s*(.*?)\s*-->", line.strip())):
-                # The renderer publishes the source path at each document boundary.
-                # Relative links retain the meaning they had in the original file.
+                # Source comments describe citation provenance. Links resolve from the fetched URL.
                 source = marker[1]
-                if source.endswith(".md"):
+                if source.endswith((".md", ".html")):
                     path = urlsplit(source)
                     parts = PurePosixPath(unquote(path.path))
                     valid = (not path.scheme and not path.netloc and not path.query and not path.fragment
                              and not parts.is_absolute() and ".." not in parts.parts)
-                    base = (_resolve(page, source) if valid else None) or page
-                    target = base
-                emit(line, base)
+                    source_page = (_resolve(page, source) if valid else None) or page
+                    target = source_page
+                emit(line, source_page)
                 continue
             if line.startswith("#"):
-                target = base
+                target = source_page
             anchor = MD_ID.search(line)
             if anchor:
                 mark(unescape(anchor[1]))
-                target = base + "#" + quote(unescape(anchor[1]))
+                target = source_page + "#" + quote(unescape(anchor[1]))
                 emit("#" + unescape(anchor[1]), target)
                 continue
             links = []
@@ -241,7 +245,7 @@ class Navigator:
 
             def replace(match):
                 href = match["angle"] or match["bare"]
-                marker, number = self._link(base, href)
+                marker, number = self._link(page, href)
                 if number:
                     links.append(number)
                     targets.append(self._links[number])
@@ -249,7 +253,7 @@ class Navigator:
                 return match[0]
 
             shown = MD_LINK.sub(replace, line)
-            pointer = targets[0] if target == base and line.lstrip().startswith(("- [", "* [")) and targets else target
+            pointer = targets[0] if target == source_page and line.lstrip().startswith(("- [", "* [")) and targets else target
             emit(shown, pointer, links)
 
     def _js(self, page, body, emit):
