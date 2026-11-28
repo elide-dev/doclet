@@ -87,6 +87,8 @@ def main():
     p.add_argument("--chars", type=int, default=600, help="Same maximum excerpt characters for every arm")
     p.add_argument("--alternatives", type=int, choices=(1, 2, 3), default=1,
                    help="Allow the reader to choose a cited declaration within the same evidence budget")
+    p.add_argument("--identifier-ids", action="store_true",
+                   help="Ask for just the citation number on declaration-name lookups")
     p.add_argument("--cited", action="store_true", help="Try additional verbatim documented facts before Luna in every arm")
     p.add_argument("--offline", action="store_true")
     args = p.parse_args()
@@ -99,8 +101,10 @@ def main():
         from eval_cited import extract_cited_answer
     if args.alternatives > 1:
         from eval_packet import packet_prompt, parse_packet_reply
+    if args.identifier_ids:
+        from eval_packet import identifier_prompt, parse_identifier_reply
     report = dict(model="gpt-6-luna", effort="low", offline=args.offline, cited=args.cited,
-                  alternatives=args.alternatives,
+                  alternatives=args.alternatives, identifier_ids=args.identifier_ids,
                   revision=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
                   fixtures=sha256(args.questions.read_bytes()).hexdigest(), excerpt_chars=args.chars,
                   entry="index.html", tokenizer="o200k_base", routes=arms, order_offset=args.offset,
@@ -133,6 +137,11 @@ def main():
                                 **({"alternatives": args.alternatives} if args.alternatives > 1 else {}))
                 candidates = outcome.get("candidates", [])
                 multiple = len(candidates) > 1
+                citation_prompt = None
+                if args.identifier_ids and outcome["page"]:
+                    if not candidates:
+                        candidates = [{key: outcome[key] for key in ("page", "path", "anchor", "excerpt")}]
+                    citation_prompt = identifier_prompt(case["question"], candidates)
                 if args.cited and not multiple and outcome["page"] and not outcome["extraction"]:
                     hit = extract_cited_answer(case["question"], outcome["excerpt"], outcome["page"])
                     if hit:
@@ -155,18 +164,22 @@ def main():
                 elif not row["excerpt"].strip():
                     row["answer"] = "unknown"
                 elif not args.offline:
-                    prompt = (packet_prompt(case["question"], candidates) if multiple else
+                    prompt = citation_prompt or (packet_prompt(case["question"], candidates) if multiple else
                               "Answer with the shortest correct identifier or phrase. No explanation. "
                               f"If unknown: unknown.\n{case['question']}\n{row['excerpt']}")
                     start = perf_counter()
                     row.update(read_answer("codex", "gpt-6-luna", prompt, "low"), model_called=True)
                     model_ms = (perf_counter() - start) * 1000
-                if multiple:
+                used_id = bool(citation_prompt and row["model_called"])
+                if args.identifier_ids:
+                    row["id_reply"] = used_id
+                if multiple or used_id:
                     row["packet"] = row["excerpt"]
                     row["raw_answer"] = row["answer"]
                     selected = None
                     if row["answer"] is not None:
-                        selected, row["answer"] = parse_packet_reply(row["answer"], candidates)
+                        parse = parse_identifier_reply if used_id else parse_packet_reply
+                        selected, row["answer"] = parse(row["answer"], candidates)
                     for key in ("page", "path", "anchor", "excerpt"):
                         row[key] = selected[key] if selected else ("" if key == "excerpt" else None)
                 row["wall_ms"] = round(lookup_ms + model_ms, 3)
