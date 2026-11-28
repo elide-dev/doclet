@@ -10,12 +10,14 @@ import stylelint from "stylelint";
 import { chromium } from "playwright-core";
 import lighthouse from "lighthouse";
 import { launch } from "chrome-launcher";
+import { checkBundleLinks } from "./bundle-links.mjs";
 
 const root = path.resolve(".dev/pages");
 const reports = path.resolve(".dev/quality");
 fs.mkdirSync(reports, { recursive: true });
 const local = (file) => fileURLToPath(new URL(file, import.meta.url));
 const configFile = local("./good-css.json");
+checkBundleLinks(path.join(root, "catalog/latest"));
 async function css(code, codeFilename) {
   const result = await stylelint.lint({ code, codeFilename, configFile });
   assert.ok(!result.errored, result.report);
