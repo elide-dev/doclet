@@ -84,6 +84,19 @@ python3 scripts/report-browse.py docs/climb/runs/035-commonmark-navigation.json 
 
 Run 033 dispatched commands from the final response only. Runs 034–038 used the first syntactically valid command emitted in chronological order, including a command in commentary. The selection rule never consulted the fixture. Run 033 also lost declaration provenance in the aggregate file. In runs 034–037 the static browser used filenames in `llms-full.txt` source comments as link bases. A regular Markdown client resolves links relative to the file it fetched. Offline replay confirmed every displayed view, final citation and file read in runs 034–037 (49 sessions, 205 views, 139 fetches). One failed trial in run 036 followed a fragment to a different file under the old rule. Every reviewed pass was independent of this discrepancy. Run 038 uses regular URL resolution for all three sites. Its Javadoc reader also preserves the member linked by native deprecated-list summary rows.
 
+## Isolating the type-directory hint
+
+Run 039 uses the same `indexed` Codec snapshot as 038. To build its second arm, copy that directory to `.dev/discovery-typed/codec`. Change only the following strings, once each.
+
+| File | Location | Original text | Trial text |
+| --- | --- | --- | --- |
+| `index.html` | `title` of the HTML head’s Markdown alternate for `index.md` | This page as Markdown | Module type directory in Markdown. Find the named type and open its page. |
+| `llms.txt` | Description after the overview link `[⬢ commons-codec](index.md)` | packages and types | type directory. Find the named type, open its page, and match the member signature. |
+
+Run the reader at `e645538` with `--cases 5 8 10 --offset 1`, the Codec questions, and sites `indexed=.dev/discovery-indexed/codec` and `typed=.dev/discovery-typed/codec`. The files grew by 52 and 65 bytes, respectively. All 256 other files have identical SHA-256 hashes.
+
+In 038, those three named-owner questions took 1,922,658 bytes on the indexed site. The module HTML, the advertised `index.md` and the three type pages would cost 305,250 bytes when charged cold for each question. Each full member section contains all facts required by its question. This is the size of an available route. The trace records the route Luna actually chose. Stock Javadoc fetched 184,476 bytes for these three questions. On the entire five-question run its entry HTML cost 26,365 bytes across five cold reads, versus 347,735 for the generated module HTML.
+
 ## Completed navigation runs
 
 Visible tokens count the exact documentation views Luna received, including repeated views. Provider input also includes prior conversation, instructions and cached tokens. The efficiency column counts reviewed grounded answers per 100,000 provider input plus output tokens. Each trial starts cold. Wall seconds are summed across trials. The reports also list cold bytes, cache hits, and costs on questions answered correctly by every arm.
@@ -107,3 +120,5 @@ Visible tokens count the exact documentation views Luna received, including repe
 | [038](runs/038-codec-indexed.json) | javadoc | 3/5 | 3/5 | 29 | 10,745 | 478,254 | 1,540 | 135.4 | 0.63 |
 | [038](runs/038-codec-indexed.json) | fixed | 2/5 | 2/5 | 21 | 8,530 | 252,521 | 1,144 | 91.7 | 0.79 |
 | [038](runs/038-codec-indexed.json) | indexed | 4/5 | 4/5 | 23 | 7,440 | 301,289 | 1,056 | 92.8 | 1.32 |
+| [039](runs/039-codec-type-route.json) | indexed | 2/3 | 2/3 | 13 | 4,891 | 171,902 | 736 | 53.5 | 1.16 |
+| [039](runs/039-codec-type-route.json) | typed | 2/3 | 2/3 | 14 | 5,843 | 272,883 | 741 | 64.4 | 0.73 |
