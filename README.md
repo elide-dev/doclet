@@ -18,7 +18,14 @@ Besides the HTML pages, a site has a Markdown twin of every page, `llms.txt` and
 
 Each HTML page advertises its Markdown twin with one `rel="alternate" type="text/markdown"` link. Clients can also discover the alphabetical index, `llms.txt`, and the declaration contracts from the HTML head without running scripts.
 
-API modules also publish `contracts.ndjson` alongside `llms.txt`. Each JSON line carries one type or member declaration with its canonical HTML link, signature, summary, and documented parameter, return, exception, and deprecation fields. For example, to inspect every overload of a method locally, run `jq -c 'select(.name == "prepare") | {href, signature, returns, throws}' contracts.ndjson`. The link distinguishes overloads and leads to the full documentation. When supplementary prose exceeds the compact record’s limit, `detailsOmitted: true` signals that the reader should open the exact member section. Its Markdown twin carries the same anchor. `--no-llms` disables this index along with the other agent outputs.
+API modules publish `contracts.ndjson` alongside `llms.txt`. Each JSON line has a qualified `symbol`, the declaration’s `signature` and canonical HTML `href`, plus its documented summary, parameters, return value, exceptions and deprecation details. Search for `Type.member` to see the overloads with their contracts, or match a complete symbol for a specific lookup.
+
+```sh
+jq -c 'select(.symbol | contains("BuildStep.prepare(")) | {symbol, href, signature}' contracts.ndjson
+jq -c 'select(.symbol == "example.runtime.BuildPlan.defaults(String)")' contracts.ndjson
+```
+
+Lookup symbols use compact parameter types. Two overloads can share a display spelling when parameter types come from different packages. The canonical `href` identifies each overload and carries the same fragment as its Markdown twin. When a record has `detailsOmitted: true`, open that fragment for the full prose. `--no-llms` disables the declaration index along with the other agent outputs.
 
 From this checkout, use the same links to look up a declaration from a generated site. The reader reports a matching answer with its supporting clause when available, plus the selected declaration and excerpt.
 

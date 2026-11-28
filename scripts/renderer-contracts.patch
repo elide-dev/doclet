@@ -1,5 +1,5 @@
 diff --git a/packages/apidocs/src/components/chrome.tsx b/packages/apidocs/src/components/chrome.tsx
-index 3196bcb..44156c7 100644
+index 3196bcb..9597c5d 100644
 --- a/packages/apidocs/src/components/chrome.tsx
 +++ b/packages/apidocs/src/components/chrome.tsx
 @@ -11,7 +11,7 @@ import { createContext, Fragment, type ComponentChildren } from "preact";
@@ -41,8 +41,11 @@ index 3196bcb..44156c7 100644
                ...(formats.model ? [{ "@type": "Dataset", name: "api.json", description: "The apidocs/1 model of the module.", encodingFormat: "application/json", url: formats.model }] : []),
              ],
            }]
-@@ -300,12 +303,16 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
+@@ -298,14 +301,18 @@ export function headData(ctx: PageContext, props: Pick<ShellProps, "title" | "de
+   // The same content for programs and AI agents: this page as Markdown, the index, the whole reference, the model.
+   const links: HeadData["links"] = [
      ...(has.markdown ? [{ rel: "alternate", type: "text/markdown", href: `${name}.md`, title: "This page as Markdown" }] : []),
++    ...(formats.contracts ? [{ rel: "describedby", type: "application/x-ndjson", href: `${root}contracts.ndjson`, title: "Find API contracts by Type.member or keyword. Each line links to its exact declaration." }] : []),
      ...(has.llms
        ? [
 -          { rel: "alternate", type: "text/markdown", href: `${root}llms.txt`, title: "llms.txt: index of every page, as Markdown links" },
@@ -53,7 +56,6 @@ index 3196bcb..44156c7 100644
        : []),
 -    ...(has.model ? [{ rel: "alternate", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
 -    { rel: "index", href: `${root}index.html`, title: `${product} API reference` },
-+    ...(formats.contracts ? [{ rel: "describedby", type: "application/x-ndjson", href: `${root}contracts.ndjson`, title: "Declaration contracts" }] : []),
 +    ...(has.model ? [{ rel: "describedby", type: "application/json", href: `${root}api.json`, title: "api.json: the apidocs/1 model of this module" }] : []),
 +    ...(indexPages(site).some(entry => entry.page === INDEX_ALL_PAGE)
 +      ? [{ rel: "index", type: has.markdown ? "text/markdown" : "text/html",
@@ -85,18 +87,18 @@ index 6f89168..ab09905 100644
  /** The optional files a site has besides its HTML pages. */
 diff --git a/packages/apidocs/src/contracts.ts b/packages/apidocs/src/contracts.ts
 new file mode 100644
-index 0000000..e6af17d
+index 0000000..c8c3424
 --- /dev/null
 +++ b/packages/apidocs/src/contracts.ts
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,50 @@
 +// Streamable member lookups for clients that need only one declaration or contract.
 +import type { Member, Type } from "./model";
 +import { INDEX, resolve, type Site, tokenText } from "./site";
-+import { blockText, summaryText } from "./structure";
++import { blockText, memberTitle, summaryText } from "./structure";
 +
 +export function declarationContracts(site: Site): string {
 +  const lines: string[] = [];
-+  function declaration(m: Member | Type) {
++  function declaration(m: Member | Type, symbol: string) {
 +    const href = resolve(site, INDEX, ".html", m.id);
 +    if (!href) return;
 +    const summary = summaryText(m.doc);
@@ -104,14 +106,17 @@ index 0000000..e6af17d
 +    const prose = blockText(m.doc?.body).replace(/\s+/g, " ").trim();
 +    const details = prose.startsWith(summary) ? prose.slice(summary.length).trim() : prose;
 +    return {
-+      href, name: m.name, kind: m.kind, signature: tokenText(m.signature),
++      symbol, href, name: m.name, kind: m.kind, signature: tokenText(m.signature),
 +      summary: summary || undefined, details: details && details.length <= 512 ? details : undefined,
 +      detailsOmitted: details.length > 512 || undefined,
 +      deprecated: m.deprecated && { since: m.deprecated.since, doc: blockText(m.deprecated.doc) || undefined },
 +    };
 +  }
-+  function add(m: Member) {
-+    const header = declaration(m);
++  function add(m: Member, owner: string) {
++    const title = memberTitle(m, true);
++    // Constructors use the type's name; their canonical href still carries <init>.
++    const symbol = m.kind === "constructor" ? owner + title.slice(title.indexOf("(")) : [owner, title].filter(Boolean).join(".");
++    const header = declaration(m, symbol);
 +    if (!header) return;
 +    lines.push(JSON.stringify({
 +      ...header,
@@ -126,11 +131,12 @@ index 0000000..e6af17d
 +    }));
 +  }
 +  for (const pkg of site.packages) {
-+    for (const m of [...pkg.functions ?? [], ...pkg.properties ?? []]) add(m);
++    for (const m of [...pkg.functions ?? [], ...pkg.properties ?? []]) add(m, pkg.name);
 +    for (const type of pkg.types ?? []) {
-+      const header = declaration(type);
++      const owner = [pkg.name, type.name].filter(Boolean).join(".");
++      const header = declaration(type, owner);
 +      if (header) lines.push(JSON.stringify(header));
-+      for (const m of type.members ?? []) add(m);
++      for (const m of type.members ?? []) add(m, owner);
 +    }
 +  }
 +  return lines.length ? lines.join("\n") + "\n" : "";
@@ -208,7 +214,7 @@ index 91730b8..d360e4b 100644
      facts.join(" "),
      deprecation(md, member.deprecated),
 diff --git a/packages/apidocs/src/render.tsx b/packages/apidocs/src/render.tsx
-index ba0a8eb..f86c6b9 100644
+index ba0a8eb..59b0ed4 100644
 --- a/packages/apidocs/src/render.tsx
 +++ b/packages/apidocs/src/render.tsx
 @@ -5,11 +5,12 @@
@@ -268,11 +274,25 @@ index ba0a8eb..f86c6b9 100644
    // Without Markdown twins, the entries are the HTML pages.
    const ext = outputs.markdown ? ".md" : ".html";
    const m = site.model.module;
-@@ -187,6 +190,7 @@ function llms(site: Site, pages: ListedPage[], guides: ListedPage[], symbols: Sy
+@@ -185,6 +188,7 @@ function llms(site: Site, pages: ListedPage[], guides: ListedPage[], symbols: Sy
+   lines.push("## When to use this", "", whenToUse?.trim() || `Use this ${what} when you write, read or review code that uses ${md(m.name)}${m.version ? ` ${md(m.version)}` : ""}.${summary ? ` ${md(summary)}` : ""}`, "");
+   lines.push(
      "## Overview", "",
++    ...(hasContracts ? ["- [API lookup](contracts.ndjson): find `Type.member` or a keyword. Each line has a qualified symbol, documented contract fields, and the declaration’s exact href. Compare signatures for overloads."] : []),
      `- [${withSym(symbols, "module", md(m.name))}](index${ext}): ${guidesOnly ? "the overview" : "packages and types"}`,
      "- [llms-full.txt](llms-full.txt): every page in one file",
-+    ...(hasContracts ? ["- [Declaration contracts](contracts.ndjson): filter JSON lines by name or href for a declaration, its parameters, return value, exceptions, or replacement."] : []),
      ...(outputs.model ? ["- [api.json](api.json): the apidocs/1 model"] : []),
-     "",
-   );
+diff --git a/packages/apidocs/src/structure.ts b/packages/apidocs/src/structure.ts
+index 97eb4db..29fc65c 100644
+--- a/packages/apidocs/src/structure.ts
++++ b/packages/apidocs/src/structure.ts
+@@ -225,3 +225,3 @@ export function optionalEnd(tokens: Token[], i: number): number | undefined {
+ /** A member's title: its name, with compact parameter types for callables so overloads differ ("read(InputStream)"). */
+-export function memberTitle(member: Member): string {
++export function memberTitle(member: Member, allParameters = false): string {
+   const receiver = member.receiver ? `${tokenText(compactTokens(member.receiver.type))}.` : "";
+@@ -229,3 +229,3 @@ export function memberTitle(member: Member): string {
+   const params = (member.params ?? []).map(p => tokenText(compactTokens(p.type)).trim());
+-  const shown = params.length > 3 ? [...params.slice(0, 2), "\u2026"] : params;
++  const shown = !allParameters && params.length > 3 ? [...params.slice(0, 2), "\u2026"] : params;
+   return `${receiver}${member.name}(${shown.join(", ")})`;

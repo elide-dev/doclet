@@ -5,7 +5,13 @@ jar=doclet/.dev/artifacts/jar/elide-doclet/elide-doclet.jar
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-echo '/** Example API. Named &ouml; and &uuml;, numeric &#x1F642; and &#128578;. */ public class Example {}' > "$work/Example.java"
+cat > "$work/Example.java" <<'EOF'
+/** Example API. Named &ouml; and &uuml;, numeric &#x1F642; and &#128578;. */
+public class Example {
+    public void select(int a, int b, int c, java.util.Date date) {}
+    public void select(int a, int b, int c, java.sql.Date date) {}
+}
+EOF
 javadoc -quiet -d "$work/docs" -doclet dev.elide.doclet.ElideDoclet \
     -docletpath "$jar" "$work/Example.java"
 test -s "$work/docs/index.html"
@@ -13,6 +19,17 @@ grep -Fq 'Example API. Named ö and ü, numeric 🙂 and 🙂.' "$work/docs/defa
 test -s "$work/docs/api.json"
 test -s "$work/docs/assets/apidocs.css"
 test -s "$work/docs/assets/apidocs.js"
+python3 - "$work/docs/contracts.ndjson" <<'PY'
+import json, sys
+from pathlib import Path
+
+rows = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
+overloads = [row for row in rows if row["symbol"] == "Example.select(int, int, int, Date)"]
+assert {row["href"] for row in overloads} == {
+    "default-package/Example.html#select(int,int,int,java.sql.Date)",
+    "default-package/Example.html#select(int,int,int,java.util.Date)",
+}
+PY
 
 echo '/** Unknown &docletTestUnknown;. */ public class Invalid {}' > "$work/Invalid.java"
 if javadoc -quiet -d "$work/invalid-entity" -doclet dev.elide.doclet.ElideDoclet \

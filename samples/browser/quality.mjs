@@ -58,6 +58,22 @@ try {
       assert.equal(response.status, 200);
       assert.match(response.headers.get("content-type"), /ndjson/);
       const records = (await response.text()).trim().split("\n").map(JSON.parse);
+      const lookups = resource === java
+        ? [
+            ["example.runtime.BuildPlan.defaults(String)", "example/runtime/BuildPlan.html#defaults(java.lang.String)"],
+            ["example.runtime.Planner.Options.Detail", "example/runtime/Planner.Options.Detail.html"],
+          ]
+        : [
+            ["example.Greeter(String)", "example/Greeter.html#<init>(kotlin.String)"],
+            ["example.Greeter.greet()", "example/Greeter.html#greet()"],
+            ["example.Greeter.name", "example/Greeter.html#name"],
+          ];
+      for (const [symbol, target] of lookups) {
+        assert.ok(records.some(record => record.symbol === symbol &&
+          decodeURIComponent(record.href) === target), symbol);
+      }
+      assert.match(await page.locator('link[type="application/x-ndjson"]').getAttribute("title"), /Type\.member/);
+      assert.match(await (await fetch(new URL("llms.txt", module))).text(), /Type\.member/);
       const anchors = await page.locator("[id]").evaluateAll(nodes => nodes.map(node => node.id));
       const members = records.filter(record => new URL(record.href, module).pathname === new URL(page.url()).pathname);
       assert.ok(members.some(record => !new URL(record.href, module).hash));
