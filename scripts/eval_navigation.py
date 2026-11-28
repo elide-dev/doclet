@@ -16,7 +16,11 @@ from eval_discovery import Tree
 ORIGIN = "https://static.invalid/"
 BLOCK = set("address article aside blockquote body dd details div dl dt footer h1 h2 h3 h4 h5 h6 header html li main nav ol p pre section table tbody td th thead tr ul".split())
 HIDDEN = {"script", "style", "template", "svg", "noscript"}
-MD_LINK = re.compile(r"\[([^\]\n]*)\]\((<?((?:[^()\s<>]|\([^()\n]*\))+)>?)(?:\s+\"[^\"]*\")?\)")
+# Java signatures inside code-span link labels can contain literal brackets.
+MD_LINK = re.compile(
+    r'\[(?:\\.| `+[^`\n]*`+ | \[[^\]\n]*\] | [^\[\]`\\\n])*\]'
+    r'\((?:<(?P<angle>[^>\n]+)>|(?P<bare>(?:[^()\s<>]|\([^()\n]*\))+))'
+    r'(?:\s+"[^"]*")?\)', re.X)
 MD_ID = re.compile(r'<a\s+(?:name|id)="([^"]+)"\s*>\s*</a>', re.I)
 
 
@@ -37,8 +41,10 @@ def _resolve(page, href):
     base = urljoin(ORIGIN, page)
     url = urljoin(base, href)
     parts = urlsplit(url)
-    if parts.scheme != "https" or parts.netloc != "static.invalid" or parts.query:
+    if parts.scheme != "https" or parts.netloc != "static.invalid":
         return None
+    # The static server resolves resources by path. Query parameters do not
+    # change file contents; their original spelling remains visible in the link.
     path = unquote(parts.path.lstrip("/"))
     if "\\" in path or "\x00" in path or path.startswith("/") or ".." in PurePosixPath(path).parts:
         return None
@@ -234,7 +240,7 @@ class Navigator:
             targets = []
 
             def replace(match):
-                href = match[3]
+                href = match["angle"] or match["bare"]
                 marker, number = self._link(base, href)
                 if number:
                     links.append(number)

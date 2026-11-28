@@ -138,6 +138,22 @@ The second result. See [Local](Local.md).
         self.assertEqual(local["url"], "b/Local.md")
         self.assertEqual(len(nav.requests), 3)
 
+    def test_array_code_labels_and_anchored_query_urls_resolve_from_markdown_and_bundle(self):
+        self.write("index.html", self.html('<a href="pkg/Guide.md">Guide</a><a href="llms-full.txt">Bundle</a>'))
+        link = '- [`read(byte[][], int[])`](Reader.md?mode=api#read%28byte%5B%5D%5B%5D%2Cint%5B%5D%29): Reads arrays.'
+        self.write("pkg/Guide.md", link)
+        self.write("llms-full.txt", "<!-- pkg/Guide.md -->\n" + link)
+        self.write("pkg/Reader.md", '<a id="read(byte[][],int[])"></a>\nContract for these arrays.')
+        nav = Navigator(self.root)
+        home = nav.start()
+        for label in ["Guide", "Bundle"]:
+            view = nav.act(dict(action="open", link=self.link(home, label), query="Reads arrays"))
+            self.assertIn(link, view["text"].replace(f" [L{self.link(view, 'Reads arrays')}]", ""))
+            cite = nav.citation(view["evidence_ids"][0])
+            self.assertEqual((cite["path"], cite["anchor"]), ("pkg/Reader", "read(byte[][],int[])"))
+            detail = nav.act(dict(action="open", link=self.link(view, "Reads arrays")))
+            self.assertIn("Contract for these arrays", detail["text"])
+
     def test_invalid_or_fenced_bundle_markers_do_not_establish_external_provenance(self):
         self.write("index.html", self.html('<a href="llms-full.txt">Bundle</a>'))
         self.write("llms-full.txt", """<!-- allowed/Thing.md -->
