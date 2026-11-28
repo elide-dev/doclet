@@ -34,5 +34,62 @@
       "reason": "The reply names expandAtSign and cites the Boolean overload. Its parameter explicitly controls whether to expand @file, which supports disabling expansion.",
       "report": "031-jcommander-repeat.json"
     }
+  ],
+  "5ac461fe094a0c4d9d7165092d299998cc3e66b69048f05d3c742c9a3d8fe846": [
+    {
+      "route": "published",
+      "question": "Which builder method disables treating an @file argument as a file of command-line options?",
+      "correct": true,
+      "reason": "E54 on the JCommander.Builder Markdown page names expandAtSign(Boolean) and says it disables @file expansion. The summary has no member link.",
+      "report": "033-jcommander-navigation.json"
+    },
+    {
+      "route": "published",
+      "question": "What does JCommander.getMainParameterValue() return when no main parameter is defined?",
+      "correct": true,
+      "reason": "E82 gives the null return condition under the displayed getMainParameterValue() declaration. Its published bundle section belongs to JCommander, but the frozen browser recorded the bundle filename as the owner.",
+      "report": "033-jcommander-navigation.json"
+    },
+    {
+      "route": "published",
+      "question": "What does Parameterized.findFieldGenericType() return when there is no applicable collection generic type?",
+      "correct": true,
+      "reason": "E62 names findFieldGenericType() on the Parameterized Markdown page and explicitly returns null when no collection type applies. Its summary has no member link.",
+      "report": "033-jcommander-navigation.json"
+    }
+  ],
+  "90c1b2a4f9399df4599d61f3c977d9aa6acaef6b98d92ea83619d2048c55e337": [
+    {
+      "route": "qualified",
+      "question": "Which method reports whether a parameter received a value during command-line parsing?",
+      "correct": true,
+      "reason": "E38 identifies ParameterDescription.isAssigned() and says it returns true when the parameter received a value during parsing. The llms.txt entry links to the type and contains the unlinked member description.",
+      "report": "034-jcommander-linked.json"
+    }
+  ],
+  "7d820aa988b5e1674a0754ebc5431eb8f6da37619b3d0ec3ef6e62a46817c7e3": [
+    {
+      "route": "javadoc",
+      "question": "What is the replacement for TextContentRenderer.Builder.stripNewlines(boolean) when all newlines must be stripped?",
+      "correct": true,
+      "reason": "The JDK deprecated-list row E65 links the exact stripNewlines(boolean) method to its prescribed replacement, lineBreakRendering(LineBreakRendering.STRIP). The browser bound the citation to the list page instead of its linked declaration.",
+      "report": "035-commonmark-navigation.json"
+    },
+    {
+      "route": "published",
+      "question": "Which LineBreakRendering mode places a blank line between blocks and respects loose lists?",
+      "correct": true,
+      "reason": "The cited type-page summary names the SEPARATE_BLOCKS enum constant and says it separates blocks by a blank line while respecting tight and loose lists. The unlinked summary on the LineBreakRendering page has no member anchor.",
+      "report": "035-commonmark-navigation.json"
+    }
+  ],
+  "41772f6efaea1b2beefa3f45e0499542ce64a48aed2170d19d9d187510453811": [
+    {
+      "route": "balanced",
+      "question": "What does JCommander.getMainParameterValue() return when no main parameter is defined?",
+      "correct": true,
+      "reason": "The adjoining api.json excerpts E39 and E40 identify JCommander#getMainParameterValue() and explicitly state that it returns null if no main parameter is defined. The reader assigned both cited excerpts to the raw API model file.",
+      "report": "036-jcommander-routing.json"
+    }
   ]
 }
