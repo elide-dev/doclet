@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.4.0](https://github.com/elide-dev/doclet/compare/v0.3.0...v0.4.0) (2026-11-28)
+
+
+### Features
+
+* advertise exact Markdown routes and evaluate HTML-start lookups with Luna ([e933eb6](https://github.com/elide-dev/doclet/commit/e933eb67788e1dfddb3b12006067b7413f58055c))
+* advertise searchable qualified declaration contracts ([90747f3](https://github.com/elide-dev/doclet/commit/90747f3d6daed9c7ab74cb36852ddc20b6aad4a6))
+* expose a searchable owner-qualified Markdown declaration index ([e5d527c](https://github.com/elide-dev/doclet/commit/e5d527c41ce73bb32fc7b48fe0f86a16089d31a4))
+* link Markdown API summaries to exact overloads ([f2646f5](https://github.com/elide-dev/doclet/commit/f2646f5fa8b6daf98e423eec971db9939fcc468a))
+* publish addressable member contracts and compare local-first readers ([98297b4](https://github.com/elide-dev/doclet/commit/98297b4405b3075a24c6c2f9af39cc89fc6c3ab2))
+* read exact type documentation and retain missing contract evidence ([11f5829](https://github.com/elide-dev/doclet/commit/11f5829bd79b6b193a774e17a850afb818c36583))
+* surface API contracts for agent discovery and short Markdown reads ([f006491](https://github.com/elide-dev/doclet/commit/f006491feedf8dc0b2c8eebd2b7ba31ff05f274c))
+
+
+### Bug Fixes
+
+* charge out-of-browser evaluation attempts as misses ([e645538](https://github.com/elide-dev/doclet/commit/e645538e201475d350868657ba6993da2469b6ba))
+* distinguish behavior searches from exact declaration lookups ([94019a2](https://github.com/elide-dev/doclet/commit/94019a2c736236733abac0a2a8f1fbedc67af5cd))
+* follow Markdown member links containing array signatures ([cfdb62a](https://github.com/elide-dev/doclet/commit/cfdb62ab13cc820708b7ef548975a7705a2b6876))
+* follow public bundle URLs and recognize native Javadoc deprecations ([e5dced1](https://github.com/elide-dev/doclet/commit/e5dced133e07dd82da27656f53de079f9f7d1dc6))
+* preserve overload lookup across qualified and legacy indexes ([529dcea](https://github.com/elide-dev/doclet/commit/529dcea8b578c99e54f1bf163ed03baf51010cb3))
+* resolve aggregate Markdown links from the published bundle ([4a4581f](https://github.com/elide-dev/doclet/commit/4a4581f6e95e8aae5888d18405f6cd3aa23147a2))
+* resolve linked overload summaries in local readers ([8b1476c](https://github.com/elide-dev/doclet/commit/8b1476c9a448e999feb66819e001a19304a40adb))
+* verify complete fixture coverage in paired comparisons ([d498661](https://github.com/elide-dev/doclet/commit/d498661bf0293976712c9b370f5eb716da0dc2ee))
+
+
+### Performance Improvements
+
+* answer complete exception and return contracts directly ([19a3ea6](https://github.com/elide-dev/doclet/commit/19a3ea6377424c8e44f9ba8319cb1ee7c47d5ed0))
+* cite a declaration by number for identifier questions ([f222ca6](https://github.com/elide-dev/doclet/commit/f222ca6f2a89d7ceeaad54fa4e38e3a88245ae83))
+* distinguish return contracts and measure both member-index readers ([84d1f66](https://github.com/elide-dev/doclet/commit/84d1f66b2b9aee6a1a711d6fbf96d0ecc44577ed))
+* index type contracts and resolve explicit overloads before ranking ([3b6e9aa](https://github.com/elide-dev/doclet/commit/3b6e9aa12d03f21f3670ef75f72840a62305e53c))
+* retain conditional evidence and rank alternative declarations within one prompt ([72ca9b3](https://github.com/elide-dev/doclet/commit/72ca9b3923a5e8689d4a4ff56dd0bd960e7e418b))
+
 ## [0.3.0](https://github.com/elide-dev/doclet/compare/v0.2.0...v0.3.0) (2026-11-27)
 
 
