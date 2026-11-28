@@ -120,7 +120,15 @@ A guide suite is a directory of Markdown files using the same title and first-pa
 
 CI builds the shared catalog from real Javadoc and Dokka output. Mobile Lighthouse checks the guide and both linked API pages for performance (90), accessibility (100), best practices (95), SEO (95), and layout shift (at most 0.05). Stylelint checks authored gallery, theme and catalog CSS against selected [Good CSS](https://good-css.com/) practices for logical properties, focus outlines and transitions.
 
-Agent-readiness checks follow the generated links and validate Markdown negotiation, JSON-LD, the API model, and LLM indexes. Push CI also records the public [Is Agentic report](https://is-agentic.com/scan/elide-dev.github.io/doclet/graalvm) and checks for regression against the initial score of 13. Several hosted probes target the parent GitHub Pages domain. The local checks exercise the exact candidate pages. Reports are downloadable from the build’s `quality-reports` artifact.
+AFDocs scans a specific Java type, Kotlin type, and cross-module guide before release. Each must pass index validity, Markdown availability, HTML/Markdown content parity, and HTTP negotiation checks. The build also resolves relative index links and checks guide backlinks, member anchors, JSON-LD, and the API model. After deployment, Pages repeats the content checks and reports how the host handles Markdown negotiation. GitHub Pages serves HTML for that header, so clients can follow the explicit Markdown link. CI saves candidate reports in the `quality-reports` artifact.
+
+### Evaluating documentation for agents
+
+With the shared sample built (`scripts/build-samples` followed by `scripts/build-shared-sample`) and JDK 25 on PATH, run `python3 scripts/eval-docs.py`. CI runs the same experiment without credentials, model calls, or inference fees.
+
+The harness builds standard Javadoc from the same Java sources. It pairs each of ten API questions with three discovery indexes (standard Javadoc, generated llms.txt, and type names alone) and two reading formats (Javadoc main text and generated Markdown). Each variant uses the same lexical retriever, one page fetch, and a 4,000-character reading budget. It records top-page accuracy, whether the expected evidence fits, and context characters per question in `.dev/quality/doc-evals.json`. Change `--chars` to test tighter budgets. The scope is type lookup on the Java sample; guides and Kotlin are covered by the separate quality gates.
+
+For an answer-level experiment, pass `--reader './your-model-wrapper'` and `--reader-label 'model/version and settings'`. The wrapper reads a prompt on stdin and prints a short answer on stdout. For a local Ollama instance with a model already installed, use `OLLAMA_MODEL=<installed-tag> python3 scripts/eval-docs.py --reader "python3 scripts/eval-ollama.py" --reader-label "<model tag/digest>, temperature 0, seed 42"`. A run makes 60 short calls. The report records answers and checks expected answer patterns against retrieved evidence. Use a fixed model and settings and inspect the paired answers before drawing conclusions. The default offline run measures retrieval, not model answer quality.
 
 ## Branding
 

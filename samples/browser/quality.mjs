@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { spawn, execFileSync } from "node:child_process";
+import { spawn, execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
 import stylelint from "stylelint";
@@ -42,6 +43,7 @@ try {
   const [line] = await once(server.stdout, "data");
   const origin = line.toString().trim().split(" ").at(-1);
   const base = origin + "/catalog/latest/";
+  await promisify(execFile)(process.execPath, [local("./agent-gate.mjs"), base]);
   const guide = "guides/handbook/guides/runtime-greetings.html";
   const java = "api/java/example/runtime/BuildPlan.html";
   const kotlin = "api/kotlin/example/Greeter.html";
@@ -148,24 +150,4 @@ try {
   await browser?.close();
   await chrome?.kill();
   server.kill();
-}
-if (process.argv.includes("--public")) {
-  const url = "https://elide-dev.github.io/doclet/graalvm";
-  const raw = execFileSync(
-    process.execPath,
-    [local("./node_modules/is-agentic/bin/is-agentic.js"), url, "--json"],
-    { timeout: 240000 },
-  );
-  fs.writeFileSync(path.join(reports, "is-agentic.json"), raw);
-  const report = JSON.parse(raw);
-  assert.equal(report.target, url);
-  assert.ok(
-    Number.isFinite(report.score) && report.eligible_checks > 0,
-    "Expected a completed public scan",
-  );
-  assert.ok(
-    report.score >= 13,
-    "Public score fell below its measured Pages baseline: " + report.score,
-  );
-  console.log("Public Is Agentic report:", report.score, report.report_url);
 }

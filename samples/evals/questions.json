@@ -1,0 +1,62 @@
+[
+  {
+    "question": "What compiler arguments does BuildPlan.defaults use?",
+    "page": "BuildPlan",
+    "answer": "empty|no (?:compiler )?arguments",
+    "evidence": "empty argument list"
+  },
+  {
+    "question": "When does Planner.prepare reject a configuration?",
+    "page": "Planner",
+    "answer": "blank|empty",
+    "evidence": "entry point is blank"
+  },
+  {
+    "question": "Which Target compiles an operating-system executable?",
+    "page": "Target",
+    "answer": "\\bNATIVE\\b",
+    "evidence": "operating-system executable"
+  },
+  {
+    "question": "Which Planner.Options.Detail value reports each preparation step?",
+    "page": "Planner.Options.Detail",
+    "answer": "\\bVERBOSE\\b",
+    "evidence": "each preparation step"
+  },
+  {
+    "question": "What replaces the deprecated runtime method on Planner.Local?",
+    "page": "Planner.Local",
+    "answer": "\\btarget\\s*\\(",
+    "evidence": "Use.{0,12}target"
+  },
+  {
+    "question": "What checked exception can a BuildStep throw when preparation fails?",
+    "page": "BuildStep",
+    "answer": "\\bPlanException\\b",
+    "evidence": "configuration cannot be prepared"
+  },
+  {
+    "question": "Which progress setting reports only the result while preparing a plan?",
+    "page": "Planner.Options.Detail",
+    "answer": "\\bQUIET\\b",
+    "evidence": "only the result"
+  },
+  {
+    "question": "Which constant selects the installed Java virtual machine as the runtime?",
+    "page": "Target",
+    "answer": "\\bJVM\\b",
+    "evidence": "installed Java virtual machine"
+  },
+  {
+    "question": "What method prepares an artifact without executing the application?",
+    "page": "BuildStep",
+    "answer": "\\bprepare\\b",
+    "evidence": "without executing the application"
+  },
+  {
+    "question": "What is the name of the record component that holds compiler arguments in invocation order?",
+    "page": "BuildPlan",
+    "answer": "\\barguments\\b",
+    "evidence": "compiler arguments in invocation order"
+  }
+]
