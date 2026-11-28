@@ -1,6 +1,7 @@
 """Local passage and Markdown layout experiments on the same retrieved type."""
 import re
 from html.parser import HTMLParser
+from eval_discovery import _overloads, glance_rows
 
 
 class MemberDetails(HTMLParser):
@@ -27,13 +28,16 @@ class MemberDetails(HTMLParser):
 
 
 def passage(source, fmt, layout, question, type_name, rank, count):
+    exact = set()
     if fmt == "html":
         parser = MemberDetails()
         parser.feed(source)
         rows = parser.rows
     else:
-        section = re.search(r"^## API at a glance\n\n((?:- [^\n]+\n)+)", source, re.M)
-        rows = [line[2:] for line in section[1].splitlines()] if section else []
+        entries = list(glance_rows(source, type_name))
+        rows = [row for _, row in entries]
+        signatures = set(_overloads(question, [member for member, _ in entries if member.anchor]))
+        exact = {row for member, row in entries if member in signatures}
     if not rows:
         return None
     ranked = rank(question, {row: row for row in rows})
@@ -41,6 +45,8 @@ def passage(source, fmt, layout, question, type_name, rank, count):
     names = re.findall(r"\b" + re.escape(type_name) + r"\.(\w+)", question)
     if names:
         ranked.sort(key=lambda row: row.split("(", 1)[0].split(":", 1)[0].split()[0] not in names)
+    if exact:
+        ranked.sort(key=lambda row: row not in exact)
     ranked = ranked[:count]
     if fmt == "html":
         return "\n".join(ranked)

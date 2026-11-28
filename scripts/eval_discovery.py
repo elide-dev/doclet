@@ -1,6 +1,7 @@
 """Look up both arms through their published alphabetical declaration indexes."""
 from collections import defaultdict
 from dataclasses import dataclass, replace
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import PurePosixPath
 import re
@@ -69,6 +70,23 @@ def _member(href, label, summary, ext):
 def _plain_markdown(s):
     return re.sub(r"\\([\\`*_[\]<>|])", r"\1",
                   re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", s)).replace("`", "")
+
+
+def glance_rows(source, path):
+    """Pair each published summary row's declaration with the text used for local ranking."""
+    section = re.search(r"^## API at a glance\n\n((?:- [^\n]+(?:\n|$))+)", source, re.M)
+    if section:
+        for line in section[1].splitlines():
+            row = line[2:]
+            linked = re.fullmatch(r"\[(.+?)\]\(#(\S+?)\)(: .+|:)?", row)
+            if linked:
+                label = _plain_markdown(linked[1])
+                anchor = unquote(linked[2])
+                row = label + (linked[3] or "")
+            else:
+                label = _plain_markdown(row.partition(": ")[0])
+                anchor = ""
+            yield Member(path, anchor, label, row.partition(": ")[2]), row
 
 
 def load_members(site_root, fmt):
@@ -385,20 +403,33 @@ def member_passage(source, fmt, member):
             body = re.sub(r"^## API at a glance\n\n(?:- [^\n]+\n)+", "", body, flags=re.M)
             return re.split(r"^## ", body, maxsplit=1, flags=re.M)[0].strip()
         # The short contract summary is bounded. Every declaration also has a full section.
-        quick = re.search(r"^## API at a glance\n\n((?:- [^\n]+\n)+)", source, re.M)
+        quick = list(glance_rows(source, member.path))
+        for entry, row in quick:
+            if entry.anchor == member.anchor:
+                return "- " + row
         sections = [s[0].strip() for s in re.finditer(r"^### ([^\n]+)\n(.*?)(?=^#{1,3} |\Z)", source, re.M | re.S)
                     if _plain_markdown(s[1]) == member.label]
+        # Members outside the bounded summary can still share a heading with a listed overload.
+        unlinked = []
+        anchored = None
+        for section in sections:
+            anchor = re.match(r'^### [^\n]+\n<a id="([^"]+)"></a>', section)
+            if anchor is None:
+                unlinked.append(section)
+            elif unescape(anchor[1]) == member.anchor:
+                anchored = section
         if len(sections) > 1:
             # Distinct overloads can share the same display signature (package-local type names).
             # The URL's index description is unambiguous even if headings collide.
-            matching = [s for s in sections if member.summary and member.summary in _plain_markdown(s)]
+            if anchored:
+                return anchored
+            matching = [s for s in unlinked if member.summary and member.summary in _plain_markdown(s)]
             if len(matching) == 1:
                 return matching[0]
         else:
-            if quick:
-                for row in quick[1].splitlines():
-                    if row[2:].partition(": ")[0] == member.label:
-                        return row
-            if sections:
-                return sections[0]
+            for entry, row in quick:
+                if not entry.anchor and entry.label == member.label:
+                    return "- " + row
+            if anchored or unlinked:
+                return anchored or unlinked[0]
     return f"{member.label}: {member.summary}"
