@@ -1,0 +1,39 @@
+--- a/packages/apidocs/src/pages.tsx
++++ b/packages/apidocs/src/pages.tsx
+@@ -97,20 +97,33 @@
+  */
+ function PackageSections() {
+   const { site } = usePage();
++  // Larger modules already give each package its own detailed overview.
++  const compact = site.types.size > 32;
+   return (
+     <section id="packages" class="section">
+       <h2>Packages</h2>
+       {site.packages.map(pkg => {
+-        const tops = (pkg.types ?? []).filter(t => !t.enclosing);
++        const types = pkg.types ?? [];
++        const tops = types.filter(t => !t.enclosing);
++        const count = compact ? types.length : tops.length;
+         return (
+           <section key={pkg.id} id={pkg.name ? `package-${pkg.name}` : "package-default"} class="package-block">
+             <h3 class="package-name">
+               <a href={relative(INDEX, packagePage(pkg), ".html")}><code>{pkg.name || "(default package)"}</code></a>
+               {pkg.deprecated && <Badge tone="deprecated">deprecated</Badge>}
+-              <span class="package-count">{tops.length === 1 ? "1 type" : `${tops.length} types`}</span>
++              <span class="package-count">{count === 1 ? "1 type" : `${count} types`}</span>
+             </h3>
+             {pkg.doc?.summary?.length ? <p class="package-summary"><Inlines nodes={pkg.doc.summary} /></p> : null}
+-            {tops.length > 0 && <DeclList types={tops} pkg={pkg} />}
++            {compact && types.length > 0 ? (
++              <ul class="index-list" style="columns:16rem">
++                {types.map(type => (
++                  <li key={type.id}>
++                    <a href={relative(INDEX, typePage(pkg, type), ".html")}><code>{type.name}</code></a>
++                    {type.deprecated && <>{" "}<Badge tone="deprecated">deprecated</Badge></>}
++                  </li>
++                ))}
++              </ul>
++            ) : tops.length > 0 && <DeclList types={tops} pkg={pkg} />}
+           </section>
+         );
+       })}

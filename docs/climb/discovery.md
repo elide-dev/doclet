@@ -122,3 +122,54 @@ Visible tokens count the exact documentation views Luna received, including repe
 | [038](runs/038-codec-indexed.json) | indexed | 4/5 | 4/5 | 23 | 7,440 | 301,289 | 1,056 | 92.8 | 1.32 |
 | [039](runs/039-codec-type-route.json) | indexed | 2/3 | 2/3 | 13 | 4,891 | 171,902 | 736 | 53.5 | 1.16 |
 | [039](runs/039-codec-type-route.json) | typed | 2/3 | 2/3 | 14 | 5,843 | 272,883 | 741 | 64.4 | 0.73 |
+
+## Reproduce the structural routing experiment
+
+Run 040 uses the shipped Codec site from run 038. Both experimental sites start with a compact variant of the same renderer. Above 32 module types, the HTML overview lists direct type links and leaves full type descriptions on the package and type pages. The cutoff defines this experiment. On Codec, the compact HTML is 26,224 bytes versus 69,547 for the original, or 5,128 versus 8,727 at gzip level 6. The benchmark charges uncompressed file bytes. The compact overview retains all 110 type destinations, seven package links and HTML IDs. Runtime Kit and Gson are below the cutoff and produced byte-identical sites.
+
+Build the experimental bundle in a scratch directory with the same dependencies as `scripts/update-renderer`. Set `components` to a local checkout containing the pinned renderer commit. Run from the Doclet repository root after generating the Codec fixture and the `indexed` control above.
+
+```sh
+trial=.dev/compact-renderer-040
+mkdir -p "$trial"
+git -C "$components" archive 84a7ea0c8aedf0fa3ee36a40be6c03afbe542671 | tar -x -C "$trial"
+patch -s -d "$trial" -p1 < scripts/renderer-contracts.patch
+patch -s -d "$trial" -p1 < docs/climb/experiments/compact-entry.patch
+(
+  cd "$trial"
+  bun install --frozen-lockfile --ignore-scripts
+  bun run --filter '@elide/tokens' build
+  cd packages/apidocs && bun run build
+)
+renderer=doclet/src/main/resources/dev/elide/apidocs/renderer
+node "$renderer/runner.mjs" --bundle "$trial/packages/apidocs/dist/render.js" \
+  --assets "$renderer/assets" --model .dev/eval-codec/markdown/api.json --out .dev/discovery-lean/codec
+python3 docs/climb/experiments/direct-type-links.py .dev/discovery-lean/codec .dev/discovery-lean-direct/codec
+python3 docs/climb/experiments/package-contracts.py .dev/discovery-lean/codec .dev/discovery-lean-packages/codec
+```
+
+The direct variant adds links to Markdown type pages grouped by declaring package. The module head advertises the directory via a same-page fragment. The package variant publishes a Markdown list per package, with one row per existing structured declaration. Each row links to the canonical Markdown twin or member anchor and carries the documented summary, supplementary text, parameters, return, throws and deprecation fields when present. The module head exposes each list with the package's own description. Codec's seven lists cover all 1,007 declaration destinations. Their sizes range from 626 to 124,793 bytes. Both sites still expose the full global index and reference.
+
+```sh
+uv run --no-project --with tiktoken==0.12.0 python scripts/eval-browse.py \
+  --questions samples/evals/codec/questions.json --cases 1 3 5 8 10 --offset 1 \
+  --site indexed=.dev/discovery-indexed/codec --site direct=.dev/discovery-lean-direct/codec \
+  --site packages=.dev/discovery-lean-packages/codec --output .dev/040.json
+```
+
+For reviewed grading, pass `--reviews docs/climb/reviews.json` to `scripts/report-browse.py` on the archived report. Reviews are bound to the exact file checksum.
+
+### Isolate the compact entry and index evidence
+
+Run 041 keeps the navigation links and their order identical to the shipped renderer. The `lean` arm changes just the module HTML. The `evidence` arm also appends complete documented contract fields to existing Markdown alphabetical rows, up to 320 characters of added text per row. It prioritizes deprecation, exceptions, returns, then supplementary prose. A link to the exact declaration already appears on every member row; a cue points readers there if a field exceeds the budget. Codec's aggregate reference has no copy of the alphabetical index. Relative to `lean`, only `index-all.md` changes. On Codec it grows from 194,887 to 298,916 bytes as 774 of 897 member rows gain evidence or a cue.
+
+```sh
+python3 docs/climb/experiments/index-evidence.py .dev/discovery-lean/codec .dev/discovery-lean-evidence/codec
+uv run --no-project --with tiktoken==0.12.0 python scripts/eval-browse.py \
+  --questions samples/evals/codec/questions.json --cases 1 3 5 8 10 --offset 2 \
+  --site javadoc=.dev/eval-codec/javadoc --site indexed=.dev/discovery-indexed/codec \
+  --site lean=.dev/discovery-lean/codec --site evidence=.dev/discovery-lean-evidence/codec \
+  --output .dev/041.json
+```
+
+With the literal queries Luna used successfully in run 038 for Base64, Hex and the Soundex setter, the enriched index can expose all required evidence in the first 1,800-character view of that file for all three declarations. The original index required a follow-up read in those three cases. This offline check establishes what the new rows contain. Only a model-selected citation receives credit in run 041.
